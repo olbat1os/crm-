@@ -1,0 +1,212 @@
+<!DOCTYPE html>
+<html lang="sr">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>{{ title or 'Map - LOVACRM' }}</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.js"></script>
+  <style>
+    html, body { height: 100%; }
+    body { margin: 0; }
+    .app-layout {
+      position: relative;
+      min-height: 100vh;
+      display: flex;
+      background: #f3f4f6;
+      color: #111827;
+      overflow: hidden;
+    }
+    .sidebar {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 90px;
+      height: 100vh;
+      background: linear-gradient(179.27deg, #2CAB5C 0%, #11998E 100%), #160D27;
+      box-shadow: 10px 0px 25px rgba(0, 0, 0, 0.25);
+      border-radius: 1px;
+      z-index: 50;
+      transition: width 0.2s ease;
+    }
+    .sidebar:hover { width: 235px; }
+    .sidebar .slot {
+      position: absolute;
+      left: 0;
+      width: 90px;
+      height: 90px;
+      background: rgba(255, 255, 255, 0.2);
+    }
+    /* активная полоса под текущим пунктом */
+    .active-band { position: absolute; left: 0; width: 90px; height: 90px; top: var(--active-top, 0px); background: rgba(255,255,255,0.2); }
+    .sidebar:hover .slot { width: 235px; }
+    .sidebar:hover .active-band { width: 235px; }
+    /* пример зоны под иконки меню (можно дублировать как нужно) */
+    .slot-1 { top: 30px; background: transparent; }
+    .slot-2 { top: 110px; background: transparent; }
+    .slot-3 { top: 190px; background: transparent; }
+    .slot-4 { top: 270px; background: transparent; }
+    .slot-5 { top: 350px; background: transparent; }
+    .slot-settings { bottom: 0; top: auto; height: 90px; }
+    .main {
+      flex: 1;
+      margin-left: 90px;
+      min-height: 100vh;
+      overflow: auto;
+      background: #efefef;
+      position: relative;
+    }
+    .sidebar:hover .slot { width: 235px; }
+    .main-inner {
+      max-width: 1200px;
+      margin: 0 auto;
+      padding: 24px 16px;
+    }
+    /* Подсветка только активного пункта через переменную */
+    .menu-item.active { background: var(--active-bg, rgba(255, 255, 255, 0.12)); }
+    /* Кликабельные пункты меню (вся строка) */
+    .menu-item {
+      position: absolute;
+      left: 0;
+      width: 90px;
+      height: 90px;
+      display: block;
+      text-decoration: none;
+      color: inherit;
+      transition: background-color 0.15s ease, width 0.2s ease;
+    }
+    .sidebar:hover .menu-item { width: 235px; }
+    .menu-item .icon { position: absolute; left: 30px; top: 30px; width: 30px; height: 30px; display: flex; align-items: center; justify-content: center; }
+    .menu-item .icon img { width: 30px; height: 30px; object-fit: contain; filter: brightness(0) invert(1); }
+    .menu-item .label, .menu-item .chevron { position: absolute; color: #FFFFFF; opacity: 0; transition: opacity 0.15s ease; }
+    .sidebar:hover .menu-item .label, .sidebar:hover .menu-item .chevron { opacity: 1; }
+    .menu-item .label { left: 75px; top: 34px; font-family: 'Manrope', system-ui, sans-serif; font-weight: 300; font-size: 16px; line-height: 22px; display: flex; align-items: center; }
+    .menu-item .chevron { left: 208px; top: 38px; width: 7px; height: 14px; }
+    .menu-item .chevron img { width: 7px; height: 14px; display: block; filter: brightness(0) invert(1); }
+    /* Позиции пунктов */
+    .item-dash { top: 0px; }
+    .item-book { top: 80px; }
+    .item-klij { top: 160px; }
+    .item-mapa { top: 240px; }
+    .item-mark { top: 320px; }
+    .item-sett { bottom: 0; top: auto; }
+    /* logo lovacrm */
+    .logo-home {
+      position: absolute;
+      width: 181px;
+      height: 40px;
+      left: 25px;
+      top: 25px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      pointer-events: none;
+      z-index: 1;
+    }
+    .logo-home img { width: 100%; height: 100%; object-fit: contain; }
+    /* правый верхний блок (поиск + колокольчик) */
+    .top-right { position: absolute; right: 25px; top: 25px; display: flex; align-items: center; gap: 20px; z-index: 1; }
+    /* колокольчик */
+    .bell-icon { width: 24px; height: 24px; display: flex; align-items: center; justify-content: center; pointer-events: none; }
+    .bell-icon img { width: 100%; height: 100%; object-fit: contain; }
+    /* поиск */
+    .search-container {
+      position: relative;
+      width: 290px;
+      height: 40px;
+    }
+    .search-box {
+      position: absolute;
+      width: 290px;
+      height: 40px;
+      border: 1px solid #D9D9D9;
+      border-radius: 40px;
+      background: transparent;
+      padding: 0 45px 0 45px;
+      font-family: 'Manrope', system-ui, sans-serif;
+      font-weight: 400;
+      font-size: 16px;
+      line-height: 22px;
+      color: #585858;
+      outline: none;
+    }
+    .search-box::placeholder { color: #585858; }
+    .search-icon {
+      position: absolute;
+      width: 20px;
+      height: 20px;
+      left: 15px;
+      top: 10px;
+      pointer-events: none;
+    }
+    .search-icon img { width: 100%; height: 100%; object-fit: contain; filter: brightness(0) saturate(100%) invert(35%) sepia(0%) saturate(0%) hue-rotate(0deg) brightness(100%) contrast(100%); }
+  </style>
+  <style>
+    /* Интенсивность подсветки для Map */
+    .app-layout { --active-bg: rgba(255, 255, 255, 0.16); --active-top: 240px; }
+  </style>
+  <script>
+    document.addEventListener('DOMContentLoaded', function () {
+      if (window.lucide && lucide.createIcons) {
+        lucide.createIcons();
+      }
+    });
+  </script>
+  </head>
+<body>
+  <div class="app-layout">
+    <aside class="sidebar">
+      <div class="active-band"></div>
+      <a class="menu-item item-dash" href="/dashboard">
+        <span class="icon"><img src="/static/images/logo dashbord.png" alt="Dashboard" /></span>
+        <span class="label">Dashboard</span>
+        <span class="chevron"><img src="/static/images/strelka logo.png" alt="" /></span>
+      </a>
+      <a class="menu-item item-book" href="/booking">
+        <span class="icon"><img src="/static/images/booking logo.png" alt="Booking" /></span>
+        <span class="label">Booking</span>
+        <span class="chevron"><img src="/static/images/strelka logo.png" alt="" /></span>
+      </a>
+      <a class="menu-item item-klij" href="/clients">
+        <span class="icon"><img src="/static/images/klijenti logo.png" alt="Klijenti" /></span>
+        <span class="label">Klijenti</span>
+        <span class="chevron"><img src="/static/images/strelka logo.png" alt="" /></span>
+      </a>
+      <a class="menu-item item-mapa active" href="/map">
+        <span class="icon"><img src="/static/images/mapa logo.png" alt="Mapa" /></span>
+        <span class="label">Mapa</span>
+        <span class="chevron"><img src="/static/images/strelka logo.png" alt="" /></span>
+      </a>
+      <a class="menu-item item-mark" href="/marketing">
+        <span class="icon"><img src="/static/images/marketing logo.png" alt="Marketing" /></span>
+        <span class="label">Marketing</span>
+        <span class="chevron"><img src="/static/images/strelka logo.png" alt="" /></span>
+      </a>
+      <a class="menu-item item-sett" href="#">
+        <span class="icon"><img src="/static/images/setting logo.png" alt="Settings" /></span>
+        <span class="label">Podešavanja</span>
+        <span class="chevron"><img src="/static/images/strelka logo.png" alt="" /></span>
+      </a>
+    </aside>
+    <main class="main">
+      <div class="logo-home">
+        <img src="/static/images/logo home.png" alt="LOVACRM" />
+      </div>
+      <div class="top-right">
+        <div class="bell-icon">
+          <img src="/static/images/kolokolchik logo.png" alt="Notifications" />
+        </div>
+        <div class="search-container">
+          <input type="text" class="search-box" placeholder="Search" />
+          <div class="search-icon">
+            <img src="/static/images/loopa logo.png" alt="Search" />
+          </div>
+        </div>
+      </div>
+      <div class="main-inner">
+        {% block content %}{% endblock %}
+      </div>
+    </main>
+  </div>
+</body>
+</html>

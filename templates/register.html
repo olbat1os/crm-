@@ -1,0 +1,363 @@
+{% extends 'login_page_base.html' %}
+{% block content %}
+<style>
+  /* Canvas matches Frame 1 measurements - now responsive */
+  .register-canvas { 
+    position: relative; 
+    width: 100vw; 
+    height: 100vh; 
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  /* Контейнер для регистрации */
+  .register-container {
+    position: relative;
+    width: 1400px;
+    height: 800px;
+    margin: 0 auto;
+  }
+  
+  /* Logo block - центрированный */
+  .logo-wrap { 
+    position: absolute; 
+    width: 550px; 
+    height: 122px; 
+    left: 50%;
+    top: 54px;
+    transform: translateX(-50%);
+    display: flex; 
+    align-items: center; 
+    justify-content: center; 
+    pointer-events: none; 
+  }
+  .logo-img { width: 550px; height: 122px; object-fit: contain; }
+  
+  /* Таблица с выравниванием по центру */
+  .form-container {
+    position: absolute;
+    left: 50%;
+    top: 50%;
+    transform: translate(-50%, -50%);
+    width: 800px;
+    display: table;
+    table-layout: fixed;
+  }
+  
+  .form-row {
+    display: table-row;
+  }
+  
+  .form-cell {
+    display: table-cell;
+    width: 50%;
+    padding: 15px 20px;
+    vertical-align: top;
+    height: 86px;
+  }
+  
+  .form-cell:first-child {
+    padding-right: 10px;
+  }
+  
+  .form-cell:last-child {
+    padding-left: 10px;
+  }
+  
+  /* Поля ввода */
+  .input-group {
+    position: relative;
+  }
+  
+  .input-label {
+    position: absolute;
+    top: -25px;
+    left: 0;
+    font-family: 'Manrope', system-ui, sans-serif;
+    font-weight: 300;
+    font-size: 16px;
+    color: #FFFFFF;
+    z-index: 1;
+  }
+  
+  .input-field {
+    width: 100%;
+    height: 50px;
+    padding: 0 20px;
+    border: 1px solid #A8FFE9;
+    border-radius: 120px;
+    background: transparent;
+    color: #FFFFFF;
+    font-family: 'Manrope', system-ui, sans-serif;
+    font-size: 18px;
+    font-weight: 300;
+    outline: none;
+    transition: all 0.3s ease;
+  }
+  
+  .input-field:focus {
+    border-color: rgba(255, 255, 255, 0.8);
+    background: rgba(255, 255, 255, 0.1);
+  }
+  
+  .input-field::placeholder {
+    color: rgba(255, 255, 255, 0.6);
+  }
+  
+  /* Выпадающие списки */
+  .select-field {
+    width: 100%;
+    height: 50px;
+    padding: 0 20px;
+    border: 1px solid #A8FFE9;
+    border-radius: 120px;
+    background: transparent;
+    color: #FFFFFF;
+    font-family: 'Manrope', system-ui, sans-serif;
+    font-size: 18px;
+    font-weight: 300;
+    outline: none;
+    transition: all 0.3s ease;
+    appearance: none;
+    -webkit-appearance: none;
+    -moz-appearance: none;
+    cursor: pointer;
+  }
+  
+  .select-field:focus {
+    border-color: rgba(255, 255, 255, 0.8);
+    background: rgba(255, 255, 255, 0.1);
+  }
+  
+  .select-field option {
+    background: #2CAB5C;
+    color: #FFFFFF;
+  }
+  
+  /* Стрелка для select */
+  .select-wrapper {
+    position: relative;
+  }
+  
+  .select-wrapper::after {
+    content: '▼';
+    position: absolute;
+    right: 20px;
+    top: 50%;
+    transform: translateY(-50%);
+    color: #FFFFFF;
+    font-size: 12px;
+    pointer-events: none;
+  }
+  
+  /* Исправляем автозаполнение */
+  .input-field:-webkit-autofill,
+  .input-field:-webkit-autofill:hover,
+  .input-field:-webkit-autofill:focus,
+  .input-field:-webkit-autofill:active {
+    -webkit-box-shadow: 0 0 0 1000px transparent inset !important;
+    -webkit-text-fill-color: #FFFFFF !important;
+    background-color: transparent !important;
+    background: transparent !important;
+    font-size: 18px !important;
+    font-weight: 300 !important;
+    transition: background-color 5000s ease-in-out 0s;
+  }
+  
+  /* Кнопка регистрации */
+  .register-btn {
+    position: absolute;
+    left: 50%;
+    top: calc(50% + 180px);
+    transform: translateX(-50%);
+    width: 670px;
+    height: 60px;
+    background: #FFFFFF;
+    border: none;
+    border-radius: 30px;
+    cursor: pointer;
+    outline: none;
+    transition: all 0.3s ease;
+  }
+  
+  .register-btn:hover {
+    background: #f0f0f0;
+    transform: translateX(-50%) translateY(-2px);
+  }
+  
+  .register-btn:active {
+    transform: translateX(-50%) translateY(0);
+  }
+  
+  .register-btn-text {
+    position: absolute;
+    left: 50%;
+    top: 50%;
+    transform: translate(-50%, -50%);
+    font-family: 'Manrope', system-ui, sans-serif;
+    font-weight: 300;
+    font-size: 18px;
+    color: #000000;
+    pointer-events: none;
+  }
+  
+  /* Ссылка "Sign-in" */
+  .signin-link {
+    position: absolute;
+    left: 50%;
+    top: 80%;
+    transform: translateX(-50%);
+    font-family: 'Manrope', system-ui, sans-serif;
+    font-weight: 300;
+    font-size: 16px;
+    color: #FFFFFF;
+    text-decoration: underline;
+    cursor: pointer;
+    transition: color 0.3s ease;
+  }
+  
+  .signin-link:hover {
+    color: rgba(255, 255, 255, 0.8);
+  }
+  
+  /* Error message */
+  .error-message {
+    position: absolute;
+    left: 50%;
+    top: 20%;
+    transform: translateX(-50%);
+    width: 400px;
+    color: #ffdddd;
+    font-size: 14px;
+    text-align: center;
+    background: rgba(255, 0, 0, 0.2);
+    border: 1px solid rgba(255, 0, 0, 0.4);
+    border-radius: 8px;
+    padding: 10px;
+  }
+  
+  /* Responsive */
+  @media (max-width: 1024px) {
+    .form-container {
+      width: 90%;
+      display: block;
+    }
+    
+    .form-row {
+      display: block;
+    }
+    
+    .form-cell {
+      display: block;
+      width: 100%;
+      padding: 10px 0;
+    }
+    
+    .form-cell:first-child,
+    .form-cell:last-child {
+      padding: 10px 0;
+    }
+    
+  }
+</style>
+
+<div class="register-canvas">
+  <div class="register-container">
+    <!-- Logo -->
+    <div class="logo-wrap">
+      <img src="/static/images/logo_login.svg.png" alt="LOVACRM" class="logo-img" />
+    </div>
+
+    {% if error %}
+      <div class="error-message">{{ error }}</div>
+    {% endif %}
+
+    <!-- Form container -->
+    <div class="form-container">
+    <!-- Row 1: Email | Adresa -->
+    <div class="form-row">
+      <div class="form-cell">
+        <div class="input-group">
+          <label class="input-label">Email</label>
+          <input class="input-field" name="email" type="email" placeholder="" autocomplete="email" />
+        </div>
+      </div>
+      <div class="form-cell">
+        <div class="input-group">
+          <label class="input-label">Adresa</label>
+          <input class="input-field" name="address" type="text" placeholder="" autocomplete="address" />
+        </div>
+      </div>
+    </div>
+    
+    <!-- Row 2: Telefon | Jezik -->
+    <div class="form-row">
+      <div class="form-cell">
+        <div class="input-group">
+          <label class="input-label">Telefon</label>
+          <input class="input-field" name="phone" type="tel" placeholder="" autocomplete="tel" />
+        </div>
+      </div>
+      <div class="form-cell">
+        <div class="input-group">
+          <label class="input-label">Jezik</label>
+          <div class="select-wrapper">
+            <select class="select-field" name="language">
+              <option value="sr">Sr</option>
+            </select>
+          </div>
+        </div>
+      </div>
+    </div>
+    
+    <!-- Row 3: Lozinka | Valuta -->
+    <div class="form-row">
+      <div class="form-cell">
+        <div class="input-group">
+          <label class="input-label">Lozinka</label>
+          <input class="input-field" name="password" type="password" placeholder="" autocomplete="new-password" required />
+        </div>
+      </div>
+      <div class="form-cell">
+        <div class="input-group">
+          <label class="input-label">Valuta</label>
+          <div class="select-wrapper">
+            <select class="select-field" name="currency">
+              <option value="rsd">RSD</option>
+            </select>
+          </div>
+        </div>
+      </div>
+    </div>
+    
+    <!-- Row 4: Ponovite lozinku | Naziv -->
+    <div class="form-row">
+      <div class="form-cell">
+        <div class="input-group">
+          <label class="input-label">Ponovite lozinku</label>
+          <input class="input-field" name="confirm_password" type="password" placeholder="" autocomplete="new-password" required />
+        </div>
+      </div>
+      <div class="form-cell">
+        <div class="input-group">
+          <label class="input-label">Naziv</label>
+          <input class="input-field" name="name" type="text" placeholder="" autocomplete="name" required />
+        </div>
+      </div>
+    </div>
+    </div>
+
+    <!-- Sign-in link -->
+    <a class="signin-link" href="/login">Sign-in</a>
+  </div>
+
+    <!-- Register button -->
+    <form method="post" class="register-form">
+      <button type="submit" class="register-btn" aria-label="Register">
+        <div class="register-btn-text">Register</div>
+      </button>
+    </form>
+  </div>
+</div>
+{% endblock %}
