@@ -2145,7 +2145,7 @@ document.addEventListener('DOMContentLoaded', function() {
         } else {
             console.log('No saved users data found');
             // Add default test user if no data exists
-            addUserToTable('Test User', '+381 60 123 4567', 'test@example.com', 'Booker');
+            // addUserToTable will be called after function is defined
         }
         console.log('=== loadUsersData END ===');
     }
@@ -2528,6 +2528,12 @@ document.addEventListener('DOMContentLoaded', function() {
     // Make functions globally accessible
     window.saveUsersData = saveUsersData;
     window.addUserToTable = addUserToTable;
+    
+    // Add default test user if no data exists (after function is defined)
+    const tbody = document.querySelector('.users-table tbody');
+    if (tbody && tbody.children.length === 0) {
+        addUserToTable('Test User', '+381 60 123 4567', 'test@example.com', 'Booker');
+    }
     
 });
 </script>
