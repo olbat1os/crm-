@@ -1,0 +1,80 @@
+# Git
+.git
+.gitignore
+
+# Documentation
+*.md
+README.md
+DEPLOYMENT_INSTRUCTIONS.md
+HOSTINGER_DEPLOYMENT.md
+
+# Environment files
+.env
+.env.local
+.env.production
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+
+# Virtual environments
+venv/
+env/
+ENV/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
+logs/
+
+# Database
+*.db
+*.sqlite
+*.sqlite3
+
+# Backups
+backups/
+*.sql
+*.dump
+
+# SSL certificates
+ssl/
+*.pem
+*.key
+*.crt
+
+# Docker
+Dockerfile
+docker-compose.yml
+.dockerignore
+
+# Deployment scripts
+deploy.sh
