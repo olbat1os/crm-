@@ -1,0 +1,2247 @@
+from fastapi import FastAPI, Request, Depends, Form, BackgroundTasks
+from fastapi.responses import HTMLResponse, RedirectResponse, JSONResponse
+from fastapi.templating import Jinja2Templates
+from fastapi.staticfiles import StaticFiles
+from sqlmodel import Session, select
+from app.db import get_session, create_db_and_tables
+from app.models import Business, Admin, AdminRole, BusinessStatus
+from app.config import settings
+from app.auth import authenticate_admin, require_admin, require_super_admin, get_all_businesses, get_pending_businesses, reset_business_password as auth_reset_business_password, set_business_password, activate_business, activate_business_with_minutes, get_current_admin, send_password_email, check_and_freeze_expired_businesses, unfreeze_business, send_unfreeze_notification, suspend_business, send_suspend_notification
+from app.models import Contact, Promoter, User, Booking
+from datetime import datetime
+from datetime import datetime as _datetime
+from datetime import date as _date
+from datetime import time as _time
+import asyncio
+
+app = FastAPI()
+
+# Подключаем статические файлы
+app.mount("/static", StaticFiles(directory="static"), name="static")
+
+# Настраиваем шаблоны
+templates = Jinja2Templates(directory="templates")
+
+# Middleware для сессий
+from starlette.middleware.sessions import SessionMiddleware
+app.add_middleware(SessionMiddleware, secret_key=settings.secret_key)
+
+# Фоновая задача для проверки истечения сроков
+async def check_expired_businesses_task():
+    """Фоновая задача для проверки истечения сроков доступа"""
+    while True:
+        session = None
+        try:
+            # Получаем сессию базы данных
+            session = next(get_session())
+            
+            # Проверяем и замораживаем истекшие бизнесы
+            frozen_count = check_and_freeze_expired_businesses(session)
+            
+            if frozen_count > 0:
+                print(f"🔄 Pozadinska provera: zamrznuto {frozen_count} biznisa")
+            else:
+                print("🔄 Pozadinska provera: nema isteklih rokova")
+                
+        except Exception as e:
+            print(f"❌ Ошибка в фоновой задаче проверки сроков: {str(e)}")
+        finally:
+            # ВАЖНО: Закрываем сессию базы данных
+            if session:
+                try:
+                    session.close()
+                except Exception as e:
+                    print(f"❌ Ошибка при закрытии сессии: {e}")
+        
+        # Ждем 5 минут перед следующей проверкой (для тестирования)
+        # Для продакшена изменить на 3600 (1 час) или 1800 (30 минут)
+        await asyncio.sleep(300)  # 5 минут = 300 секунд
+
+# Запускаем фоновую задачу при старте приложения
+@app.on_event("startup")
+async def startup_event():
+    """Запуск фоновых задач при старте приложения"""
+    print("🚀 Pokretanje sistema provere isteka rokova...")
+    asyncio.create_task(check_expired_businesses_task())
+    print("✅ Sistem provere isteka rokova je pokrenut")
+    create_db_and_tables()
+
+def get_current_user(request: Request):
+    return request.session.get("user")
+
+def check_business_active(request: Request, session: Session):
+    """Проверяет, активен ли бизнес пользователя и не истек ли срок"""
+    user = get_current_user(request)
+    if not user:
+        return None, None
+    
+    business_id = user.get("business_id")
+    if not business_id:
+        return None, "Business not found"
+    
+    # Получаем бизнес из базы
+    business = session.get(Business, business_id)
+    if not business:
+        return None, "Business not found"
+    
+    # Проверяем статус
+    if business.status == BusinessStatus.EXPIRED:
+        # Автоматически выходим из системы
+        request.session.clear()
+        return None, "Vaš probni period je istekao. Kontaktirajte administratora za produženje."
+    
+    if business.status == BusinessStatus.SUSPENDED:
+        # Автоматически выходим из системы
+        request.session.clear()
+        return None, "Vaš nalog je privremeno suspendovan. Kontaktirajte administratora."
+    
+    if business.status != BusinessStatus.ACTIVE:
+        # Автоматически выходим из системы
+        request.session.clear()
+        return None, "Vaš nalog nije aktivan. Kontaktirajte administratora."
+    
+    # Проверяем срок действия
+    from datetime import datetime
+    if business.access_end_date and business.access_end_date < datetime.utcnow():
+        # Срок истёк, замораживаем и выкидываем
+        from app.auth import freeze_expired_business, send_expiry_notification
+        freeze_expired_business(session, business_id)
+        send_expiry_notification(
+            business.email,
+            business.business_name,
+            admin_email="admin@lovacrm.com"
+        )
+        request.session.clear()
+        return None, "Vaš probni period je istekao. Kontaktirajte administratora za produženje."
+    
+    return business, None
+
+def get_client_stats(session: Session, business_id: int):
+    """Получает статистику клиентов для поиска"""
+    contacts = session.exec(select(Contact).where(Contact.business_id == business_id).order_by(Contact.created_at.desc())).all()
+    if not contacts:
+        return [], {}
+    
+    contact_ids = [c.id for c in contacts]
+    all_bookings = session.exec(select(Booking).where(Booking.contact_id.in_(contact_ids))).all()
+    
+    bookings_by_contact = {}
+    for b in all_bookings:
+        bookings_by_contact.setdefault(b.contact_id, []).append(b)
+    
+    month_names = {
+        1: "Januar", 2: "Februar", 3: "Mart", 4: "April", 5: "Maj", 6: "Jun",
+        7: "Jul", 8: "Avgust", 9: "Septembar", 10: "Oktobar", 11: "Novembar", 12: "Decembar"
+    }
+    
+    client_stats = {}
+    for c in contacts:
+        lst = bookings_by_contact.get(c.id, [])
+        last_visit = None
+        last_booking_status = None
+        visits_confirmed = 0
+        spends = []
+        
+        for b in lst:
+            if last_visit is None or (b.date, b.time_from) > (last_visit[0], last_visit[1] if last_visit[1] else b.time_from):
+                last_visit = (b.date, b.time_from)
+                last_booking_status = b.status
+            if b.status in ("potvrdjeno", "potvrđeno", "POTVRDJENO"):
+                visits_confirmed += 1
+            if b.spend_eur is not None:
+                spends.append(b.spend_eur)
+        
+        avg_spend = (sum(spends) / len(spends)) if spends else None
+        last_visit_str = None
+        if last_visit is not None:
+            d, t = last_visit
+            month_name = month_names.get(d.month, str(d.month))
+            last_visit_str = f"{d.day}. {month_name} {d.year} | {t.strftime('%H:%M')}"
+        
+        client_stats[c.id] = {
+            "last_visit": last_visit[0].isoformat() if last_visit else None,
+            "last_visit_str": last_visit_str,
+            "last_booking_status": last_booking_status,
+            "visits_confirmed": visits_confirmed,
+            "avg_spend": avg_spend,
+        }
+    
+    return contacts, client_stats
+
+@app.get("/", response_class=HTMLResponse)
+async def landing_page(request: Request):
+    return templates.TemplateResponse("landing.html", {"request": request, "title": "LovaCRM"})
+
+@app.get("/login", response_class=HTMLResponse)
+async def login_page(request: Request):
+    return templates.TemplateResponse("login.html", {"request": request, "title": "Login"})
+
+@app.post("/login")
+async def login(request: Request, username: str = Form(...), password: str = Form(...), session: Session = Depends(get_session)):
+    # Проверяем статические учетные данные
+    if username == settings.single_username and password == settings.single_password:
+        request.session["user"] = {"username": username}
+        return RedirectResponse(url="/dashboard", status_code=302)
+    
+    # Проверяем бизнесы в базе данных
+    from app.auth import hash_password
+    password_hash = hash_password(password)
+    
+    # Ищем бизнес по email
+    business = session.exec(select(Business).where(Business.email == username)).first()
+    if business and business.password_hash and business.password_hash == password_hash:
+        # Проверяем статус бизнеса
+        if business.status == BusinessStatus.ACTIVE:
+            # Проверяем, не истек ли срок доступа
+            from app.auth import check_business_expiry, freeze_expired_business, send_expiry_notification
+            
+            expiry_check = check_business_expiry(session, business.id)
+            if expiry_check["expired"]:
+                # Замораживаем бизнес и отправляем уведомления
+                freeze_expired_business(session, business.id)
+                send_expiry_notification(
+                    business.email,
+                    business.business_name,
+                    admin_email="admin@lovacrm.com"
+                )
+                
+                return templates.TemplateResponse("login.html", {
+                    "request": request, 
+                    "title": "Login", 
+                    "error": f"Rok pristupa je istekao pre {expiry_check['days_overdue']} dana. Nalog je zamrznut. Obratite se administratoru."
+                }, status_code=400)
+            
+            # Если все в порядке, разрешаем вход
+            request.session["user"] = {"username": username, "business_id": business.id}
+            return RedirectResponse(url="/dashboard", status_code=302)
+        elif business.status == BusinessStatus.EXPIRED:
+            return templates.TemplateResponse("login.html", {
+                "request": request, 
+                "title": "Login", 
+                "error": "Rok pristupa je istekao. Nalog je zamrznut. Obratite se administratoru za produženje."
+            }, status_code=400)
+        else:
+            return templates.TemplateResponse("login.html", {
+                "request": request, 
+                "title": "Login", 
+                "error": "Account is not active. Please contact administrator."
+            }, status_code=400)
+    
+    return templates.TemplateResponse("login.html", {"request": request, "title": "Login", "error": "Invalid credentials"}, status_code=400)
+
+@app.get("/dashboard", response_class=HTMLResponse)
+async def dashboard(request: Request, session: Session = Depends(get_session)):
+    try:
+        user = get_current_user(request)
+        if not user:
+            return RedirectResponse(url="/login", status_code=302)
+        
+        # Проверяем активность бизнеса
+        business, error = check_business_active(request, session)
+        if error:
+            return templates.TemplateResponse("login.html", {
+                "request": request,
+                "title": "Login",
+                "error": error
+            }, status_code=400)
+        
+        business_id = user.get("business_id")
+        contacts, client_stats = get_client_stats(session, business_id) if business_id else ([], {})
+        
+        # Заглушки для графиков/пирога
+        monthly_occupancy = {"feb": 0, "mar": 0, "apr": 0, "may": 0, "jun": 0, "jul": 0}
+        marketing_data = {"instagram": 0, "promoter": 0, "random": 0, "whatsapp": 0, "calls": 0}
+        
+        return templates.TemplateResponse("dashboard.html", {
+            "request": request, 
+            "title": "CRM", 
+            "user": user,
+            "contacts": contacts,
+            "client_stats": client_stats,
+            "has_data": bool(contacts),
+            "total_contacts": len(contacts),
+            "avg_spend": 0,
+            "guests_with_bookings": 0,
+            "google_rating": 0,
+            "attendance_rate": 0,
+            "new_clients_percent": 0,
+            "regular_clients_percent": 0,
+            "retention": 0,
+            "marketing_data": marketing_data,
+            "total_spend": 0,
+            "monthly_occupancy": monthly_occupancy
+        })
+        
+    except Exception as e:
+        print(f"Dashboard error: {str(e)}")
+        return templates.TemplateResponse("error.html", {
+            "request": request,
+            "title": "Error",
+            "error": f"Dashboard error: {str(e)}"
+        }, status_code=500)
+
+@app.get("/booking", response_class=HTMLResponse)
+async def booking_page(request: Request, session: Session = Depends(get_session)):
+    user = get_current_user(request)
+    if not user:
+        return RedirectResponse(url="/login", status_code=302)
+
+    # Проверяем активность бизнеса
+    business, error = check_business_active(request, session)
+    if error:
+        return templates.TemplateResponse("login.html", {
+            "request": request,
+            "title": "Login",
+            "error": error
+        }, status_code=400)
+
+    business_id = user.get("business_id")
+
+    # Получаем дату из query, по умолчанию сегодня
+    query_params = dict(request.query_params)
+    date_str = query_params.get("date")
+    try:
+        selected_date = _datetime.strptime(date_str, "%Y-%m-%d").date() if date_str else _datetime.utcnow().date()
+    except Exception:
+        selected_date = _datetime.utcnow().date()
+
+    # Загружаем бронирования на выбранную дату
+    if business_id:
+        contact_ids_for_business = session.exec(select(Contact.id).where(Contact.business_id == business_id)).all()
+        contact_ids_for_business = [cid for (cid,) in contact_ids_for_business] if contact_ids_for_business and isinstance(contact_ids_for_business[0], tuple) else contact_ids_for_business
+        if contact_ids_for_business:
+            bookings = session.exec(
+                select(Booking)
+                .where(Booking.date == selected_date, Booking.contact_id.in_(contact_ids_for_business))
+                .order_by(Booking.time_from)
+            ).all()
+        else:
+            bookings = []
+    else:
+        bookings = session.exec(select(Booking).where(Booking.date == selected_date).order_by(Booking.time_from)).all()
+
+    # Для отображения имени клиента подготовим карту id->Contact
+    contact_ids = {b.contact_id for b in bookings}
+    contacts_map = {}
+    if contact_ids:
+        contacts = session.exec(select(Contact).where(Contact.id.in_(contact_ids))).all()
+        contacts_map = {c.id: c for c in contacts}
+
+    # Данные для поиска
+    contacts, client_stats = get_client_stats(session, business_id) if business_id else ([], {})
+
+    return templates.TemplateResponse("booking.html", {
+        "request": request,
+        "title": "Booking",
+        "user": user,
+        "bookings": bookings,
+        "contacts_map": contacts_map,
+        "selected_date": selected_date,
+        "contacts": contacts,
+        "client_stats": client_stats,
+    })
+
+@app.get("/clients", response_class=HTMLResponse)
+async def clients_page(request: Request, session: Session = Depends(get_session)):
+    user = get_current_user(request)
+    if not user:
+        return RedirectResponse(url="/login", status_code=302)
+    
+    # Проверяем активность бизнеса
+    business, error = check_business_active(request, session)
+    if error:
+        return templates.TemplateResponse("login.html", {
+            "request": request,
+            "title": "Login",
+            "error": error
+        }, status_code=400)
+    
+    business_id = user.get("business_id")
+    if not business_id:
+        return RedirectResponse(url="/login", status_code=302)
+    
+    contacts, client_stats = get_client_stats(session, business_id)
+    
+    return templates.TemplateResponse("clients.html", {
+        "request": request, 
+        "title": "Clients",
+        "contacts": contacts,
+        "client_stats": client_stats
+    })
+
+@app.get("/map", response_class=HTMLResponse)
+async def map_page(request: Request, session: Session = Depends(get_session)):
+    user = get_current_user(request)
+    if not user:
+        return RedirectResponse(url="/login", status_code=302)
+    
+    # Проверяем активность бизнеса
+    business, error = check_business_active(request, session)
+    if error:
+        return templates.TemplateResponse("login.html", {
+            "request": request,
+            "title": "Login",
+            "error": error
+        }, status_code=400)
+    
+    business_id = user.get("business_id")
+    contacts, client_stats = get_client_stats(session, business_id) if business_id else ([], {})
+    
+    return templates.TemplateResponse("map.html", {
+        "request": request, 
+        "title": "Map", 
+        "contacts": contacts, 
+        "client_stats": client_stats
+    })
+
+@app.get("/marketing", response_class=HTMLResponse)
+async def marketing_page(request: Request, session: Session = Depends(get_session)):
+    user = get_current_user(request)
+    if not user:
+        return RedirectResponse(url="/login", status_code=302)
+    
+    # Проверяем активность бизнеса
+    business, error = check_business_active(request, session)
+    if error:
+        return templates.TemplateResponse("login.html", {
+            "request": request,
+            "title": "Login",
+            "error": error
+        }, status_code=400)
+    
+    business_id = user.get("business_id")
+    contacts, client_stats = get_client_stats(session, business_id) if business_id else ([], {})
+    
+    return templates.TemplateResponse("marketing.html", {
+        "request": request, 
+        "title": "Marketing", 
+        "contacts": contacts, 
+        "client_stats": client_stats
+    })
+
+@app.get("/settings", response_class=HTMLResponse)
+async def settings_page(request: Request, session: Session = Depends(get_session)):
+    user = get_current_user(request)
+    if not user:
+        return RedirectResponse(url="/login", status_code=302)
+    
+    # Проверяем активность бизнеса
+    business, error = check_business_active(request, session)
+    if error:
+        return templates.TemplateResponse("login.html", {
+            "request": request,
+            "title": "Login",
+            "error": error
+        }, status_code=400)
+    
+    business_id = user.get("business_id")
+    if not business_id:
+        return RedirectResponse(url="/login", status_code=302)
+    
+    # Получаем сотрудников только для текущего бизнеса
+    promoters = session.exec(select(Promoter).where(Promoter.business_id == business_id)).all()
+    contacts, client_stats = get_client_stats(session, business_id)
+    
+    return templates.TemplateResponse("settings.html", {
+        "request": request, 
+        "title": "Settings",
+        "promoters": promoters,
+        "business_id": business_id,
+        "contacts": contacts,
+        "client_stats": client_stats
+    })
+
+# API для работы с настройками бизнеса
+@app.get("/api/business/settings")
+async def get_business_settings(request: Request, session: Session = Depends(get_session)):
+    """Получить настройки текущего бизнеса"""
+    user = get_current_user(request)
+    if not user:
+        return JSONResponse({"success": False, "error": "Unauthorized"}, status_code=401)
+    
+    business_id = user.get("business_id")
+    if not business_id:
+        return JSONResponse({"success": False, "error": "Business not found"}, status_code=404)
+    
+    business = session.get(Business, business_id)
+    if not business:
+        return JSONResponse({"success": False, "error": "Business not found"}, status_code=404)
+    
+    return {
+        "success": True,
+        "settings": {
+            "business_name": business.business_name,
+            "address": business.address,
+            "email": business.email,
+            "currency": business.currency or "EUR",
+            "working_schedule": business.working_schedule or {},
+            "timezone": business.timezone or "Europe/Belgrade"
+        }
+    }
+
+@app.post("/api/business/settings")
+async def update_business_settings(request: Request, session: Session = Depends(get_session)):
+    """Обновить настройки бизнеса"""
+    user = get_current_user(request)
+    if not user:
+        return JSONResponse({"success": False, "error": "Unauthorized"}, status_code=401)
+    
+    business_id = user.get("business_id")
+    if not business_id:
+        return JSONResponse({"success": False, "error": "Business not found"}, status_code=404)
+    
+    business = session.get(Business, business_id)
+    if not business:
+        return JSONResponse({"success": False, "error": "Business not found"}, status_code=404)
+    
+    try:
+        data = await request.json()
+        
+        # Обновляем поля
+        if "business_name" in data:
+            business.business_name = data["business_name"]
+        if "address" in data:
+            business.address = data["address"]
+        if "email" in data:
+            business.email = data["email"]
+        if "currency" in data:
+            business.currency = data["currency"]
+        if "working_schedule" in data:
+            business.working_schedule = data["working_schedule"]
+        if "timezone" in data:
+            business.timezone = data["timezone"]
+        
+        business.updated_at = _datetime.utcnow()
+        session.add(business)
+        session.commit()
+        
+        return {"success": True}
+        
+    except Exception as e:
+        session.rollback()
+        return JSONResponse({"success": False, "error": str(e)}, status_code=500)
+
+@app.post("/api/business/reset-password")
+async def reset_business_password_api(request: Request, session: Session = Depends(get_session)):
+    """Сбросить пароль бизнеса (без проверки текущего пароля)"""
+    print("🔐 API: reset_business_password called")
+    
+    user = get_current_user(request)
+    if not user:
+        print("❌ API: Unauthorized user")
+        return JSONResponse({"success": False, "error": "Unauthorized"}, status_code=401)
+    
+    business_id = user.get("business_id")
+    if not business_id:
+        print("❌ API: No business_id in user")
+        return JSONResponse({"success": False, "error": "Business not found"}, status_code=404)
+    
+    print(f"✅ API: User authorized, business_id: {business_id}")
+    
+    business = session.get(Business, business_id)
+    if not business:
+        print("❌ API: Business not found in database")
+        return JSONResponse({"success": False, "error": "Business not found"}, status_code=404)
+    
+    print(f"✅ API: Business found: {business.business_name}")
+    
+    try:
+        data = await request.json()
+        new_password = data.get("new_password")
+        
+        print(f"📝 API: Received data - new_password length: {len(new_password) if new_password else 0}")
+        
+        if not new_password:
+            print("❌ API: No new password provided")
+            return JSONResponse({"success": False, "error": "New password is required"}, status_code=400)
+        
+        # Хешируем новый пароль (используем SHA256, как при логине)
+        print("🔐 API: Hashing new password...")
+        from app.auth import hash_password
+        business.password_hash = hash_password(new_password)
+        
+        business.updated_at = _datetime.utcnow()
+        session.add(business)
+        session.commit()
+        
+        print("✅ API: Password saved to database")
+        
+        # Отправляем email уведомление о смене пароля
+        print("📧 API: Sending email notification...")
+        try:
+            from app.email_service import send_notification_email
+            
+            subject = "🔐 Password je uspešno promenjen - LovaCRM"
+            message = f"""
+            Zdravo, {business.business_name}!
+            
+            ✅ POTVRDA: Vaš password je uspešno promenjen!
+            
+            Detalji:
+            📧 Email: {business.email}
+            🏢 Naziv biznisa: {business.business_name}
+            📅 Datum promene: {_datetime.utcnow().strftime('%Y-%m-%d %H:%M')}
+            
+            Vaš novi password je aktiviran i možete se prijaviti na sistem.
+            
+            Ako niste vi promenili password, kontaktirajte nas odmah!
+            
+            Sa poštovanjem,
+            Tim LovaCRM
+            """
+            
+            email_sent = send_notification_email(
+                to_email=business.email,
+                subject=subject,
+                message=message,
+                notification_type="success"
+            )
+            
+            if email_sent:
+                print("✅ API: Email o promeni passworda je poslat!")
+            else:
+                print("❌ API: Greška pri slanju email-a o promeni passworda")
+                
+        except Exception as email_error:
+            print(f"❌ API: Greška pri slanju email-a: {str(email_error)}")
+        
+        print("✅ API: Password reset completed successfully")
+        return {"success": True}
+        
+    except Exception as e:
+        session.rollback()
+        print(f"❌ API: Error in reset password: {str(e)}")
+        return JSONResponse({"success": False, "error": str(e)}, status_code=500)
+
+@app.post("/api/business/change-password")
+async def change_business_password(request: Request, session: Session = Depends(get_session)):
+    """Изменить пароль бизнеса"""
+    print("🔐 API: change_business_password called")
+    
+    user = get_current_user(request)
+    if not user:
+        print("❌ API: Unauthorized user")
+        return JSONResponse({"success": False, "error": "Unauthorized"}, status_code=401)
+    
+    business_id = user.get("business_id")
+    if not business_id:
+        print("❌ API: No business_id in user")
+        return JSONResponse({"success": False, "error": "Business not found"}, status_code=404)
+    
+    print(f"✅ API: User authorized, business_id: {business_id}")
+    
+    business = session.get(Business, business_id)
+    if not business:
+        print("❌ API: Business not found in database")
+        return JSONResponse({"success": False, "error": "Business not found"}, status_code=404)
+    
+    print(f"✅ API: Business found: {business.business_name}")
+    
+    try:
+        data = await request.json()
+        new_password = data.get("new_password")
+        current_password = data.get("current_password")
+        
+        print(f"📝 API: Received data - new_password length: {len(new_password) if new_password else 0}")
+        print(f"📝 API: Received data - current_password length: {len(current_password) if current_password else 0}")
+        
+        if not new_password:
+            print("❌ API: No new password provided")
+            return JSONResponse({"success": False, "error": "New password is required"}, status_code=400)
+        
+        # Проверяем текущий пароль (если указан)
+        if current_password and business.password_hash:
+            print("🔍 API: Checking current password...")
+            from app.auth import hash_password
+            current_password_hash = hash_password(current_password)
+            
+            if current_password_hash != business.password_hash:
+                print("❌ API: Current password is incorrect")
+                return JSONResponse({"success": False, "error": "Trenutni password je netačan!"}, status_code=400)
+            print("✅ API: Current password verified")
+        else:
+            print("⚠️ API: No current password provided or no password_hash in business")
+        
+        # Хешируем новый пароль (используем SHA256, как при логине)
+        print("🔐 API: Hashing new password...")
+        from app.auth import hash_password
+        business.password_hash = hash_password(new_password)
+        
+        business.updated_at = _datetime.utcnow()
+        session.add(business)
+        session.commit()
+        
+        print("✅ API: Password saved to database")
+        
+        # Отправляем email уведомление о смене пароля
+        print("📧 API: Sending email notification...")
+        try:
+            from app.email_service import send_notification_email
+            
+            subject = "🔐 Password je uspešno promenjen - LovaCRM"
+            message = f"""
+            Zdravo, {business.business_name}!
+            
+            ✅ POTVRDA: Vaš password je uspešno promenjen!
+            
+            Detalji:
+            📧 Email: {business.email}
+            🏢 Naziv biznisa: {business.business_name}
+            📅 Datum promene: {_datetime.utcnow().strftime('%Y-%m-%d %H:%M')}
+            
+            Vaš novi password je aktiviran i možete se prijaviti na sistem.
+            
+            Ako niste vi promenili password, kontaktirajte nas odmah!
+            
+            Sa poštovanjem,
+            Tim LovaCRM
+            """
+            
+            email_sent = send_notification_email(
+                to_email=business.email,
+                subject=subject,
+                message=message,
+                notification_type="success"
+            )
+            
+            if email_sent:
+                print("✅ API: Email o promeni passworda je poslat!")
+            else:
+                print("❌ API: Greška pri slanju email-a o promeni passworda")
+                
+        except Exception as email_error:
+            print(f"❌ API: Greška pri slanju email-a: {str(email_error)}")
+        
+        print("✅ API: Password change completed successfully")
+        return {"success": True}
+        
+    except Exception as e:
+        session.rollback()
+        return JSONResponse({"success": False, "error": str(e)}, status_code=500)
+
+# API для работы с промоутерами
+@app.get("/api/promoters")
+async def get_promoters(request: Request, session: Session = Depends(get_session)):
+    """Получить список промоутеров для текущего бизнеса"""
+    user = get_current_user(request)
+    if not user:
+        return JSONResponse({"success": False, "error": "Unauthorized"}, status_code=401)
+    
+    business_id = user.get("business_id")
+    if not business_id:
+        return JSONResponse({"success": False, "error": "Business not found"}, status_code=404)
+    
+    promoters = session.exec(select(Promoter).where(Promoter.business_id == business_id)).all()
+    
+    return {
+        "success": True,
+        "promoters": [
+            {
+                "id": p.id,
+                "name": p.name,
+                "phone": p.phone,
+                "email": p.email,
+                "instagram_handle": p.instagram_handle,
+                "role": "Employee"  # По умолчанию все сотрудники имеют роль Employee
+            }
+            for p in promoters
+        ]
+    }
+
+@app.post("/api/promoters")
+async def create_promoter(request: Request, session: Session = Depends(get_session)):
+    """Создать нового промоутера"""
+    user = get_current_user(request)
+    if not user:
+        return JSONResponse({"success": False, "error": "Unauthorized"}, status_code=401)
+    
+    business_id = user.get("business_id")
+    if not business_id:
+        return JSONResponse({"success": False, "error": "Business not found"}, status_code=404)
+    
+    try:
+        data = await request.json()
+        
+        promoter = Promoter(
+            name=data.get("name", ""),
+            phone=data.get("phone"),
+            email=data.get("email"),
+            instagram_handle=data.get("instagram_handle"),
+            business_id=business_id
+        )
+        
+        session.add(promoter)
+        session.commit()
+        session.refresh(promoter)
+        
+        return {
+            "success": True,
+            "promoter": {
+                "id": promoter.id,
+                "name": promoter.name,
+                "phone": promoter.phone,
+                "email": promoter.email,
+                "instagram_handle": promoter.instagram_handle,
+                "role": "Employee"
+            }
+        }
+        
+    except Exception as e:
+        session.rollback()
+        return JSONResponse({"success": False, "error": str(e)}, status_code=500)
+
+@app.get("/clients/new", response_class=HTMLResponse)
+async def new_client_form(request: Request):
+    user = get_current_user(request)
+    if not user:
+        return RedirectResponse(url="/login", status_code=302)
+    return templates.TemplateResponse("client_form.html", {"request": request, "title": "Novi klijent", "user": user})
+
+@app.get("/clients/quick-add")
+async def quick_add_client(request: Request, session: Session = Depends(get_session)):
+    user = get_current_user(request)
+    if not user:
+        return RedirectResponse(url="/login", status_code=302)
+    
+    business_id = user.get("business_id")
+    if not business_id:
+        return RedirectResponse(url="/login", status_code=302)
+    
+    # Находим максимальный номер клиента среди всех клиентов с именем "Klijent №X" для данного бизнеса
+    contacts = session.exec(select(Contact).where(Contact.business_id == business_id, Contact.first_name.like("Klijent №%"))).all()
+    max_number = 0
+    
+    for contact in contacts:
+        # Извлекаем номер из имени "Klijent №X" (используем № как разделитель)
+        if contact.first_name.startswith("Klijent №"):
+            try:
+                # Ищем номер после "Klijent №"
+                number_part = contact.first_name.split("№")[1].strip()
+                number = int(number_part)
+                max_number = max(max_number, number)
+            except (ValueError, IndexError):
+                continue
+    
+    # Создаем нового клиента с следующим номером
+    next_number = max_number + 1
+    contact = Contact(
+        business_id=business_id,
+        first_name=f"Klijent №{next_number}",
+        last_name=None,
+        phone=None,
+        email=None,
+        instagram_handle=None,
+        nickname=None,
+        gender=None,
+        city=None,
+        birth_date=None,
+        preferences=None,
+        rating=None,
+        created_at=datetime.utcnow()
+    )
+    session.add(contact)
+    session.commit()
+    session.refresh(contact)
+    return RedirectResponse(url=f"/clients/{contact.id}", status_code=302)
+
+@app.post("/clients/new")
+async def create_client(
+    request: Request,
+    first_name: str = Form(...),
+    last_name: str = Form(None),
+    phone: str = Form(None),
+    email: str = Form(None),
+    instagram_handle: str = Form(None),
+    nickname: str = Form(None),
+    gender: str = Form(None),
+    city: str = Form(None),
+    birth_date: str = Form(None),
+    communication_method: str = Form(None),
+    promoter_name: str = Form(None),
+    rating: str = Form(None),
+    preferences_text: str = Form(None),
+    is_regular: str = Form(None),
+    knows_owner: str = Form(None),
+    session: Session = Depends(get_session),
+):
+    user = get_current_user(request)
+    if not user:
+        return RedirectResponse(url="/login", status_code=302)
+    
+    business_id = user.get("business_id")
+    if not business_id:
+        return RedirectResponse(url="/login", status_code=302)
+    
+    # Parse birth_date
+    parsed_birth_date = None
+    if birth_date:
+        try:
+            parsed_birth_date = _datetime.strptime(birth_date, "%Y-%m-%d").date()
+        except Exception:
+            pass
+    
+    # Build preferences JSON
+    preferences = {}
+    if communication_method:
+        preferences["communication_method"] = communication_method
+    if promoter_name:
+        preferences["promoter_name"] = promoter_name
+    if preferences_text:
+        preferences["preferences_text"] = preferences_text
+    preferences["is_regular"] = True if is_regular else False
+    preferences["knows_owner"] = True if knows_owner else False
+    
+    # Parse rating
+    parsed_rating = None
+    if rating is not None and rating != "":
+        try:
+            parsed_rating = int(rating)
+        except Exception:
+            pass
+    
+    contact = Contact(
+        business_id=business_id,
+        first_name=first_name,
+        last_name=last_name,
+        phone=phone,
+        email=email,
+        instagram_handle=instagram_handle,
+        nickname=nickname,
+        gender=gender,
+        city=city,
+        birth_date=parsed_birth_date,
+        preferences=preferences if preferences else None,
+        rating=parsed_rating,
+        created_at=datetime.utcnow()
+    )
+    session.add(contact)
+    session.commit()
+    session.refresh(contact)
+    return RedirectResponse(url="/clients", status_code=302)
+
+@app.get("/clients/{contact_id}", response_class=HTMLResponse)
+async def client_detail(request: Request, contact_id: int, session: Session = Depends(get_session)):
+    user = get_current_user(request)
+    if not user:
+        return RedirectResponse(url="/login", status_code=302)
+    
+    business_id = user.get("business_id")
+    if not business_id:
+        return RedirectResponse(url="/login", status_code=302)
+    
+    contact = session.get(Contact, contact_id)
+    if not contact or contact.business_id != business_id:
+        return RedirectResponse(url="/clients", status_code=302)
+    
+    # Получаем бронирования для этого клиента
+    bookings = session.exec(select(Booking).where(Booking.contact_id == contact_id).order_by(Booking.date.desc(), Booking.time_from.desc())).all()
+    visits_count = len(bookings)
+    total_spent = sum([b.spend_eur or 0 for b in bookings if b.spend_eur])
+    rating = contact.rating or 0
+    
+    # Данные для поиска по всем клиентам бизнеса
+    all_contacts, all_client_stats = get_client_stats(session, business_id)
+    
+    response = templates.TemplateResponse("client_detail.html", {
+        "request": request,
+        "title": f"Klijent: {contact.first_name}",
+        "user": user,
+        "contact": contact,
+        "bookings": bookings,
+        "visits_count": visits_count,
+        "total_spent": total_spent,
+        "rating": rating,
+        "all_contacts": all_contacts,
+        "all_client_stats": all_client_stats
+    })
+    
+    # Добавляем заголовки против кэширования
+    response.headers["Cache-Control"] = "no-cache, no-store, must-revalidate"
+    response.headers["Pragma"] = "no-cache"
+    response.headers["Expires"] = "0"
+    
+    return response
+
+@app.post("/register")
+async def register(
+    request: Request,
+    business_name: str = Form(...),
+    contact_person: str = Form(...),
+    email: str = Form(...),
+    phone: str = Form(...),
+    address: str = Form(None),
+    city: str = Form(None),
+    country: str = Form(None),
+    business_type: str = Form(None),
+    description: str = Form(None),
+    social_media: str = Form(None),
+    session: Session = Depends(get_session),
+):
+    try:
+        # Проверяем, не существует ли уже бизнес с таким email
+        existing_business = session.exec(select(Business).where(Business.email == email)).first()
+        if existing_business:
+            # Формируем подробное сообщение в зависимости от статуса
+            if existing_business.status == BusinessStatus.PENDING:
+                error_msg = "⚠️ Sa ovim podacima već postoji korisnik! Vaša zahtev je poslat na odobrenje administratora."
+            elif existing_business.status == BusinessStatus.ACTIVE:
+                error_msg = "⚠️ Sa ovim podacima već postoji aktivan korisnik! Molimo prijavite se."
+            elif existing_business.status == BusinessStatus.SUSPENDED:
+                error_msg = "⚠️ Sa ovim podacima već postoji korisnik! Vaš nalog je privremeno suspendovan. Kontaktirajte administratora."
+            elif existing_business.status == BusinessStatus.EXPIRED:
+                error_msg = "⚠️ Sa ovim podacima već postoji korisnik! Vaš probni period je istekao. Kontaktirajte administratora za produženje."
+            else:
+                error_msg = "⚠️ Sa ovim podacima već postoji korisnik!"
+            
+            return templates.TemplateResponse("landing.html", {
+                "request": request,
+                "title": "LovaCRM",
+                "error": error_msg
+            }, status_code=400)
+        
+        # Создаем новый бизнес
+        business = Business(
+            business_name=business_name,
+            contact_person=contact_person,
+            email=email,
+            phone=phone,
+            address=address,
+            city=city,
+            country=country,
+            business_type=business_type,
+            description=description,
+            social_media=social_media,
+            status=BusinessStatus.PENDING  # Сначала PENDING
+        )
+        
+        session.add(business)
+        session.commit()
+        session.refresh(business)
+        
+        # Генерируем случайный пароль для бизнеса
+        from app.auth import generate_random_password, hash_password
+        random_password = generate_random_password(length=12)
+        business.password_hash = hash_password(random_password)
+        session.add(business)
+        session.commit()
+        session.refresh(business)
+        
+        # Автоматически активируем бизнес на 5 минут (тестовый период)
+        from app.auth import activate_business_with_minutes
+        success = activate_business_with_minutes(
+            session=session,
+            business_id=business.id,
+            access_minutes=5,  # 5 минут для тестирования (потом изменим на 7 дней)
+            assigned_admin_id=None
+        )
+        
+        if success:
+            # Обновляем информацию о бизнесе
+            session.refresh(business)
+            
+            # Отправляем email клиенту с инструкциями
+            try:
+                from app.email_service import send_notification_email
+                subject = "🎉 Dobrodošli u LovaCRM - Vaš probni period je aktivan!"
+                message = f"""
+                Zdravo, {business.business_name}!
+                
+                🎉 DOBRODOŠLI U LOVACRM!
+                
+                Vaš probni period je automatski aktiviran!
+                
+                Detalji:
+                📧 Email: {business.email}
+                🏢 Naziv biznisa: {business.business_name}
+                ⏰ Probni period: 5 minuta (test)
+                📅 Pristup do: {business.access_end_date.strftime('%Y-%m-%d %H:%M') if business.access_end_date else 'N/A'}
+                
+                🔐 PRISTUPNI PODACI:
+                Link za prijavu: {request.base_url}login
+                Email: {business.email}
+                Password: {random_password}
+                
+                ⚠️ NAPOMENA:
+                Ovo je testni probni period od 5 minuta.
+                Nakon isteka probnog perioda, vaš nalog će biti privremeno suspendovan.
+                Za produženje pristupa, kontaktirajte našu podršku.
+                
+                Sa poštovanjem,
+                Tim LovaCRM
+                """
+                send_notification_email(
+                    to_email=business.email,
+                    subject=subject,
+                    message=message,
+                    notification_type="success"
+                )
+            except Exception as email_error:
+                print(f"❌ Greška pri slanju email-a klijentu: {str(email_error)}")
+            
+            # Отправляем email админу о новой регистрации
+            try:
+                from app.email_service import send_notification_email
+                admin_subject = "🔔 Nova registracija u LovaCRM sistemu"
+                admin_message = f"""
+                Zdravo, Admin!
+                
+                🔔 NOVA REGISTRACIJA U LOVACRM SISTEMU
+                
+                Detalji novog korisnika:
+                📧 Email: {business.email}
+                🏢 Naziv biznisa: {business.business_name}
+                👤 Kontakt osoba: {business.contact_person}
+                📞 Telefon: {business.phone}
+                📍 Adresa: {business.address or 'N/A'}
+                🏙️ Grad: {business.city or 'N/A'}
+                🌍 Zemlja: {business.country or 'N/A'}
+                🏢 Tip biznisa: {business.business_type or 'N/A'}
+                📝 Opis: {business.description or 'N/A'}
+                📱 Društvene mreže: {business.social_media or 'N/A'}
+                
+                🔐 PRISTUPNI PODACI:
+                Email: {business.email}
+                Password: {random_password}
+                Status: {business.status.value}
+                ⏰ Probni period: 5 minuta (test)
+                📅 Pristup do: {business.access_end_date.strftime('%Y-%m-%d %H:%M') if business.access_end_date else 'N/A'}
+                
+                🌐 Admin panel: {request.base_url}admin/login
+                
+                Sa poštovanjem,
+                LovaCRM Sistem
+                """
+                send_notification_email(
+                    to_email="lovacrmhelp@gmail.com",
+                    subject=admin_subject,
+                    message=admin_message,
+                    notification_type="info"
+                )
+            except Exception as admin_email_error:
+                print(f"❌ Greška pri slanju email-a adminu: {str(admin_email_error)}")
+            
+            # Выводим информацию в консоль
+            print("=" * 60)
+            print("🎉 NOVI BIZNIS REGISTROVAN I AKTIVIRAN!")
+            print(f"📧 Email: {business.email}")
+            print(f"🏢 Naziv: {business.business_name}")
+            print(f"🔐 Password: {random_password}")
+            print(f"⏰ Probni period: 5 minuta")
+            print(f"📅 Pristup do: {business.access_end_date.strftime('%Y-%m-%d %H:%M') if business.access_end_date else 'N/A'}")
+            print("📧 Email poslat klijentu i adminu!")
+            print("=" * 60)
+        
+        return templates.TemplateResponse("landing.html", {
+            "request": request,
+            "title": "LovaCRM",
+            "success": "🎉 Uspešno! Vaš probni period je započeo! Proverite email za pristupne podatke."
+            })
+        
+    except Exception as e:
+        print(f"Registration error: {str(e)}")
+        return templates.TemplateResponse("landing.html", {
+            "request": request,
+            "title": "LovaCRM",
+            "error": f"Greška pri registraciji: {str(e)}"
+        }, status_code=400)
+
+@app.get("/logout")
+async def logout(request: Request):
+    request.session.clear()
+    return RedirectResponse(url="/login", status_code=302)
+
+# Admin routes
+@app.get("/admin/login", response_class=HTMLResponse)
+async def admin_login_page(request: Request):
+    return templates.TemplateResponse("admin_login_new.html", {"request": request, "title": "Admin Login"})
+
+@app.post("/admin/login")
+async def admin_login(request: Request, username: str = Form(...), password: str = Form(...), session: Session = Depends(get_session)):
+    admin = authenticate_admin(session, username, password)
+    if admin:
+        # Генерируем код 2FA
+        from app.auth import generate_2fa_code, send_2fa_code
+        from datetime import datetime, timedelta
+        
+        code = generate_2fa_code()
+        admin.two_factor_code = code
+        admin.two_factor_code_expires = datetime.utcnow() + timedelta(minutes=5)
+        session.add(admin)
+        session.commit()
+        
+        # Отправляем код на email
+        send_2fa_code(admin.email, code, admin.full_name)
+        
+        # Сохраняем временные данные в сессии для проверки кода
+        request.session["admin_pending"] = {
+            "id": admin.id,
+            "username": admin.username,
+            "role": admin.role.value
+        }
+        
+        print(f"🔐 2FA код отправлен админу {admin.username}: {code}")
+        
+        # Перенаправляем на страницу ввода кода
+        return RedirectResponse(url="/admin/verify-code", status_code=302)
+    return templates.TemplateResponse("admin_login_new.html", {"request": request, "title": "Admin Login", "error": "Invalid credentials"}, status_code=400)
+
+@app.get("/admin/verify-code", response_class=HTMLResponse)
+async def admin_verify_code_page(request: Request):
+    # Проверяем, есть ли pending admin в сессии
+    admin_pending = request.session.get("admin_pending")
+    if not admin_pending:
+        return RedirectResponse(url="/admin/login", status_code=302)
+    
+    return templates.TemplateResponse("admin_verify_code.html", {
+        "request": request,
+        "title": "Verify Code"
+    })
+
+@app.post("/admin/verify-code")
+async def admin_verify_code(request: Request, code: str = Form(...), session: Session = Depends(get_session)):
+    admin_pending = request.session.get("admin_pending")
+    if not admin_pending:
+        return RedirectResponse(url="/admin/login", status_code=302)
+    
+    # Получаем админа из базы
+    admin = session.get(Admin, admin_pending["id"])
+    if not admin:
+        return templates.TemplateResponse("admin_verify_code.html", {
+            "request": request,
+            "title": "Verify Code",
+            "error": "Admin not found"
+        }, status_code=400)
+    
+    # Проверяем код
+    from datetime import datetime
+    if admin.two_factor_code != code:
+        return templates.TemplateResponse("admin_verify_code.html", {
+            "request": request,
+            "title": "Verify Code",
+            "error": "Неверный код. Проверьте email и попробуйте снова."
+        }, status_code=400)
+    
+    # Проверяем срок действия
+    if admin.two_factor_code_expires and admin.two_factor_code_expires < datetime.utcnow():
+        return templates.TemplateResponse("admin_verify_code.html", {
+            "request": request,
+            "title": "Verify Code",
+            "error": "Код истёк. Пожалуйста, войдите заново."
+        }, status_code=400)
+    
+    # Код верный, очищаем его и входим
+    admin.two_factor_code = None
+    admin.two_factor_code_expires = None
+    session.add(admin)
+    session.commit()
+    
+    # Переносим данные из admin_pending в admin
+    request.session["admin"] = admin_pending
+    del request.session["admin_pending"]
+    
+    print(f"✅ Админ {admin.username} успешно вошёл с 2FA")
+    
+    return RedirectResponse(url="/admin", status_code=302)
+
+@app.get("/admin", response_class=HTMLResponse)
+@app.get("/admin/dashboard", response_class=HTMLResponse)
+async def admin_dashboard(request: Request, session: Session = Depends(get_session)):
+    admin = get_current_admin(request)
+    if not admin:
+        return RedirectResponse(url="/admin/login", status_code=302)
+    
+    businesses = get_all_businesses(session)
+    pending_businesses = get_pending_businesses(session)
+    
+    # Подсчитываем статистику
+    total_businesses = len(businesses)
+    active_businesses = len([b for b in businesses if b.status == BusinessStatus.ACTIVE])
+    pending_businesses_count = len(pending_businesses)
+    suspended_businesses = len([b for b in businesses if b.status == BusinessStatus.SUSPENDED])
+    expired_businesses = len([b for b in businesses if b.status == BusinessStatus.EXPIRED])
+    
+    # Подсчитываем общее количество бронирований
+    bookings_query = select(Booking)
+    bookings_result = session.exec(bookings_query)
+    total_bookings = len(list(bookings_result))
+    
+    stats = {
+        "total_businesses": total_businesses,
+        "active_businesses": active_businesses,
+        "pending_businesses": pending_businesses_count,
+        "suspended_businesses": suspended_businesses,
+        "expired_businesses": expired_businesses,
+        "total_bookings": total_bookings
+    }
+    
+    # Сортируем бизнесы по дате создания (новые первые)
+    recent_businesses = sorted(businesses, key=lambda x: x.created_at or datetime.min, reverse=True)[:10]
+    
+    return templates.TemplateResponse("admin_dashboard_new.html", {
+        "request": request,
+        "title": "Admin Dashboard",
+        "admin": admin,
+        "stats": stats,
+        "recent_businesses": recent_businesses
+    })
+
+@app.get("/admin/businesses", response_class=HTMLResponse)
+async def admin_businesses(request: Request, session: Session = Depends(get_session)):
+    admin = get_current_admin(request)
+    if not admin:
+        return RedirectResponse(url="/admin/login", status_code=302)
+    
+    businesses = get_all_businesses(session)
+    return templates.TemplateResponse("admin_businesses_new.html", {
+        "request": request,
+        "title": "Businesses",
+        "admin": admin,
+        "businesses": businesses
+    })
+
+@app.get("/admin/pending", response_class=HTMLResponse)
+async def admin_pending(request: Request, session: Session = Depends(get_session)):
+    admin = get_current_admin(request)
+    if not admin:
+        return RedirectResponse(url="/admin/login", status_code=302)
+    
+    pending_businesses = get_pending_businesses(session)
+    return templates.TemplateResponse("admin_pending_new.html", {
+        "request": request,
+        "title": "Pending Businesses",
+        "admin": admin,
+        "pending_businesses": pending_businesses
+    })
+
+@app.post("/admin/businesses/{business_id}/activate")
+async def admin_activate_business(
+    business_id: int,
+    request: Request,
+    access_days: int = Form(7),
+    access_hours: int = Form(0),
+    access_minutes: int = Form(0),
+    session: Session = Depends(get_session)
+):
+    admin = get_current_admin(request)
+    if not admin:
+        return JSONResponse({"success": False, "error": "Unauthorized"}, status_code=401)
+    
+    try:
+        # Вычисляем общее время доступа в минутах
+        total_minutes = access_days * 24 * 60 + access_hours * 60 + access_minutes
+        
+        # Если указано время, используем его, иначе используем дни
+        if total_minutes > 0:
+            success = activate_business_with_minutes(session, business_id, total_minutes, admin["id"])
+        else:
+            success = activate_business(session, business_id, access_days, admin["id"])
+        
+        if success:
+            try:
+                # Генерируем пароль для бизнеса
+                business = session.get(Business, business_id)
+                
+                if business:
+                    # Генерируем новый пароль
+                    new_password = set_business_password(session, business_id)
+                    
+                    # Отправляем пароль на email (выводится в консоль)
+                    send_password_email(
+                        business.email, 
+                        business.business_name, 
+                        new_password, 
+                        is_reset=False
+                    )
+                    
+                    # Выводим дополнительную информацию в консоль
+                    print("=" * 60)
+                    print("🎉 БИЗНЕС АКТИВИРОВАН!")
+                    print(f"📧 Email: {business.email}")
+                    print(f"🏢 Название: {business.business_name}")
+                    print(f"👤 Контактное лицо: {business.contact_person}")
+                    print(f"📞 Телефон: {business.phone}")
+                    print(f"🔑 Пароль: {new_password}")
+                    print(f"⏰ Доступ до: {business.access_end_date}")
+                    print(f"👨‍💼 Активировал: {admin['username']}")
+                    print("=" * 60)
+                else:
+                    print(f"❌ ОШИБКА: Бизнес с ID {business_id} не найден после активации")
+                    
+            except Exception as e:
+                print(f"❌ ОШИБКА при генерации пароля: {str(e)}")
+                # Не прерываем выполнение, активация уже прошла успешно
+            
+            return JSONResponse({"success": True, "message": "Бизнес успешно активирован, пароль отправлен на email"})
+        else:
+            return JSONResponse({"success": False, "error": "Бизнес не найден"}, status_code=404)
+            
+    except Exception as e:
+        return JSONResponse({"success": False, "error": str(e)}, status_code=500)
+
+@app.get("/admin/settings", response_class=HTMLResponse)
+async def admin_settings(request: Request, session: Session = Depends(get_session)):
+    admin = get_current_admin(request)
+    if not admin:
+        return RedirectResponse(url="/admin/login", status_code=302)
+    
+    # Подсчитываем статистику системы
+    businesses = get_all_businesses(session)
+    bookings_query = select(Booking)
+    bookings_result = session.exec(bookings_query)
+    total_bookings = len(list(bookings_result))
+    
+    system_stats = {
+        "total_users": len(businesses),
+        "total_bookings": total_bookings,
+        "emails_sent": 0,  # TODO: добавить подсчет отправленных email
+        "system_uptime": 24  # TODO: добавить реальное время работы
+    }
+    
+    return templates.TemplateResponse("admin_settings_new.html", {
+        "request": request, 
+        "title": "Admin Settings",
+        "admin": admin,
+        "system_stats": system_stats,
+        "last_update": "2024-01-15"
+    })
+
+@app.get("/admin/logout")
+async def admin_logout(request: Request):
+    request.session.clear()
+    return RedirectResponse(url="/admin/login", status_code=302)
+
+@app.get("/admin/businesses/{business_id}", response_class=HTMLResponse)
+async def admin_business_detail(business_id: int, request: Request, session: Session = Depends(get_session)):
+    """Просмотр деталей конкретного бизнеса"""
+    admin = get_current_admin(request)
+    if not admin:
+        return RedirectResponse(url="/admin/login", status_code=302)
+    
+    business = session.get(Business, business_id)
+    if not business:
+        return templates.TemplateResponse("error.html", {
+            "request": request,
+            "title": "Business Not Found",
+            "error": f"Business with ID {business_id} not found"
+        }, status_code=404)
+    
+    return templates.TemplateResponse("admin_business_detail_new.html", {
+        "request": request,
+        "title": f"Business: {business.business_name}",
+        "admin": admin,
+        "business": business,
+        "now": datetime.utcnow()
+    })
+
+@app.get("/admin/businesses/{business_id}/edit", response_class=HTMLResponse)
+async def admin_business_edit_form(business_id: int, request: Request, session: Session = Depends(get_session)):
+    """Форма редактирования бизнеса"""
+    admin = get_current_admin(request)
+    if not admin:
+        return RedirectResponse(url="/admin/login", status_code=302)
+    
+    business = session.get(Business, business_id)
+    if not business:
+        return templates.TemplateResponse("error.html", {
+            "request": request,
+            "title": "Business Not Found",
+            "error": f"Business with ID {business_id} not found"
+        }, status_code=404)
+    
+    return templates.TemplateResponse("admin_business_edit.html", {
+        "request": request,
+        "title": f"Edit Business: {business.business_name}",
+        "admin": admin,
+        "business": business
+    })
+
+@app.post("/admin/businesses/{business_id}/edit")
+async def admin_business_edit(
+    business_id: int,
+    request: Request,
+    session: Session = Depends(get_session),
+    business_name: str = Form(...),
+    contact_person: str = Form(...),
+    email: str = Form(...),
+    phone: str = Form(...),
+    address: str = Form(None),
+    city: str = Form(None),
+    country: str = Form(None),
+    business_type: str = Form(None),
+    description: str = Form(None),
+    notes: str = Form(None)
+):
+    """Обновление данных бизнеса"""
+    admin = get_current_admin(request)
+    if not admin:
+        return RedirectResponse(url="/admin/login", status_code=302)
+    
+    business = session.get(Business, business_id)
+    if not business:
+        return {"success": False, "message": "Business not found"}
+    
+    try:
+        # Обновляем данные
+        business.business_name = business_name
+        business.contact_person = contact_person
+        business.email = email
+        business.phone = phone
+        business.address = address
+        business.city = city
+        business.country = country
+        business.business_type = business_type
+        business.description = description
+        business.notes = notes
+        business.updated_at = datetime.utcnow()
+        
+        session.add(business)
+        session.commit()
+        
+        return {"success": True, "message": "Business updated successfully"}
+    except Exception as e:
+        session.rollback()
+        return {"success": False, "message": f"Error updating business: {str(e)}"}
+
+@app.get("/.well-known/appspecific/com.chrome.devtools.json")
+async def chrome_devtools():
+    """Обработка запроса от Chrome DevTools"""
+    return {"message": "Chrome DevTools endpoint"}
+
+@app.post("/admin/restart-system")
+async def admin_restart_system(request: Request):
+    """Перезапуск системы"""
+    admin = get_current_admin(request)
+    if not admin:
+        return RedirectResponse(url="/admin/login", status_code=302)
+    
+    try:
+        # Здесь можно добавить логику очистки кеша, перезапуска сервисов и т.д.
+        # Пока просто возвращаем успех
+        return {"success": True, "message": "Sistem je uspešno restartovan!"}
+    except Exception as e:
+        return {"success": False, "message": f"Greška pri restartovanju: {str(e)}"}
+
+@app.post("/admin/businesses/{business_id}/reset-password")
+async def reset_password(business_id: int, request: Request, session: Session = Depends(get_session)):
+    """Сбрасывает пароль бизнеса и отправляет новый на email"""
+    admin = get_current_admin(request)
+    if not admin:
+        return RedirectResponse(url="/admin/login", status_code=302)
+    
+    try:
+        success = auth_reset_business_password(session, business_id)
+        if success:
+            return {"success": True, "message": "Пароль успешно сброшен и отправлен на email"}
+        else:
+            return {"success": False, "message": "Бизнес не найден"}
+    except Exception as e:
+        return {"success": False, "message": f"Ошибка: {str(e)}"}
+
+@app.post("/admin/check-expired")
+async def admin_check_expired(request: Request, session: Session = Depends(get_session)):
+    """Ручная проверка истечения сроков доступа (для тестирования)"""
+    admin = get_current_admin(request)
+    if not admin:
+        return JSONResponse({"success": False, "error": "Unauthorized"}, status_code=401)
+    
+    try:
+        frozen_count = check_and_freeze_expired_businesses(session)
+        return JSONResponse({
+            "success": True, 
+            "message": f"Проверка завершена. Заморожено бизнесов: {frozen_count}",
+            "frozen_count": frozen_count
+        })
+    except Exception as e:
+        return JSONResponse({"success": False, "error": str(e)}, status_code=500)
+
+@app.post("/admin/businesses/{business_id}/unfreeze")
+async def admin_unfreeze_business(
+    business_id: int,
+    request: Request,
+    new_access_days: int = Form(30),
+    session: Session = Depends(get_session)
+):
+    """Размораживает бизнес и устанавливает новый срок доступа"""
+    admin = get_current_admin(request)
+    if not admin:
+        return JSONResponse({"success": False, "error": "Unauthorized"}, status_code=401)
+    
+    try:
+        # Проверяем, что бизнес существует и заморожен
+        business = session.get(Business, business_id)
+        if not business:
+            return JSONResponse({"success": False, "error": "Biznis nije pronađen"}, status_code=404)
+        
+        if business.status != BusinessStatus.EXPIRED:
+            return JSONResponse({"success": False, "error": "Biznis nije zamrznut"}, status_code=400)
+        
+        # Размораживаем бизнес
+        success = unfreeze_business(session, business_id, new_access_days)
+        
+        if success:
+            # Отправляем уведомления
+            send_unfreeze_notification(
+                business.email,
+                business.business_name,
+                new_access_days,
+                admin_email="admin@lovacrm.com"
+            )
+            
+            # Выводим информацию в консоль
+            print("=" * 60)
+            print("✅ BIZNIS RAZMRZNUT!")
+            print(f"📧 Email: {business.email}")
+            print(f"🏢 Naziv: {business.business_name}")
+            print(f"⏰ Novi rok pristupa: {new_access_days} dana")
+            print("=" * 60)
+            
+            return JSONResponse({
+                "success": True, 
+                "message": f"Biznis je uspešno razmrznut. Novi rok pristupa: {new_access_days} dana"
+            })
+        else:
+            return JSONResponse({"success": False, "error": "Greška pri razmrznavanju"}, status_code=500)
+            
+    except Exception as e:
+        return JSONResponse({"success": False, "error": str(e)}, status_code=500)
+
+@app.post("/admin/businesses/suspend")
+async def admin_suspend_business(
+    request: Request,
+    session: Session = Depends(get_session)
+):
+    """Приостанавливает бизнес"""
+    admin = get_current_admin(request)
+    if not admin:
+        return JSONResponse({"success": False, "error": "Unauthorized"}, status_code=401)
+    
+    try:
+        # Получаем данные из JSON
+        data = await request.json()
+        business_id = data.get("business_id")
+        
+        if not business_id:
+            return JSONResponse({"success": False, "error": "Business ID is required"}, status_code=400)
+        
+        # Проверяем, что бизнес существует и активен
+        business = session.get(Business, business_id)
+        if not business:
+            return JSONResponse({"success": False, "error": "Biznis nije pronađen"}, status_code=404)
+        
+        if business.status != BusinessStatus.ACTIVE:
+            return JSONResponse({"success": False, "error": "Biznis nije aktivan"}, status_code=400)
+        
+        # Приостанавливаем бизнес
+        success = suspend_business(session, business_id)
+        
+        if success:
+            # Отправляем уведомления
+            send_suspend_notification(
+                business.email,
+                business.business_name,
+                admin_email="admin@lovacrm.com"
+            )
+            
+            # Выводим информацию в консоль
+            print("=" * 60)
+            print("⚠️ BIZNIS SUSPENDOVAN!")
+            print(f"📧 Email: {business.email}")
+            print(f"🏢 Naziv: {business.business_name}")
+            print("=" * 60)
+            
+            return JSONResponse({
+                "success": True, 
+                "message": "Biznis je uspešno suspendovan"
+            })
+        else:
+            return JSONResponse({"success": False, "error": "Greška pri suspendovanju"}, status_code=500)
+            
+    except Exception as e:
+        return JSONResponse({"success": False, "error": str(e)}, status_code=500)
+
+@app.post("/admin/businesses/{business_id}/unsuspend")
+async def admin_unsuspend_business(
+    business_id: int,
+    request: Request,
+    session: Session = Depends(get_session)
+):
+    """Возобновляет приостановленный бизнес"""
+    admin = get_current_admin(request)
+    if not admin:
+        return JSONResponse({"success": False, "error": "Unauthorized"}, status_code=401)
+    
+    try:
+        # Проверяем, что бизнес существует и приостановлен
+        business = session.get(Business, business_id)
+        if not business:
+            return JSONResponse({"success": False, "error": "Biznis nije pronađen"}, status_code=404)
+        
+        if business.status != BusinessStatus.SUSPENDED:
+            return JSONResponse({"success": False, "error": "Biznis nije suspendovan"}, status_code=400)
+        
+        # Активируем бизнес с доступом на 30 дней по умолчанию
+        from app.auth import activate_business
+        admin_id = admin.get("id") if isinstance(admin, dict) else admin.id
+        success = activate_business(session, business_id, access_days=30, assigned_admin_id=admin_id)
+        
+        if success:
+            # Обновляем информацию о бизнесе
+            session.refresh(business)
+            
+            # Отправляем уведомление о возобновлении
+            try:
+                from app.email_service import send_notification_email
+                subject = "✅ Biznis je aktiviran - LovaCRM"
+                message = f"""
+                Zdravo, {business.business_name}!
+                
+                ✅ DOBRA VEST: Vaš biznis je ponovo aktiviran!
+                
+                Detalji:
+                📧 Email: {business.email}
+                🏢 Naziv biznisa: {business.business_name}
+                📅 Pristup do: {business.access_end_date.strftime('%Y-%m-%d %H:%M') if business.access_end_date else 'N/A'}
+                
+                Možete se ponovo prijaviti na sistem i koristiti sve funkcije.
+                
+                Sa poštovanjem,
+                Tim LovaCRM
+                """
+                send_notification_email(
+                    to_email=business.email,
+                    subject=subject,
+                    message=message,
+                    notification_type="success"
+                )
+            except Exception as email_error:
+                print(f"❌ Greška pri slanju email-a: {str(email_error)}")
+            
+            # Выводим информацию в консоль
+            print("=" * 60)
+            print("✅ BIZNIS AKTIVIRAN!")
+            print(f"📧 Email: {business.email}")
+            print(f"🏢 Naziv: {business.business_name}")
+            print(f"📅 Pristup do: {business.access_end_date.strftime('%Y-%m-%d %H:%M') if business.access_end_date else 'N/A'}")
+            print("=" * 60)
+            
+            return JSONResponse({
+                "success": True, 
+                "message": "Biznis je uspešno aktiviran"
+            })
+        else:
+            return JSONResponse({"success": False, "error": "Greška pri aktivaciji"}, status_code=500)
+            
+    except Exception as e:
+        print(f"❌ Error in unsuspend: {str(e)}")
+        return JSONResponse({"success": False, "error": str(e)}, status_code=500)
+
+# API маршруты для тегов и редактирования клиентов
+@app.get("/api/tags/all")
+async def get_all_tags(session: Session = Depends(get_session)):
+    """Получает все существующие теги"""
+    try:
+        # Получаем все теги из всех клиентов
+        contacts = session.exec(select(Contact)).all()
+        all_tags = set()
+        
+        for contact in contacts:
+            if contact.preferences and isinstance(contact.preferences, dict):
+                tags = contact.preferences.get('tags', [])
+                if isinstance(tags, list):
+                    all_tags.update(tags)
+        
+        return {"success": True, "tags": list(all_tags)}
+    except Exception as e:
+        return {"success": False, "message": f"Error getting tags: {str(e)}"}
+
+@app.post("/clients/{contact_id}/add-tag")
+async def add_tag_to_client(
+    contact_id: int, 
+    request: Request, 
+    session: Session = Depends(get_session)
+):
+    """Добавляет тег к клиенту"""
+    user = get_current_user(request)
+    if not user:
+        return {"success": False, "message": "Not authenticated"}
+    
+    business_id = user.get("business_id")
+    if not business_id:
+        return {"success": False, "message": "No business ID"}
+    
+    try:
+        # Получаем данные из JSON
+        data = await request.json()
+        print(f"DEBUG: Add tag received data: {data}")
+        tag = data.get("tag", "").strip()
+        print(f"DEBUG: Extracted tag: '{tag}'")
+        
+        if not tag:
+            return {"success": False, "message": "Tag is required"}
+        
+        # Находим клиента
+        contact = session.get(Contact, contact_id)
+        if not contact or contact.business_id != business_id:
+            return {"success": False, "message": "Contact not found"}
+        
+        # Получаем существующие теги
+        preferences = contact.preferences or {}
+        print(f"DEBUG: Current preferences: {preferences}")
+        tags = preferences.get('tags', [])
+        print(f"DEBUG: Current tags: {tags}")
+        
+        # Добавляем новый тег, если его еще нет
+        if tag not in tags:
+            tags.append(tag)
+            print(f"DEBUG: Updated tags: {tags}")
+            preferences['tags'] = tags
+            print(f"DEBUG: Updated preferences: {preferences}")
+            
+            # Используем прямой SQL запрос для обновления JSON поля
+            import json
+            preferences_json = json.dumps(preferences, ensure_ascii=False)
+            print(f"DEBUG: JSON to save: {preferences_json}")
+            
+            # Выполняем SQL UPDATE напрямую
+            from sqlalchemy import text
+            result = session.execute(
+                text("UPDATE contact SET preferences = :preferences, updated_at = :updated_at WHERE id = :contact_id"),
+                {
+                    "preferences": preferences_json,
+                    "updated_at": datetime.utcnow(),
+                    "contact_id": contact_id
+                }
+            )
+            session.commit()
+            
+            # Проверяем, что сохранилось в базе данных
+            session.refresh(contact)
+            print(f"DEBUG: After commit and refresh - contact.preferences: {contact.preferences}")
+            
+            print(f"DEBUG: Tag '{tag}' added successfully to contact {contact_id}")
+            print(f"DEBUG: Final preferences: {contact.preferences}")
+            
+            return {"success": True, "message": "Tag added successfully"}
+        else:
+            return {"success": False, "message": "Tag already exists"}
+            
+    except Exception as e:
+        session.rollback()
+        return {"success": False, "message": f"Error adding tag: {str(e)}"}
+
+@app.post("/api/contacts/{contact_id}/update")
+async def update_contact(
+    contact_id: int,
+    request: Request,
+    session: Session = Depends(get_session)
+):
+    """Обновляет данные клиента"""
+    user = get_current_user(request)
+    if not user:
+        return {"success": False, "message": "Not authenticated"}
+    
+    business_id = user.get("business_id")
+    if not business_id:
+        return {"success": False, "message": "No business ID"}
+    
+    try:
+        # Получаем данные из JSON
+        data = await request.json()
+        print(f"DEBUG: Received data: {data}")
+        
+        # Находим клиента
+        contact = session.get(Contact, contact_id)
+        if not contact or contact.business_id != business_id:
+            return {"success": False, "message": "Contact not found"}
+        
+        # Обновляем поля
+        if 'first_name' in data:
+            contact.first_name = data['first_name']
+        if 'last_name' in data:
+            contact.last_name = data['last_name']
+        if 'phone' in data:
+            contact.phone = data['phone']
+        if 'email' in data:
+            contact.email = data['email']
+        if 'instagram_handle' in data:
+            contact.instagram_handle = data['instagram_handle']
+        if 'nickname' in data:
+            contact.nickname = data['nickname']
+        if 'gender' in data:
+            contact.gender = data['gender']
+        if 'city' in data:
+            contact.city = data['city']
+        if 'birth_date' in data:
+            if data['birth_date']:
+                try:
+                    # Конвертируем строку в объект date
+                    contact.birth_date = datetime.strptime(data['birth_date'], '%Y-%m-%d').date()
+                except ValueError:
+                    return {"success": False, "message": "Invalid date format. Expected YYYY-MM-DD"}
+            else:
+                contact.birth_date = None
+        if 'preferences' in data:
+            contact.preferences = data['preferences']
+        
+        # Обработка отдельных полей preferences
+        if 'preferences_text' in data:
+            if not contact.preferences:
+                contact.preferences = {}
+            # Сохраняем существующие значения
+            existing_preferences = contact.preferences.copy()
+            existing_preferences['preferences_text'] = data['preferences_text']
+            contact.preferences = existing_preferences
+            print(f"DEBUG: Updated preferences_text: {data['preferences_text']}")
+        
+        if 'communication_method' in data:
+            if not contact.preferences:
+                contact.preferences = {}
+            # Сохраняем существующие значения
+            existing_preferences = contact.preferences.copy()
+            existing_preferences['communication_method'] = data['communication_method']
+            contact.preferences = existing_preferences
+            print(f"DEBUG: Updated communication_method: {data['communication_method']}")
+        
+        if 'promoter_name' in data:
+            if not contact.preferences:
+                contact.preferences = {}
+            # Сохраняем существующие значения
+            existing_preferences = contact.preferences.copy()
+            existing_preferences['promoter_name'] = data['promoter_name']
+            contact.preferences = existing_preferences
+            print(f"DEBUG: Updated promoter_name: {data['promoter_name']}")
+        
+        if 'rating' in data:
+            contact.rating = data['rating']
+        
+        contact.updated_at = datetime.utcnow()
+        
+        print(f"DEBUG: Final preferences: {contact.preferences}")
+        
+        session.add(contact)
+        session.commit()
+        
+        return {"success": True, "message": "Contact updated successfully"}
+        
+    except Exception as e:
+        session.rollback()
+        return {"success": False, "message": f"Error updating contact: {str(e)}"}
+
+@app.get("/api/contacts/{contact_id}/get-preferences")
+async def get_contact_preferences(
+    contact_id: int,
+    request: Request,
+    session: Session = Depends(get_session)
+):
+    """Получает preferences клиента"""
+    user = get_current_user(request)
+    if not user:
+        return {"success": False, "message": "Not authenticated"}
+    
+    business_id = user.get("business_id")
+    if not business_id:
+        return {"success": False, "message": "No business ID"}
+    
+    try:
+        contact = session.get(Contact, contact_id)
+        if not contact or contact.business_id != business_id:
+            return {"success": False, "message": "Contact not found"}
+        
+        return {"success": True, "preferences": contact.preferences or {}}
+        
+    except Exception as e:
+        return {"success": False, "message": f"Error getting preferences: {str(e)}"}
+
+@app.get("/api/contacts/find")
+async def find_contact_by_name_and_phone(
+    name: str,
+    phone: str,
+    request: Request,
+    session: Session = Depends(get_session)
+):
+    """Находит клиента по имени и телефону"""
+    user = get_current_user(request)
+    if not user:
+        return {"success": False, "message": "Not authenticated"}
+    
+    business_id = user.get("business_id")
+    if not business_id:
+        return {"success": False, "message": "No business ID"}
+    
+    try:
+        print(f"DEBUG: Searching for contact with name: '{name}', phone: '{phone}', business_id: {business_id}")
+        
+        # Ищем клиента по имени и телефону
+        contact = session.query(Contact).filter(
+            Contact.business_id == business_id,
+            Contact.first_name.ilike(f"%{name}%"),
+            Contact.phone == phone
+        ).first()
+        
+        if contact:
+            print(f"DEBUG: Contact found with ID: {contact.id}")
+            return {"success": True, "contact_id": contact.id}
+        else:
+            print(f"DEBUG: Contact not found")
+            return {"success": False, "message": "Contact not found"}
+            
+    except Exception as e:
+        return {"success": False, "message": f"Error finding contact: {str(e)}"}
+
+@app.post("/api/contacts/create")
+async def create_contact(
+    request: Request,
+    session: Session = Depends(get_session)
+):
+    """Создает нового клиента"""
+    user = get_current_user(request)
+    if not user:
+        return {"success": False, "message": "Not authenticated"}
+    
+    business_id = user.get("business_id")
+    if not business_id:
+        return {"success": False, "message": "No business ID"}
+    
+    try:
+        # Получаем данные из JSON
+        data = await request.json()
+        print(f"DEBUG: Creating contact with data: {data}")
+        
+        # Извлекаем данные
+        first_name = data.get("first_name", "").strip()
+        phone = data.get("phone", "").strip()
+        
+        if not first_name or not phone:
+            return {"success": False, "message": "First name and phone are required"}
+        
+        # Создаем нового клиента
+        contact = Contact(
+            first_name=first_name,
+            phone=phone,
+            business_id=business_id,
+            created_at=datetime.utcnow()
+        )
+        
+        session.add(contact)
+        session.commit()
+        session.refresh(contact)
+        
+        print(f"DEBUG: Contact created successfully with ID: {contact.id}")
+        return {"success": True, "contact_id": contact.id}
+        
+    except Exception as e:
+        session.rollback()
+        return {"success": False, "message": f"Error creating contact: {str(e)}"}
+
+@app.post("/api/bookings/new")
+async def create_new_booking(
+    request: Request,
+    session: Session = Depends(get_session)
+):
+    """Создает новую резервацию"""
+    user = get_current_user(request)
+    if not user:
+        return {"success": False, "message": "Not authenticated"}
+    
+    business_id = user.get("business_id")
+    if not business_id:
+        return {"success": False, "message": "No business ID"}
+    
+    try:
+        # Получаем данные из JSON
+        data = await request.json()
+        print(f"DEBUG: Received booking data: {data}")
+        
+        # Извлекаем данные
+        contact_id = data.get("contact_id")
+        status = data.get("status", "dogovoreno")
+        party_size = data.get("party_size", 1)
+        table_type = data.get("table_type", "")
+        date_str = data.get("date")
+        special_case_note = data.get("special_case_note") or data.get("specialOccasion") or ""
+        time_from = data.get("time_from", "")
+        time_to = data.get("time_to", "")
+        comment = data.get("comment", "")
+        
+        # Проверяем обязательные поля
+        if not contact_id:
+            return {"success": False, "message": "Contact ID is required"}
+        if not date_str:
+            return {"success": False, "message": "Date is required"}
+        if not time_from:
+            return {"success": False, "message": "Time is required"}
+        
+        # Проверяем, что клиент принадлежит текущему бизнесу
+        contact = session.get(Contact, contact_id)
+        if not contact or contact.business_id != business_id:
+            return {"success": False, "message": "Contact not found"}
+        
+        # Парсим дату
+        try:
+            booking_date = datetime.strptime(date_str, "%Y-%m-%d").date()
+        except ValueError:
+            return {"success": False, "message": "Invalid date format. Expected YYYY-MM-DD"}
+        
+        # Парсим время
+        try:
+            time_from_obj = datetime.strptime(time_from, "%H:%M").time()
+        except ValueError:
+            return {"success": False, "message": "Invalid time format. Expected HH:MM"}
+        
+        # Парсим время окончания (если указано)
+        time_to_obj = None
+        if time_to:
+            try:
+                time_to_obj = datetime.strptime(time_to, "%H:%M").time()
+            except ValueError:
+                return {"success": False, "message": "Invalid time_to format. Expected HH:MM"}
+        
+        # Создаем новую резервацию
+        booking = Booking(
+            contact_id=contact_id,
+            status=status,
+            party_size=party_size,
+            table_type=table_type,
+            date=booking_date,
+            special_case_note=special_case_note,
+            time_from=time_from_obj,
+            comment=comment,
+            created_at=datetime.utcnow(),
+            updated_at=datetime.utcnow()
+        )
+        
+        session.add(booking)
+        session.commit()
+        session.refresh(booking)
+        
+        print(f"DEBUG: Booking created successfully with ID: {booking.id}")
+        return {"success": True, "message": "Booking created successfully", "booking_id": booking.id}
+        
+    except Exception as e:
+        session.rollback()
+        return {"success": False, "message": f"Error creating booking: {str(e)}"}
+
+@app.get("/api/bookings/{booking_id}")
+async def get_booking(booking_id: int, request: Request, session: Session = Depends(get_session)):
+    user = get_current_user(request)
+    if not user:
+        return {"success": False, "error": "Unauthorized"}
+
+    booking = session.get(Booking, booking_id)
+    if not booking:
+        return {"success": False, "error": "Booking not found"}
+
+    contact = session.get(Contact, booking.contact_id)
+
+    def fmt_time(t):
+        return t.strftime("%H:%M") if t else None
+
+    return {
+        "success": True,
+        "booking": {
+            "id": booking.id,
+            "date": booking.date.isoformat() if booking.date else None,
+            "time_from": fmt_time(booking.time_from),
+            "time_to": None,
+            "party_size": booking.party_size,
+            "table_type": booking.table_type,
+            "status": booking.status,
+            "special_case_note": booking.special_case_note,
+            "comment": booking.comment,
+            "contact": {
+                "id": contact.id if contact else None,
+                "first_name": contact.first_name if contact else None,
+                "last_name": contact.last_name if contact else None,
+                "phone": contact.phone if contact else None,
+            },
+        },
+    }
+
+@app.post("/api/bookings/{booking_id}/update")
+async def update_booking_api(
+    booking_id: int,
+    request: Request,
+    session: Session = Depends(get_session),
+):
+    user = get_current_user(request)
+    if not user:
+        return {"success": False, "error": "Unauthorized"}
+
+    booking = session.get(Booking, booking_id)
+    if not booking:
+        return {"success": False, "error": "Booking not found"}
+
+    try:
+        data = await request.json()
+        print(f"DEBUG: Update booking {booking_id} with data: {data}")
+        
+        if "date" in data and data["date"]:
+            try:
+                booking.date = datetime.strptime(data["date"], "%Y-%m-%d").date()
+            except ValueError:
+                return {"success": False, "error": "Invalid date format. Expected YYYY-MM-DD"}
+        if "time_from" in data and data["time_from"]:
+            try:
+                booking.time_from = datetime.strptime(data["time_from"], "%H:%M").time()
+            except ValueError:
+                return {"success": False, "error": "Invalid time format. Expected HH:MM"}
+        if "party_size" in data:
+            try:
+                booking.party_size = int(data["party_size"]) if data["party_size"] is not None else None
+            except (TypeError, ValueError):
+                return {"success": False, "error": "Invalid party_size"}
+        if "table_type" in data:
+            booking.table_type = data["table_type"] or None
+        if "special_case_note" in data or "occasion" in data or "specialOccasion" in data:
+            booking.special_case_note = data.get("special_case_note") or data.get("occasion") or data.get("specialOccasion") or None
+        if "comment" in data:
+            booking.comment = data["comment"] or None
+        if "status" in data and data["status"]:
+            booking.status = data["status"]
+
+        booking.updated_at = datetime.utcnow()
+        session.add(booking)
+        session.commit()
+        
+        print(f"DEBUG: Booking {booking_id} updated successfully")
+        return {"success": True}
+    except Exception as e:
+        session.rollback()
+        return {"success": False, "error": str(e)}
+
+@app.post("/bookings/{booking_id}/update-status")
+async def update_booking_status(
+    request: Request,
+    booking_id: int,
+    session: Session = Depends(get_session)
+):
+    user = get_current_user(request)
+    if not user:
+        return {"success": False, "error": "Unauthorized"}
+
+    booking = session.get(Booking, booking_id)
+    if not booking:
+        return {"success": False, "error": "Booking not found"}
+
+    try:
+        body = await request.json()
+        new_status = body.get("status")
+
+        if not new_status:
+            return {"success": False, "error": "Status is required"}
+
+        booking.status = new_status
+        booking.updated_at = _datetime.utcnow()
+        session.add(booking)
+        session.commit()
+
+        return {"success": True}
+    except Exception as e:
+        session.rollback()
+        return {"success": False, "error": str(e)}
+
+
+if __name__ == "__main__":
+    import uvicorn
+    uvicorn.run(app, host="0.0.0.0", port=8000)
+

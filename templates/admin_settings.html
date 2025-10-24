@@ -1,0 +1,328 @@
+<!DOCTYPE html>
+<html lang="sr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin Settings - Admin Panel</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <style>
+        .sidebar {
+            min-height: 100vh;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        }
+        .sidebar .nav-link {
+            color: rgba(255, 255, 255, 0.8);
+            padding: 12px 20px;
+            border-radius: 8px;
+            margin: 4px 0;
+            transition: all 0.3s ease;
+        }
+        .sidebar .nav-link:hover,
+        .sidebar .nav-link.active {
+            color: white;
+            background: rgba(255, 255, 255, 0.1);
+        }
+        .main-content {
+            background-color: #f8f9fa;
+            min-height: 100vh;
+        }
+        .card {
+            border: none;
+            box-shadow: 0 0.125rem 0.25rem rgba(0, 0, 0, 0.075);
+            border-radius: 12px;
+        }
+        .table th {
+            border-top: none;
+            font-weight: 600;
+            color: #495057;
+        }
+        .role-badge {
+            font-size: 0.75rem;
+            padding: 0.25rem 0.5rem;
+        }
+        .role-super_admin { background-color: #dc3545; color: #fff; }
+        .role-admin { background-color: #198754; color: #fff; }
+        .status-active { color: #198754; }
+        .status-inactive { color: #dc3545; }
+    </style>
+</head>
+<body>
+    <div class="container-fluid">
+        <div class="row">
+            <!-- Sidebar -->
+            <div class="col-md-3 col-lg-2 sidebar p-0">
+                <div class="p-3">
+                    <h4 class="text-white mb-4">
+                        <i class="fas fa-shield-alt me-2"></i>
+                        Admin Panel
+                    </h4>
+                    <nav class="nav flex-column">
+                        <a class="nav-link" href="/admin">
+                            <i class="fas fa-tachometer-alt me-2"></i>
+                            Dashboard
+                        </a>
+                        <a class="nav-link" href="/admin/businesses">
+                            <i class="fas fa-building me-2"></i>
+                            Businesses
+                        </a>
+                        <a class="nav-link" href="/admin/pending">
+                            <i class="fas fa-clock me-2"></i>
+                            Pending Requests
+                        </a>
+                        <a class="nav-link active" href="/admin/settings">
+                            <i class="fas fa-cog me-2"></i>
+                            Settings
+                        </a>
+                        <hr class="text-white-50">
+                        <a class="nav-link" href="/logout">
+                            <i class="fas fa-sign-out-alt me-2"></i>
+                            Logout
+                        </a>
+                    </nav>
+                </div>
+            </div>
+
+            <!-- Main Content -->
+            <div class="col-md-9 col-lg-10 main-content">
+                <div class="p-4">
+                    <!-- Header -->
+                    <div class="d-flex justify-content-between align-items-center mb-4">
+                        <h2 class="mb-0">Admin Settings</h2>
+                        <div class="text-muted">
+                            System Administration
+                        </div>
+                    </div>
+
+                    <!-- System Information -->
+                    <div class="row mb-4">
+                        <div class="col-md-6">
+                            <div class="card">
+                                <div class="card-header">
+                                    <h5 class="mb-0"><i class="fas fa-info-circle me-2"></i>System Information</h5>
+                                </div>
+                                <div class="card-body">
+                                    <div class="row">
+                                        <div class="col-6">
+                                            <strong>App Name:</strong><br>
+                                            <span class="text-muted">LovaCRM</span>
+                                        </div>
+                                        <div class="col-6">
+                                            <strong>Version:</strong><br>
+                                            <span class="text-muted">1.1.0</span>
+                                        </div>
+                                    </div>
+                                    <hr>
+                                    <div class="row">
+                                        <div class="col-6">
+                                            <strong>Database:</strong><br>
+                                            <span class="text-muted">SQLite</span>
+                                        </div>
+                                        <div class="col-6">
+                                            <strong>Environment:</strong><br>
+                                            <span class="text-muted">Development</span>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="card">
+                                <div class="card-header">
+                                    <h5 class="mb-0"><i class="fas fa-chart-bar me-2"></i>Quick Stats</h5>
+                                </div>
+                                <div class="card-body">
+                                    <div class="row text-center">
+                                        <div class="col-4">
+                                            <h4 class="text-primary mb-0">{{ admins|length }}</h4>
+                                            <small class="text-muted">Admins</small>
+                                        </div>
+                                        <div class="col-4">
+                                            <h4 class="text-success mb-0">2</h4>
+                                            <small class="text-muted">Roles</small>
+                                        </div>
+                                        <div class="col-4">
+                                            <h4 class="text-info mb-0">Active</h4>
+                                            <small class="text-muted">System</small>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Admin Management -->
+                    <div class="card">
+                        <div class="card-header d-flex justify-content-between align-items-center">
+                            <h5 class="mb-0"><i class="fas fa-users-cog me-2"></i>Admin Users</h5>
+                            <button class="btn btn-outline-primary btn-sm" onclick="showAddAdminModal()">
+                                <i class="fas fa-plus me-1"></i> Add Admin
+                            </button>
+                        </div>
+                        <div class="card-body">
+                            {% if admins %}
+                            <div class="table-responsive">
+                                <table class="table table-hover">
+                                    <thead>
+                                        <tr>
+                                            <th>Username</th>
+                                            <th>Full Name</th>
+                                            <th>Email</th>
+                                            <th>Role</th>
+                                            <th>Status</th>
+                                            <th>Created</th>
+                                            <th>Actions</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        {% for admin in admins %}
+                                        <tr>
+                                            <td>
+                                                <strong>{{ admin.username }}</strong>
+                                                {% if admin.id == admin.id %}
+                                                <span class="badge bg-primary ms-1">You</span>
+                                                {% endif %}
+                                            </td>
+                                            <td>{{ admin.full_name }}</td>
+                                            <td>
+                                                <a href="mailto:{{ admin.email }}" class="text-decoration-none">
+                                                    {{ admin.email }}
+                                                </a>
+                                            </td>
+                                            <td>
+                                                <span class="badge role-badge role-{{ admin.role.value }}">
+                                                    {{ admin.role.value.replace('_', ' ').title() }}
+                                                </span>
+                                            </td>
+                                            <td>
+                                                <span class="status-{{ 'active' if admin.is_active else 'inactive' }}">
+                                                    <i class="fas fa-circle me-1"></i>
+                                                    {{ 'Active' if admin.is_active else 'Inactive' }}
+                                                </span>
+                                            </td>
+                                            <td>{{ admin.created_at.strftime('%Y-%m-%d') }}</td>
+                                            <td>
+                                                <div class="btn-group" role="group">
+                                                    <button class="btn btn-outline-info btn-sm" onclick="viewAdmin({{ admin.id }})" title="View Details">
+                                                        <i class="fas fa-eye"></i>
+                                                    </button>
+                                                    {% if admin.id != admin.id %}
+                                                    <button class="btn btn-outline-warning btn-sm" onclick="editAdmin({{ admin.id }})" title="Edit">
+                                                        <i class="fas fa-edit"></i>
+                                                    </button>
+                                                    {% endif %}
+                                                </div>
+                                            </td>
+                                        </tr>
+                                        {% endfor %}
+                                    </tbody>
+                                </table>
+                            </div>
+                            {% else %}
+                            <div class="text-center text-muted py-4">
+                                <i class="fas fa-users fa-3x mb-3"></i>
+                                <p>No admin users found.</p>
+                            </div>
+                            {% endif %}
+                        </div>
+                    </div>
+
+                    <!-- Security Settings -->
+                    <div class="card mt-4">
+                        <div class="card-header">
+                            <h5 class="mb-0"><i class="fas fa-shield-alt me-2"></i>Security Settings</h5>
+                        </div>
+                        <div class="card-body">
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <h6>Password Policy</h6>
+                                    <ul class="list-unstyled text-muted">
+                                        <li><i class="fas fa-check text-success me-2"></i>Minimum 8 characters</li>
+                                        <li><i class="fas fa-check text-success me-2"></i>SHA-256 hashing</li>
+                                        <li><i class="fas fa-check text-success me-2"></i>Secure storage</li>
+                                    </ul>
+                                </div>
+                                <div class="col-md-6">
+                                    <h6>Session Management</h6>
+                                    <ul class="list-unstyled text-muted">
+                                        <li><i class="fas fa-check text-success me-2"></i>Secure cookies</li>
+                                        <li><i class="fas fa-check text-success me-2"></i>Session timeout</li>
+                                        <li><i class="fas fa-check text-success me-2"></i>Logout on close</li>
+                                    </ul>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Add Admin Modal -->
+    <div class="modal fade" id="addAdminModal" tabindex="-1">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Add New Admin</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <form id="addAdminForm">
+                        <div class="mb-3">
+                            <label for="username" class="form-label">Username</label>
+                            <input type="text" class="form-control" id="username" name="username" required>
+                        </div>
+                        <div class="mb-3">
+                            <label for="email" class="form-label">Email</label>
+                            <input type="email" class="form-control" id="email" name="email" required>
+                        </div>
+                        <div class="mb-3">
+                            <label for="full_name" class="form-label">Full Name</label>
+                            <input type="text" class="form-control" id="full_name" name="full_name" required>
+                        </div>
+                        <div class="mb-3">
+                            <label for="password" class="form-label">Password</label>
+                            <input type="password" class="form-control" id="password" name="password" required>
+                        </div>
+                        <div class="mb-3">
+                            <label for="role" class="form-label">Role</label>
+                            <select class="form-select" id="role" name="role" required>
+                                <option value="admin">Admin</option>
+                                <option value="super_admin">Super Admin</option>
+                            </select>
+                        </div>
+                    </form>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="button" class="btn btn-primary" onclick="addAdmin()">Add Admin</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        function showAddAdminModal() {
+            const modal = new bootstrap.Modal(document.getElementById('addAdminModal'));
+            modal.show();
+        }
+
+        function addAdmin() {
+            // TODO: Implement add admin functionality
+            alert('Add admin functionality will be implemented soon.');
+        }
+
+        function viewAdmin(adminId) {
+            // TODO: Implement view admin functionality
+            alert('View admin functionality will be implemented soon.');
+        }
+
+        function editAdmin(adminId) {
+            // TODO: Implement edit admin functionality
+            alert('Edit admin functionality will be implemented soon.');
+        }
+    </script>
+</body>
+</html>
+

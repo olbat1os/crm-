@@ -1,0 +1,4277 @@
+{% extends 'clients_base.html' %}
+{% block content %}
+<style>
+  /* Mobile Header */
+  .mobile-header {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 70px;
+    background: #FFFFFF;
+    display: none;
+    align-items: center;
+    z-index: 1000;
+  }
+
+  .logo-home {
+    position: absolute;
+    width: 181px;
+    height: 40px;
+    top: 25px;
+    left: 30px;
+    z-index: 0;
+    opacity: 1;
+  }
+
+  .mobile-logo {
+    position: absolute;
+    width: 109px;
+    height: 24px;
+    top: 23px;
+    left: 20px;
+  }
+
+  .mobile-search-btn {
+    position: absolute;
+    width: 22px;
+    height: 22px;
+    top: 20px;
+    right: 84px;
+    cursor: pointer;
+  }
+
+  .mobile-notification-btn {
+    position: absolute;
+    width: 22px;
+    height: 22px;
+    top: 20px;
+    right: 52px;
+    cursor: pointer;
+  }
+
+  .mobile-menu-btn {
+    position: absolute;
+    width: 22px;
+    height: 22px;
+    top: 20px;
+    right: 20px;
+    cursor: pointer;
+  }
+
+  .mobile-search-modal {
+    position: fixed;
+    top: 70px;
+    left: 0;
+    right: 0;
+    background: #FFFFFF;
+    border-top: 1px solid #D9D9D9;
+    padding: 20px;
+    z-index: 999;
+    display: none;
+  }
+
+  .mobile-search-input {
+    width: 100%;
+    height: 40px;
+    border: 1px solid #D9D9D9;
+    border-radius: 20px;
+    padding: 0 20px;
+    font-family: 'Manrope', sans-serif;
+    font-size: 16px;
+    outline: none;
+  }
+
+  /* Mobile Sidebar */
+  .mobile-sidebar {
+    position: fixed;
+    top: 0;
+    right: 0;
+    width: 235px;
+    height: 100vh;
+    background: linear-gradient(179.27deg, #2CAB5C 0%, #11998E 100%);
+    border-radius: 1px;
+    transition: transform 0.3s ease;
+    z-index: 2000;
+    overflow-y: auto;
+    transform: translateX(100%);
+  }
+
+  .mobile-sidebar.open {
+    transform: translateX(0);
+  }
+
+  .mobile-sidebar-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.5);
+    z-index: 1999;
+    display: none;
+  }
+
+  .mobile-sidebar-overlay.show {
+    display: block;
+  }
+
+  /* Mobile Sidebar Content */
+  .mobile-sidebar-content {
+    padding: 20px;
+    color: #FFFFFF;
+  }
+
+  .mobile-sidebar-item {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    height: 60px;
+    padding: 0 20px;
+    cursor: pointer;
+    color: #FFFFFF;
+    text-decoration: none;
+  }
+
+  .mobile-sidebar-item:hover {
+    background: rgba(255, 255, 255, 0.1);
+  }
+
+  .mobile-sidebar-logo {
+    position: absolute;
+    left: 20px;
+    bottom: 20px;
+    width: 136px;
+    height: 30px;
+  }
+
+  .mobile-sidebar-arrow {
+    width: 7px;
+    height: 14px;
+  }
+
+  @media (max-width: 768px) {
+    .mobile-header {
+      display: flex;
+    }
+    
+    .logo-home {
+      display: none;
+    }
+    
+    .client-card-container {
+      margin-left: 0 !important;
+      margin-top: 70px !important;
+    }
+    
+    /* Hide left sidebar in mobile */
+    .sidebar {
+      display: none !important;
+    }
+    
+    .main {
+      margin-left: 0 !important;
+    }
+    
+    .main-inner {
+      padding-top: 0 !important;
+    }
+    
+    /* Mobile layout adjustments */
+    .client-card-container {
+      flex-direction: column !important;
+      width: 100% !important;
+      height: auto !important;
+      margin-top: 70px !important;
+    }
+    
+    .client-info-panel {
+      position: relative !important;
+      top: auto !important;
+      left: auto !important;
+      transform: none !important;
+      width: 90% !important;
+      margin: 20px auto 20px auto !important;
+      height: auto !important; /* Автоматическая высота по содержимому */
+      padding-bottom: 20px !important; /* Добавляем отступ снизу */
+    }
+    
+    /* Мобильные стили для кнопки "Новая резервация" */
+    .new-reservation-btn {
+      margin-bottom: 10px !important;
+    }
+    
+    .right-panel {
+      position: relative !important;
+      left: auto !important;
+      right: auto !important;
+      top: auto !important;
+      width: 90% !important;
+      margin: 20px auto !important;
+      height: auto !important; /* Автоматическая высота по содержимому */
+      padding-bottom: 20px !important; /* Добавляем отступ снизу */
+    }
+    
+    /* Text overflow handling - improved */
+    .client-name span,
+    .phone-number,
+    .value[contenteditable="true"],
+    .label,
+    .tag-text,
+    .details-table td {
+      max-width: 100% !important;
+      overflow: hidden !important;
+      text-overflow: ellipsis !important;
+      white-space: nowrap !important;
+      word-wrap: break-word !important;
+      word-break: break-word !important;
+    }
+    
+    .details-table {
+      table-layout: fixed !important;
+      width: 100% !important;
+    }
+    
+    .details-table td.value {
+      max-width: 60% !important;
+    }
+    
+    .client-name span:focus,
+    .phone-number:focus,
+    .value[contenteditable="true"]:focus {
+      white-space: normal !important;
+      overflow: visible !important;
+      text-overflow: initial !important;
+    }
+    
+    /* Mobile new reservation modal - exactly like booking */
+    .new-booking-modal {
+      position: fixed !important;
+      top: 0 !important;
+      left: 0 !important;
+      width: 100% !important;
+      height: 100% !important;
+      background: rgba(0, 0, 0, 0.5) !important;
+      z-index: 3000 !important;
+    }
+    
+    .new-booking-modal-content {
+      position: fixed !important;
+      top: 20px !important;
+      left: 20px !important;
+      right: 20px !important;
+      bottom: 20px !important;
+      transform: none !important;
+      width: auto !important;
+      height: auto !important;
+      background: #FFFFFF !important;
+      border-radius: 16px !important;
+      padding: 20px !important;
+      overflow-y: auto !important;
+    }
+    
+    .new-booking-header {
+      display: flex !important;
+      justify-content: space-between !important;
+      align-items: center !important;
+      margin-bottom: 20px !important;
+      padding-bottom: 15px !important;
+      border-bottom: 1px solid #E5E7EB !important;
+    }
+    
+    .new-booking-title {
+      font-family: 'Manrope', sans-serif !important;
+      font-size: 20px !important;
+      font-weight: 600 !important;
+      color: #000000 !important;
+      margin: 0 !important;
+    }
+    
+    .new-booking-close {
+      width: 24px !important;
+      height: 24px !important;
+      cursor: pointer !important;
+    }
+    
+    /* Mobile form exactly like booking */
+    .new-booking-form {
+      display: flex !important;
+      flex-direction: column !important;
+      gap: 0 !important;
+    }
+    
+    .form-row {
+      display: flex !important;
+      flex-direction: column !important;
+      gap: 10px !important;
+      margin-bottom: 15px !important;
+      align-items: stretch !important;
+    }
+    
+    .form-field {
+      flex: none !important;
+      display: flex !important;
+      flex-direction: column !important;
+      align-items: stretch !important;
+      gap: 5px !important;
+      min-height: auto !important;
+      margin-bottom: 10px !important;
+    }
+    
+    .form-label {
+      font-family: 'Manrope', sans-serif !important;
+      font-size: 14px !important;
+      min-width: auto !important;
+      margin-bottom: 5px !important;
+      color: #000000 !important;
+    }
+    
+    .form-input {
+      flex: none !important;
+      width: 100% !important;
+      height: 45px !important;
+      font-family: 'Manrope', sans-serif !important;
+      font-size: 14px !important;
+      border-radius: 40px !important;
+      border: 1px solid #D9D9D9 !important;
+      padding: 0 16px !important;
+      box-sizing: border-box !important;
+    }
+    
+    .form-textarea {
+      width: 100% !important;
+      height: 80px !important;
+      font-family: 'Manrope', sans-serif !important;
+      font-size: 14px !important;
+      border-radius: 40px !important;
+      line-height: 1.4 !important;
+      border: 1px solid #D9D9D9 !important;
+      padding: 12px 16px !important;
+      box-sizing: border-box !important;
+    }
+    
+    .date-time-field {
+      align-items: stretch !important;
+    }
+    
+    .date-time-container {
+      gap: 5px !important;
+    }
+    
+    .date-field-row,
+    .time-field-row {
+      display: flex !important;
+      flex-direction: column !important;
+      gap: 5px !important;
+      align-items: flex-start !important;
+    }
+    
+    .time-inputs {
+      display: flex !important;
+      align-items: center !important;
+      gap: 8px !important;
+      width: 100% !important;
+    }
+    
+    .time-inputs .form-input {
+      flex: 1 !important;
+      width: auto !important;
+    }
+    
+    .time-inputs span {
+      font-family: 'Manrope', sans-serif !important;
+      font-size: 14px !important;
+    }
+    
+    .form-actions {
+      display: flex !important;
+      justify-content: center !important;
+      margin-top: 15px !important;
+    }
+    
+    .save-btn {
+      width: 100% !important;
+      height: 45px !important;
+      font-family: 'Manrope', sans-serif !important;
+      font-size: 16px !important;
+      border-radius: 40px !important;
+      background: linear-gradient(270deg, #11998E 0%, #2CAB5C 100%) !important;
+      border: none !important;
+      color: #FFFFFF !important;
+      cursor: pointer !important;
+    }
+    
+    .stats-vector {
+      width: 100% !important;
+      margin: 0 !important;
+    }
+    
+    .reservations-list {
+      width: 100% !important;
+      margin: 0 !important;
+    }
+  }
+</style>
+
+<!-- Desktop Logo -->
+<img src="/static/images/logo home.png" alt="LOVACRM" class="logo-home">
+
+<!-- Mobile Header -->
+<div class="mobile-header">
+  <img src="/static/images/logo home.png" alt="LOVACRM" class="mobile-logo">
+  <img src="/static/images/poisk.png" alt="Search" class="mobile-search-btn" onclick="toggleMobileSearch()">
+  <img src="/static/images/kolokolchik logo.png" alt="Notifications" class="mobile-notification-btn">
+  <img src="/static/images/menu.png" alt="Menu" class="mobile-menu-btn" onclick="toggleMobileSidebar()">
+</div>
+
+<!-- Mobile Search Modal -->
+<div class="mobile-search-modal" id="mobileSearchModal">
+  <input type="text" class="mobile-search-input" placeholder="Search clients..." id="mobileSearchInput">
+</div>
+
+<!-- Mobile Sidebar Overlay -->
+<div class="mobile-sidebar-overlay" id="mobileSidebarOverlay" onclick="closeMobileSidebar()"></div>
+
+<!-- Mobile Sidebar -->
+<div class="mobile-sidebar" id="mobileSidebar">
+  <div class="mobile-sidebar-content">
+    <a href="/dashboard" class="mobile-sidebar-item">
+      <div style="display: flex; align-items: center;">
+        <img src="/static/images/logo dashbord.png" alt="Dashboard" style="width: 20px; height: 20px; margin-right: 15px;">
+        Dashboard
+      </div>
+      <img src="/static/images/strelka logo.png" alt="Arrow" class="mobile-sidebar-arrow">
+    </a>
+    <a href="/booking" class="mobile-sidebar-item">
+      <div style="display: flex; align-items: center;">
+        <img src="/static/images/booking logo.png" alt="Booking" style="width: 20px; height: 20px; margin-right: 15px;">
+        Booking
+      </div>
+      <img src="/static/images/strelka logo.png" alt="Arrow" class="mobile-sidebar-arrow">
+    </a>
+    <a href="/contacts" class="mobile-sidebar-item">
+      <div style="display: flex; align-items: center;">
+        <img src="/static/images/klijenti logo.png" alt="Klijenti" style="width: 20px; height: 20px; margin-right: 15px;">
+        Klijenti
+      </div>
+      <img src="/static/images/strelka logo.png" alt="Arrow" class="mobile-sidebar-arrow">
+    </a>
+    <a href="/map" class="mobile-sidebar-item">
+      <div style="display: flex; align-items: center;">
+        <img src="/static/images/mapa logo.png" alt="Mapa" style="width: 20px; height: 20px; margin-right: 15px;">
+        Mapa
+      </div>
+      <img src="/static/images/strelka logo.png" alt="Arrow" class="mobile-sidebar-arrow">
+    </a>
+    <a href="/marketing" class="mobile-sidebar-item">
+      <div style="display: flex; align-items: center;">
+        <img src="/static/images/marketing logo.png" alt="Marketing" style="width: 20px; height: 20px; margin-right: 15px;">
+        Marketing
+      </div>
+      <img src="/static/images/strelka logo.png" alt="Arrow" class="mobile-sidebar-arrow">
+    </a>
+    <a href="/settings" class="mobile-sidebar-item">
+      <div style="display: flex; align-items: center;">
+        <img src="/static/images/setting logo.png" alt="Podešavanja" style="width: 20px; height: 20px; margin-right: 15px;">
+        Podešavanja
+      </div>
+      <img src="/static/images/strelka logo.png" alt="Arrow" class="mobile-sidebar-arrow">
+    </a>
+  </div>
+  <img src="/static/images/logo_login.svg.png" alt="Logo" class="mobile-sidebar-logo">
+</div>
+
+<!-- Результаты поиска -->
+<div id="search-results" class="search-results" style="position:absolute; right:25px; top:75px; width:290px; height:250px; display:none;">
+  <div class="search-results-content">
+    <!-- Результаты будут добавлены динамически -->
+  </div>
+</div>
+
+<div class="client-card-container">
+    <!-- Left Panel - Client Info -->
+    <div class="client-info-panel">
+        <!-- Client Header -->
+        <div class="client-header">
+            <img src="/static/images/nazad.png" alt="Back" class="back-arrow" onclick="history.back()">
+            <h1 class="client-name">
+                <span contenteditable="true" onblur="updateField('first_name', this.textContent, this)">{{ contact.first_name or '' }}</span>
+                {% if contact.last_name %}
+                <span contenteditable="true" onblur="updateField('last_name', this.textContent, this)">{{ contact.last_name }}</span>
+                {% endif %}
+            </h1>
+        </div>
+        
+        <!-- Phone -->
+        <div class="phone-section">
+            <span class="phone-number" contenteditable="true" onblur="updateField('phone', this.textContent, this)" onfocus="handlePhoneFocus(this)" onblur="handlePhoneBlur(this)">{{ contact.phone or '+__________________' }}</span>
+            {% if contact.phone %}
+            <img src="/static/images/telefon.png" alt="Call" class="phone-icon" onclick="showCallModal('{{ contact.first_name or '' }} {{ contact.last_name or '' }}', '{{ contact.phone }}', '{{ bookings[0].date.strftime("%d. %B %Y") if bookings else "Nema rezervacije" }}')">
+            {% endif %}
+        </div>
+        
+        <!-- Tags -->
+        <div class="tags-section">
+            <div class="client-tags-container">
+                {% if contact.preferences and contact.preferences.get('tags') %}
+                    {% for tag in contact.preferences.get('tags') %}
+                        <div class="tag-item">
+                            <div class="tag-text">{{ tag }}</div>
+                        </div>
+                    {% endfor %}
+                {% else %}
+                    <div class="no-tags-placeholder">
+                        <svg width="100" height="24" viewBox="0 0 130 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                            <rect width="130" height="24" rx="12" fill="#D9D9D9"/>
+                            <path d="M9.94031 18V6.48H13.4363C13.559 6.48 13.767 6.48267 14.0603 6.488C14.359 6.49333 14.6443 6.51467 14.9163 6.552C15.791 6.67467 16.5216 7 17.1083 7.528C17.695 8.056 18.135 8.728 18.4283 9.544C18.7216 10.36 18.8683 11.2587 18.8683 12.24C18.8683 13.2213 18.7216 14.12 18.4283 14.936C18.135 15.752 17.695 16.424 17.1083 16.952C16.5216 17.48 15.791 17.8053 14.9163 17.928C14.6496 17.96 14.3643 17.9813 14.0603 17.992C13.7563 17.9973 13.5483 18 13.4363 18H9.94031ZM11.1563 16.872H13.4363C13.655 16.872 13.8896 16.8667 14.1403 16.856C14.3963 16.84 14.615 16.8133 14.7963 16.776C15.4683 16.6587 16.0096 16.3867 16.4203 15.96C16.8363 15.5333 17.1403 15 17.3323 14.36C17.5243 13.7147 17.6203 13.008 17.6203 12.24C17.6203 11.4667 17.5243 10.7573 17.3323 10.112C17.1403 9.46667 16.8363 8.93333 16.4203 8.512C16.0043 8.09067 15.463 7.82133 14.7963 7.704C14.615 7.66667 14.3936 7.64267 14.1323 7.632C13.8763 7.616 13.6443 7.608 13.4363 7.608H11.1563V16.872ZM24.2983 18.24C23.4396 18.24 22.7063 18.0453 22.0983 17.656C21.4903 17.2667 21.0236 16.728 20.6983 16.04C20.373 15.352 20.2103 14.5627 20.2103 13.672C20.2103 12.7653 20.3756 11.9707 20.7063 11.288C21.037 10.6053 21.5063 10.0747 22.1143 9.696C22.7276 9.312 23.4556 9.12 24.2983 9.12C25.1623 9.12 25.8983 9.31467 26.5063 9.704C27.1196 10.088 27.5863 10.624 27.9063 11.312C28.2316 11.9947 28.3943 12.7813 28.3943 13.672C28.3943 14.5787 28.2316 15.376 27.9063 16.064C27.581 16.7467 27.1116 17.28 26.4983 17.664C25.885 18.048 25.1516 18.24 24.2983 18.24ZM24.2983 17.112C25.2583 17.112 25.973 16.7947 26.4423 16.16C26.9116 15.52 27.1463 14.6907 27.1463 13.672C27.1463 12.6267 26.909 11.7947 26.4343 11.176C25.965 10.5573 25.253 10.248 24.2983 10.248C23.653 10.248 23.1196 10.3947 22.6983 10.688C22.2823 10.976 21.9703 11.3787 21.7623 11.896C21.5596 12.408 21.4583 13 21.4583 13.672C21.4583 14.712 21.6983 15.5467 22.1783 16.176C22.6583 16.8 23.365 17.112 24.2983 17.112ZM33.5111 18.24C32.7057 18.24 32.0177 18.04 31.4471 17.64C30.8764 17.2347 30.4391 16.688 30.1351 16C29.8311 15.312 29.6791 14.536 29.6791 13.672C29.6791 12.8133 29.8284 12.04 30.1271 11.352C30.4311 10.664 30.8657 10.12 31.4311 9.72C31.9964 9.32 32.6737 9.12 33.4631 9.12C34.2737 9.12 34.9564 9.31733 35.5111 9.712C36.0657 10.1067 36.4844 10.648 36.7671 11.336C37.0551 12.0187 37.1991 12.7973 37.1991 13.672C37.1991 14.5307 37.0577 15.3067 36.7751 16C36.4924 16.688 36.0764 17.2347 35.5271 17.64C34.9777 18.04 34.3057 18.24 33.5111 18.24ZM33.6311 17.144C34.2444 17.144 34.7511 16.9947 35.1511 16.696C35.5511 16.3973 35.8497 15.9867 36.0471 15.464C36.2444 14.936 36.3431 14.3387 36.3431 13.672C36.3431 12.9947 36.2444 12.3973 36.0471 11.88C35.8497 11.3573 35.5511 10.9493 35.1511 10.656C34.7564 10.3627 34.2577 10.216 33.6551 10.216C33.0364 10.216 32.5244 10.368 32.1191 10.672C31.7137 10.976 31.4124 11.3893 31.2151 11.912C31.0231 12.4347 30.9271 13.0213 30.9271 13.672C30.9271 14.328 31.0257 14.92 31.2231 15.448C31.4257 15.9707 31.7271 16.384 32.1271 16.688C32.5271 16.992 33.0284 17.144 33.6311 17.144ZM36.3431 18V11.496H36.2151V6.48H37.3991V18H36.3431ZM42.1154 18.24C41.4648 18.24 40.9181 18.1227 40.4754 17.888C40.0381 17.6533 39.7101 17.3413 39.4914 16.952C39.2728 16.5627 39.1634 16.1387 39.1634 15.68C39.1634 15.2107 39.2568 14.8107 39.4434 14.48C39.6354 14.144 39.8941 13.8693 40.2194 13.656C40.5501 13.4427 40.9314 13.28 41.3634 13.168C41.8008 13.0613 42.2834 12.968 42.8114 12.888C43.3448 12.8027 43.8648 12.7307 44.3714 12.672C44.8834 12.608 45.3314 12.5467 45.7154 12.488L45.2994 12.744C45.3154 11.8907 45.1501 11.2587 44.8034 10.848C44.4568 10.4373 43.8541 10.232 42.9954 10.232C42.4034 10.232 41.9021 10.3653 41.4914 10.632C41.0861 10.8987 40.8008 11.32 40.6354 11.896L39.4914 11.56C39.6888 10.7867 40.0861 10.1867 40.6834 9.76C41.2808 9.33333 42.0568 9.12 43.0114 9.12C43.8008 9.12 44.4701 9.26933 45.0194 9.568C45.5741 9.86133 45.9661 10.288 46.1954 10.848C46.3021 11.0987 46.3714 11.3787 46.4034 11.688C46.4354 11.9973 46.4514 12.312 46.4514 12.632V18H45.4034V15.832L45.7074 15.96C45.4141 16.7013 44.9581 17.2667 44.3394 17.656C43.7208 18.0453 42.9794 18.24 42.1154 18.24ZM42.2514 17.224C42.8008 17.224 43.2808 17.1253 43.6914 16.928C44.1021 16.7307 44.4328 16.4613 44.6834 16.12C44.9341 15.7733 45.0968 15.384 45.1714 14.952C45.2354 14.6747 45.2701 14.3707 45.2754 14.04C45.2808 13.704 45.2834 13.4533 45.2834 13.288L45.7314 13.52C45.3314 13.5733 44.8968 13.6267 44.4274 13.68C43.9634 13.7333 43.5048 13.7947 43.0514 13.864C42.6034 13.9333 42.1981 14.016 41.8354 14.112C41.5901 14.1813 41.3528 14.28 41.1234 14.408C40.8941 14.5307 40.7048 14.696 40.5554 14.904C40.4114 15.112 40.3394 15.3707 40.3394 15.68C40.3394 15.9307 40.4008 16.1733 40.5234 16.408C40.6514 16.6427 40.8541 16.8373 41.1314 16.992C41.4141 17.1467 41.7874 17.224 42.2514 17.224ZM47.2541 21.84V20.704H47.7421C48.1314 20.704 48.4407 20.6027 48.6701 20.4C48.9047 20.2027 49.0221 19.8693 49.0221 19.4V9.36H50.1901V19.696C50.1901 20.416 50.0167 20.952 49.6701 21.304C49.3287 21.6613 48.8034 21.84 48.0941 21.84H47.2541ZM49.0221 7.72V6.4H50.1901V7.72H49.0221ZM57.2537 18C56.7684 18.1013 56.2884 18.1413 55.8137 18.12C55.3444 18.0987 54.923 17.9973 54.5497 17.816C54.1817 17.6347 53.9017 17.352 53.7097 16.968C53.555 16.648 53.4697 16.3253 53.4537 16C53.443 15.6693 53.4377 15.2933 53.4377 14.872V6.96H54.6057V14.824C54.6057 15.1867 54.6084 15.4907 54.6137 15.736C54.6244 15.976 54.6804 16.1893 54.7817 16.376C54.9737 16.7333 55.2777 16.9467 55.6937 17.016C56.115 17.0853 56.635 17.0693 57.2537 16.968V18ZM51.5897 10.368V9.36H57.2537V10.368H51.5897ZM62.2994 18.24C61.4568 18.24 60.7261 18.0533 60.1074 17.68C59.4941 17.3067 59.0168 16.7813 58.6754 16.104C58.3341 15.4267 58.1634 14.632 58.1634 13.72C58.1634 12.776 58.3314 11.96 58.6674 11.272C59.0034 10.584 59.4754 10.0533 60.0834 9.68C60.6968 9.30667 61.4194 9.12 62.2514 9.12C63.1048 9.12 63.8328 9.31733 64.4354 9.712C65.0381 10.1013 65.4941 10.6613 65.8034 11.392C66.1128 12.1227 66.2541 12.9947 66.2274 14.008H65.0274V13.592C65.0061 12.472 64.7634 11.6267 64.2994 11.056C63.8408 10.4853 63.1688 10.2 62.2834 10.2C61.3554 10.2 60.6434 10.5013 60.1474 11.104C59.6568 11.7067 59.4114 12.5653 59.4114 13.68C59.4114 14.768 59.6568 15.6133 60.1474 16.216C60.6434 16.8133 61.3448 17.112 62.2514 17.112C62.8701 17.112 63.4088 16.9707 63.8674 16.688C64.3314 16.4 64.6968 15.9867 64.9634 15.448L66.0594 15.872C65.7181 16.624 65.2141 17.208 64.5474 17.624C63.8861 18.0347 63.1368 18.24 62.2994 18.24ZM58.9954 14.008V13.024H65.5954V14.008H58.9954ZM75.9099 18C75.4246 18.1013 74.9446 18.1413 74.4699 18.12C74.0006 18.0987 73.5793 17.9973 73.2059 17.816C72.8379 17.6347 72.5579 17.352 72.3659 16.968C72.2113 16.648 72.1259 16.3253 72.1099 16C72.0993 15.6693 72.0939 15.2933 72.0939 14.872V6.96H73.2619V14.824C73.2619 15.1867 73.2646 15.4907 73.2699 15.736C73.2806 15.976 73.3366 16.1893 73.4379 16.376C73.6299 16.7333 73.9339 16.9467 74.3499 17.016C74.7713 17.0853 75.2913 17.0693 75.9099 16.968V18ZM70.2459 10.368V9.36H75.9099V10.368H70.2459ZM80.0842 18.24C79.4335 18.24 78.8869 18.1227 78.4442 17.888C78.0069 17.6533 77.6789 17.3413 77.4602 16.952C77.2415 16.5627 77.1322 16.1387 77.1322 15.68C77.1322 15.2107 77.2255 14.8107 77.4122 14.48C77.6042 14.144 77.8629 13.8693 78.1882 13.656C78.5189 13.4427 78.9002 13.28 79.3322 13.168C79.7695 13.0613 80.2522 12.968 80.7802 12.888C81.3135 12.8027 81.8335 12.7307 82.3402 12.672C82.8522 12.608 83.3002 12.5467 83.6842 12.488L83.2682 12.744C83.2842 11.8907 83.1189 11.2587 82.7722 10.848C82.4255 10.4373 81.8229 10.232 80.9642 10.232C80.3722 10.232 79.8709 10.3653 79.4602 10.632C79.0549 10.8987 78.7695 11.32 78.6042 11.896L77.4602 11.56C77.6575 10.7867 78.0549 10.1867 78.6522 9.76C79.2495 9.33333 80.0255 9.12 80.9802 9.12C81.7695 9.12 82.4389 9.26933 82.9882 9.568C83.5429 9.86133 83.9349 10.288 84.1642 10.848C84.2709 11.0987 84.3402 11.3787 84.3722 11.688C84.4042 11.9973 84.4202 12.312 84.4202 12.632V18H83.3722V15.832L83.6762 15.96C83.3829 16.7013 82.9269 17.2667 82.3082 17.656C81.6895 18.0453 80.9482 18.24 80.0842 18.24ZM80.2202 17.224C80.7695 17.224 81.2495 17.1253 81.6602 16.928C82.0709 16.7307 82.4015 16.4613 82.6522 16.12C82.9029 15.7733 83.0655 15.384 83.1402 14.952C83.2042 14.6747 83.2389 14.3707 83.2442 14.04C83.2495 13.704 83.2522 13.4533 83.2522 13.288L83.7002 13.52C83.3002 13.5733 82.8655 13.6267 82.3962 13.68C81.9322 13.7333 81.4735 13.7947 81.0202 13.864C80.5722 13.9333 80.1669 14.016 79.8042 14.112C79.5589 14.1813 79.3215 14.28 79.0922 14.408C78.8629 14.5307 78.6735 14.696 78.5242 14.904C78.3802 15.112 78.3082 15.3707 78.3082 15.68C78.3082 15.9307 78.3695 16.1733 78.4922 16.408C78.6202 16.6427 78.8229 16.8373 79.1002 16.992C79.3829 17.1467 79.7562 17.224 80.2202 17.224ZM89.9348 22.08C89.4921 22.08 89.0548 22.0133 88.6228 21.88C88.1961 21.752 87.8015 21.5467 87.4388 21.264C87.0761 20.9867 86.7721 20.624 86.5268 20.176L87.5908 19.584C87.8308 20.064 88.1668 20.408 88.5988 20.616C89.0361 20.8293 89.4815 20.936 89.9348 20.936C90.5588 20.936 91.0628 20.8187 91.4468 20.584C91.8361 20.3547 92.1188 20.0133 92.2948 19.56C92.4708 19.1067 92.5561 18.5413 92.5508 17.864V15.56H92.6868V9.36H93.7348V17.88C93.7348 18.1253 93.7268 18.36 93.7108 18.584C93.7001 18.8133 93.6761 19.0373 93.6388 19.256C93.5375 19.9013 93.3268 20.432 93.0068 20.848C92.6921 21.264 92.2761 21.5733 91.7588 21.776C91.2468 21.9787 90.6388 22.08 89.9348 22.08ZM89.8548 18.24C89.0495 18.24 88.3615 18.04 87.7908 17.64C87.2201 17.2347 86.7828 16.688 86.4788 16C86.1748 15.312 86.0228 14.536 86.0228 13.672C86.0228 12.8133 86.1721 12.04 86.4708 11.352C86.7748 10.664 87.2095 10.12 87.7748 9.72C88.3401 9.32 89.0175 9.12 89.8068 9.12C90.6175 9.12 91.3001 9.31733 91.8548 9.712C92.4095 10.1067 92.8281 10.648 93.1108 11.336C93.3988 12.0187 93.5428 12.7973 93.5428 13.672C93.5428 14.5307 93.4015 15.3067 93.1188 16C92.8361 16.688 92.4201 17.2347 91.8708 17.64C91.3215 18.04 90.6495 18.24 89.8548 18.24ZM89.9748 17.144C90.5881 17.144 91.0948 16.9947 91.4948 16.696C91.8948 16.3973 92.1935 15.9867 92.3908 15.464C92.5881 14.936 92.6868 14.3387 92.6868 13.672C92.6868 12.9947 92.5881 12.3973 92.3908 11.88C92.1935 11.3573 91.8948 10.9493 91.4948 10.656C91.1001 10.3627 90.6015 10.216 89.9988 10.216C89.3801 10.216 88.8681 10.368 88.4628 10.672C88.0575 10.976 87.7561 11.3893 87.5588 11.912C87.3668 12.4347 87.2708 13.0213 87.2708 13.672C87.2708 14.328 87.3695 14.92 87.5668 15.448C87.7695 15.9707 88.0708 16.384 88.4708 16.688C88.8708 16.992 89.3721 17.144 89.9748 17.144ZM99.5796 18.24C98.7209 18.24 97.9876 18.0453 97.3796 17.656C96.7716 17.2667 96.3049 16.728 95.9796 16.04C95.6542 15.352 95.4916 14.5627 95.4916 13.672C95.4916 12.7653 95.6569 11.9707 95.9876 11.288C96.3182 10.6053 96.7876 10.0747 97.3956 9.696C98.0089 9.312 98.7369 9.12 99.5796 9.12C100.444 9.12 101.18 9.31467 101.788 9.704C102.401 10.088 102.868 10.624 103.188 11.312C103.513 11.9947 103.676 12.7813 103.676 13.672C103.676 14.5787 103.513 15.376 103.188 16.064C102.862 16.7467 102.393 17.28 101.78 17.664C101.166 18.048 100.433 18.24 99.5796 18.24ZM99.5796 17.112C100.54 17.112 101.254 16.7947 101.724 16.16C102.193 15.52 102.428 14.6907 102.428 13.672C102.428 12.6267 102.19 11.7947 101.716 11.176C101.246 10.5573 100.534 10.248 99.5796 10.248C98.9342 10.248 98.4009 10.3947 97.9796 10.688C97.5636 10.976 97.2516 11.3787 97.0436 11.896C96.8409 12.408 96.7396 13 96.7396 13.672C96.7396 14.712 96.9796 15.5467 97.4596 16.176C97.9396 16.8 98.6462 17.112 99.5796 17.112ZM107.464 18L104.328 9.36H105.52L108.072 16.464L110.608 9.36H111.816L108.68 18H107.464ZM116.596 18.24C115.754 18.24 115.023 18.0533 114.404 17.68C113.791 17.3067 113.314 16.7813 112.972 16.104C112.631 15.4267 112.46 14.632 112.46 13.72C112.46 12.776 112.628 11.96 112.964 11.272C113.3 10.584 113.772 10.0533 114.38 9.68C114.994 9.30667 115.716 9.12 116.548 9.12C117.402 9.12 118.13 9.31733 118.732 9.712C119.335 10.1013 119.791 10.6613 120.1 11.392C120.41 12.1227 120.551 12.9947 120.524 14.008H119.324V13.592C119.303 12.472 119.06 11.6267 118.596 11.056C118.138 10.4853 117.466 10.2 116.58 10.2C115.652 10.2 114.94 10.5013 114.444 11.104C113.954 11.7067 113.708 12.5653 113.708 13.68C113.708 14.768 113.954 15.6133 114.444 16.216C114.94 16.8133 115.642 17.112 116.548 17.112C117.167 17.112 117.706 16.9707 118.164 16.688C118.628 16.4 118.994 15.9867 119.26 15.448L120.356 15.872C120.015 16.624 119.511 17.208 118.844 17.624C118.183 18.0347 117.434 18.24 116.596 18.24ZM113.292 14.008V13.024H119.892V14.008H113.292Z" fill="#858585"/>
+                        </svg>
+                    </div>
+                {% endif %}
+            <img src="/static/images/plus.png" alt="add tag" class="add-tag-btn" data-client-id="{{ contact.id }}" />
+            </div>
+        </div>
+        
+        <!-- Divider Line -->
+        <div class="divider-line"></div>
+        
+        <!-- Client Details -->
+        <div class="client-details">
+            <table class="details-table">
+                <tr>
+                    <td class="label">E-mail:</td>
+                    <td class="value" contenteditable="true" onfocus="handleFieldFocus(this)" onblur="handleFieldBlur(this, 'email')">{{ contact.email or '...' }}</td>
+                </tr>
+                <tr>
+                    <td class="label">Datum rođenja:</td>
+                    <td class="value date-field" contenteditable="true" onfocus="handleFieldFocus(this)" onblur="handleFieldBlur(this, 'birth_date')" oninput="formatDateInput(this)">{{ contact.birth_date or '...' }}</td>
+                </tr>
+                <tr>
+                    <td class="label">Pol:</td>
+                    <td class="gender-selector" onclick="toggleGenderDropdown()">
+                        <span class="gender-value">{{ contact.gender or 'Izabrati' }}</span>
+                        <img src="/static/images/strelka vniz.png" alt="Select" class="gender-arrow">
+                    </td>
+                </tr>
+                <tr>
+                    <td class="label">Grad:</td>
+                    <td class="value" contenteditable="true" onfocus="handleFieldFocus(this)" onblur="handleFieldBlur(this, 'city')">{{ contact.city or '...' }}</td>
+                </tr>
+                <tr>
+                    <td class="label">Instagram:</td>
+                    <td class="value" contenteditable="true" onfocus="handleFieldFocus(this)" onblur="handleFieldBlur(this, 'instagram_handle')">{{ contact.instagram_handle or '...' }}</td>
+                </tr>
+                <tr>
+                    <td class="label">Preferencije:</td>
+                    <td class="value" contenteditable="true" onfocus="handleFieldFocus(this)" onblur="handleFieldBlur(this, 'preferences_text')">{{ (contact.preferences or {}).get('preferences_text', '...') }}</td>
+                </tr>
+                <tr>
+                    <td class="label">Način komunikacije:</td>
+                    <td class="communication-selector" onclick="toggleCommunicationDropdown()">
+                        <span class="communication-value">{{ (contact.preferences or {}).get('communication_method', 'Izabrati') }}</span>
+                        <img src="/static/images/strelka vniz.png" alt="Select" class="communication-arrow">
+                    </td>
+                </tr>
+                <tr>
+                    <td class="label">Promoter:</td>
+                    <td class="promoter-selector" onclick="togglePromoterDropdown()">
+                        <span class="promoter-value">{{ (contact.preferences or {}).get('promoter_name', 'Izabrati') }}</span>
+                        <img src="/static/images/strelka vniz.png" alt="Select" class="promoter-arrow">
+                    </td>
+                </tr>
+            </table>
+        </div>
+        
+        <!-- New Reservation Button -->
+        <button class="new-reservation-btn" onclick="openNewBookingModal()">
+            + Nova rezervacija
+        </button>
+    </div>
+    
+    <!-- Right Panel - Statistics and Reservations -->
+    <div class="right-panel">
+        <!-- Statistics Header -->
+        <div class="stats-header">
+            <img src="/static/images/vektor.png" class="stats-vector" alt="Vector">
+            <div class="stat-item">
+                <div class="stat-number">{% if visits_count and visits_count > 0 %}{{ visits_count }}{% else %}—{% endif %}</div>
+                <div class="stat-label">Izlazaka</div>
+            </div>
+            <div class="stat-item">
+                <div class="stat-number">{% if rating and rating > 0 %}{{ rating }}{% else %}—{% endif %}</div>
+                <div class="stat-label">Ocena</div>
+            </div>
+            <div class="stat-item">
+                <div class="stat-number">{% if total_spent and total_spent > 0 %}{{ "%.2f"|format(total_spent) }}€{% else %}—{% endif %}</div>
+                <div class="stat-label">Potrošnje</div>
+            </div>
+        </div>
+        
+        <!-- Reservations List -->
+        <div class="reservations-list">
+            {% if bookings %}
+                {% for booking in bookings %}
+                <div class="reservation-item">
+                    <div class="reservation-main">
+                        <div class="reservation-date-time">{{ booking.date.strftime('%d. %B %Y') if booking.date else '' }} | {{ booking.time_from.strftime('%H:%M') if booking.time_from else '' }}</div>
+                        <div class="reservation-status {% if booking.status == 'nacekanju' or booking.status == 'na_cekaju' %}status-na-cekaju{% else %}status-{{ booking.status }}{% endif %}" onclick="showStatusTagsPopupForExisting(this)" data-booking-id="{{ booking.id }}" style="cursor: pointer;">
+                            {% if booking.status == 'dogovoreno' %}Dogovoreno
+                            {% elif booking.status == 'potvrdjeno' %}Potvrđeno
+                            {% elif booking.status == 'otkazano' %}Otkazano
+                            {% elif booking.status == 'nisu' %}Nisu došli
+                            {% elif booking.status == 'dosli' %}Došli
+                            {% elif booking.status == 'na_cekaju' or booking.status == 'nacekanju' %}Na čekanju
+                            {% elif booking.status == 'zavrseno' %}Završeno
+                            {% else %}{{ booking.status|title }}{% endif %}
+                        </div>
+                        <img src="/static/images/strelka vniz 2.png" alt="Expand" class="expand-arrow" onclick="toggleReservationDetails(this)">
+                    </div>
+                    <div class="reservation-details" style="display: none;">
+                        <div class="detail-line">
+                            <span class="detail-label">Gosti:</span>
+                            <span class="detail-value">{{ booking.party_size or 0 }} osoba</span>
+                        </div>
+                        <div class="detail-line">
+                            <span class="detail-label">Uslov:</span>
+                            <span class="detail-value">{{ booking.deposit_eur or 0 }} €</span>
+                        </div>
+                        <div class="detail-line">
+                            <span class="detail-label">Tip stola:</span>
+                            <span class="detail-value">{{ booking.table_type or '-' }}</span>
+                        </div>
+                        <div class="detail-line">
+                            <span class="detail-label">Poseban povod:</span>
+                            <span class="detail-value">{{ booking.special_case_note or '-' }}</span>
+                        </div>
+                        <div class="detail-line">
+                            <span class="detail-label">Komentar:</span>
+                            <span class="detail-value">{{ booking.comment or '-' }}</span>
+                        </div>
+                    </div>
+                    
+                    <!-- Status Dropdown -->
+                    <div class="status-dropdown-menu" id="statusDropdown{{ booking.id }}" style="display: none;">
+                        <div class="status-option" onclick="selectReservationStatus({{ booking.id }}, 'dogovoreno')">Dogovoreno</div>
+                        <div class="status-option" onclick="selectReservationStatus({{ booking.id }}, 'potvrdjeno')">Potvrđeno</div>
+                        <div class="status-option" onclick="selectReservationStatus({{ booking.id }}, 'otkazano')">Otkazano</div>
+                        <div class="status-option" onclick="selectReservationStatus({{ booking.id }}, 'nisu')">Nisu došli</div>
+                        <div class="status-option" onclick="selectReservationStatus({{ booking.id }}, 'dosli')">Došli</div>
+                        <div class="status-option" onclick="selectReservationStatus({{ booking.id }}, 'na_cekaju')">Na čekanju</div>
+                        <div class="status-option" onclick="selectReservationStatus({{ booking.id }}, 'waitlist')">Waitlist</div>
+                    </div>
+                </div>
+                {% endfor %}
+            {% else %}
+                <div class="no-reservations">
+                    <p>Nema rezervacija za ovog klijenta.</p>
+                </div>
+            {% endif %}
+        </div>
+    </div>
+    
+</div>
+
+<!-- Tag Modal -->
+<div class="tag-modal" id="tagModal">
+    <div class="tag-modal-content">
+        <div class="tag-search-container">
+            <input type="text" class="tag-search" placeholder="..." id="tagSearch" />
+        </div>
+        <div class="tag-divider"></div>
+        <div class="tag-options" id="tagOptions">
+            <div class="tag-placeholder">...</div>
+        </div>
+        <div class="add-new-tag-container" id="addNewTagContainer" style="display: none;">
+            <div class="add-new-tag-text">Dodati tag</div>
+            <img src="/static/images/enter logo.png" alt="Enter" class="add-new-tag-icon" />
+            <div class="add-new-tag-preview" id="newTagPreview"></div>
+        </div>
+    </div>
+</div>
+
+<!-- Call Modal -->
+<div class="call-modal" id="callModal">
+    <div class="call-modal-content">
+        <button class="close-button" onclick="closeCallModal()">
+            <img src="/static/images/krest.png" alt="Close" width="20" height="20">
+        </button>
+        <div class="client-name" id="callClientName"></div>
+        <div class="last-reservation-date" id="callLastReservation"></div>
+        <div class="client-phone" id="callClientPhone"></div>
+        <div class="call-actions">
+            <button onclick="makeCall()" class="call-button">Pozvati</button>
+            <button onclick="openWhatsApp()" class="whatsapp-button">
+                <svg width="40" height="40" viewBox="0 0 40 40" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <defs>
+                        <linearGradient id="whatsapp-gradient" x1="40" y1="20" x2="0" y2="20" gradientUnits="userSpaceOnUse">
+                            <stop stop-color="#11998E"/>
+                            <stop offset="1" stop-color="#2CAB5C"/>
+                        </linearGradient>
+                    </defs>
+                    <circle cx="20" cy="20" r="20" fill="url(#whatsapp-gradient)"/>
+                    <path fill-rule="evenodd" clip-rule="evenodd" d="M11.62 25.826L10.216 30.954L15.468 29.577C16.918 30.367 18.544 30.782 20.195 30.783C22.373 30.782 24.49 30.064 26.217 28.738C27.945 27.413 29.187 25.554 29.751 23.451C30.315 21.348 30.169 19.117 29.336 17.105C28.504 15.093 27.031 13.412 25.145 12.323C23.26 11.233 21.068 10.796 18.909 11.078C16.75 11.361 14.745 12.349 13.204 13.887C11.663 15.426 10.672 17.429 10.386 19.588C10.1 21.747 10.534 23.939 11.62 25.826ZM24.839 23.017C25.013 23.1 25.13 23.156 25.18 23.24C25.241 23.343 25.254 23.832 25.042 24.409C24.83 24.985 23.842 25.514 23.367 25.584C22.848 25.673 22.315 25.639 21.81 25.486C21.331 25.338 20.86 25.164 20.4 24.965C18.087 23.967 16.523 21.728 16.222 21.297C16.2 21.266 16.185 21.244 16.177 21.233C16.051 21.066 15.167 19.891 15.167 18.675C15.162 18.292 15.236 17.913 15.385 17.561C15.534 17.209 15.754 16.891 16.032 16.628C16.115 16.532 16.218 16.455 16.334 16.402C16.449 16.348 16.574 16.32 16.701 16.317C16.757 16.317 16.811 16.316 16.864 16.315C16.969 16.313 17.072 16.311 17.174 16.317C17.194 16.319 17.215 16.318 17.237 16.318C17.381 16.316 17.554 16.314 17.732 16.743C17.782 16.865 17.851 17.031 17.926 17.213C18.155 17.771 18.449 18.485 18.495 18.578C18.534 18.643 18.556 18.716 18.56 18.792C18.563 18.868 18.548 18.943 18.515 19.011C18.454 19.16 18.37 19.3 18.268 19.424C18.221 19.478 18.174 19.535 18.128 19.591C18.05 19.683 17.973 19.776 17.896 19.858C17.892 19.861 17.889 19.865 17.886 19.868C17.764 19.997 17.647 20.121 17.788 20.362C18.159 20.998 18.622 21.576 19.163 22.076C19.746 22.596 20.415 23.01 21.14 23.302C21.386 23.426 21.533 23.406 21.676 23.24C21.82 23.075 22.29 22.518 22.458 22.271C22.625 22.023 22.789 22.063 23.016 22.146C23.243 22.23 24.458 22.829 24.705 22.952C24.753 22.976 24.798 22.997 24.839 23.017Z" fill="white"/>
+                </svg>
+            </button>
+        </div>
+    </div>
+</div>
+
+<!-- Status Tags Popup -->
+<div class="status-tags-popup" id="statusTagsPopup" style="display: none;">
+    <div class="status-tags-content">
+        <div class="status-tag-option" onclick="selectStatusTag('dogovoreno', 'Dogovoreno')">
+            Dogovoreno
+        </div>
+        <div class="status-tag-option" onclick="selectStatusTag('na_cekaju', 'Na čekanju')">
+            Na čekanju
+        </div>
+        <div class="status-tag-option" onclick="selectStatusTag('potvrdjeno', 'Potvrđeno')">
+            Potvrđeno
+        </div>
+        <div class="status-tag-option" onclick="selectStatusTag('otkazano', 'Otkazano')">
+            Otkazano
+        </div>
+        <div class="status-tag-option" onclick="selectStatusTag('nisu', 'Nisu došli')">
+            Nisu došli
+        </div>
+        <div class="status-tag-option" onclick="selectStatusTag('dosli', 'Došli')">
+            Došli
+        </div>
+    </div>
+</div>
+
+<!-- Gender Dropdown -->
+<div class="dropdown-menu" id="genderDropdown">
+    <div class="dropdown-option" onclick="selectGender('M', event)">M</div>
+    <div class="dropdown-option" onclick="selectGender('Ž', event)">Ž</div>
+</div>
+
+<!-- Communication Dropdown -->
+<div class="dropdown-menu" id="communicationDropdown">
+    <div class="dropdown-option" onclick="selectCommunication('WhatsApp', event)">WhatsApp</div>
+    <div class="dropdown-option" onclick="selectCommunication('Instagram', event)">Instagram</div>
+    <div class="dropdown-option" onclick="selectCommunication('Telefon', event)">Telefon</div>
+    <div class="dropdown-option" onclick="selectCommunication('Email', event)">Email</div>
+</div>
+
+<!-- Promoter Dropdown -->
+<div class="dropdown-menu" id="promoterDropdown">
+    <div class="dropdown-option" onclick="selectPromoter('Vlasnik', event)">Vlasnik</div>
+    <div class="dropdown-option" onclick="selectPromoter('Menadžer', event)">Menadžer</div>
+    <div class="dropdown-option" onclick="selectPromoter('Konobar', event)">Konobar</div>
+    <div class="dropdown-option" onclick="selectPromoter('Hostesa', event)">Hostesa</div>
+</div>
+
+<!-- Status Menu -->
+<div class="status-menu" id="statusMenu">
+    <div class="status-option" onclick="updateBookingStatus('potvrdjeno')">Potvrđeno</div>
+    <div class="status-option" onclick="updateBookingStatus('dogovoreno')">Dogovoreno</div>
+    <div class="status-option" onclick="updateBookingStatus('otkazano')">Otkazano</div>
+    <div class="status-option" onclick="updateBookingStatus('nisu')">Nisu došli</div>
+    <div class="status-option" onclick="updateBookingStatus('dosli')">Došli</div>
+    <div class="status-option" onclick="updateBookingStatus('na_cekaju')">Na čekanju</div>
+    <div class="status-option" onclick="updateBookingStatus('waitlist')">Waitlist</div>
+</div>
+
+<style>
+/* Глобальный шрифт Manrope для всего текста */
+* {
+    font-family: 'Manrope', sans-serif !important;
+}
+
+/* Основной контейнер */
+.client-card-container {
+    position: relative;
+    width: 1400px;
+    height: 800px;
+    background: #FFFFFF;
+    display: flex;
+  }
+  
+/* Левая панель с информацией о клиенте */
+.client-info-panel {
+    position: fixed;
+    width: 540px;
+    height: calc(100vh - 120px);
+    left: 120px;
+    top: 95px;
+    overflow-y: auto;
+    background: #FFFFFF;
+    border: 1px solid #D9D9D9;
+    border-radius: 20px;
+    padding: 30px;
+    box-sizing: border-box;
+}
+
+/* Стилизация скроллбара для client-info-panel */
+.client-info-panel {
+    scrollbar-width: thin;
+    scrollbar-color: #11998E #f1f1f1;
+}
+
+.client-info-panel::-webkit-scrollbar {
+    width: 8px;
+    background: transparent;
+}
+
+.client-info-panel::-webkit-scrollbar-track {
+    background: #f1f1f1;
+    border-radius: 4px;
+    margin: 10px 0;
+}
+
+.client-info-panel::-webkit-scrollbar-thumb {
+    background: #11998E;
+    border-radius: 4px;
+    border: 1px solid #f1f1f1;
+}
+
+.client-info-panel::-webkit-scrollbar-thumb:hover {
+    background: #0d7a6f;
+}
+
+/* Для маленьких экранов - всегда показывать скроллбар */
+@media (max-width: 768px) {
+    .client-info-panel {
+        scrollbar-width: thin;
+        -ms-overflow-style: auto;
+    }
+    
+    .client-info-panel::-webkit-scrollbar {
+        display: block;
+        width: 6px;
+    }
+}
+  
+  .client-header {
+    display: flex;
+    align-items: center;
+    margin-bottom: 15px;
+  }
+  
+  .back-arrow {
+    width: 9px;
+    height: 15px;
+    cursor: pointer;
+    margin-right: 10px;
+  }
+  
+  .client-name {
+    font-family: 'Manrope', sans-serif;
+    font-style: normal;
+    font-weight: 700;
+    font-size: 30px;
+    line-height: 41px;
+    color: #000000;
+    margin: 0;
+    display: flex;
+    gap: 10px;
+    max-width: 100%;
+    overflow: hidden;
+}
+
+.client-name span {
+    border: 1px solid transparent;
+    padding: 2px;
+    border-radius: 4px;
+    flex: 1;
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+  
+.client-name span:hover {
+    border: 1px solid #D9D9D9;
+    background: #F9F9F9;
+  }
+  
+.client-name span:focus {
+    border: 1px solid #11998E;
+    background: #FFFFFF;
+    outline: none;
+}
+
+.phone-section {
+    display: flex;
+    align-items: center;
+    margin-bottom: 15px;
+}
+
+.phone-icon {
+    width: 20px;
+    height: 20px;
+    cursor: pointer;
+}
+
+.phone-number {
+    font-family: 'Manrope', sans-serif;
+    font-style: normal;
+    font-weight: 400;
+    font-size: 20px;
+    line-height: 27px;
+    color: #000000;
+    border: 1px solid transparent;
+    padding: 2px;
+    border-radius: 4px;
+  }
+
+.phone-number:empty::before,
+.phone-number[data-empty="true"] {
+    content: '+__________________';
+    color: #D9D9D9;
+  }
+  
+.phone-number:hover {
+    border: 1px solid #D9D9D9;
+    background: #F9F9F9;
+  }
+  
+.phone-number:focus {
+    border: 1px solid #11998E;
+    background: #FFFFFF;
+    outline: none;
+  }
+  
+.tags-section {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+    margin-bottom: 30px;
+    align-items: center;
+}
+
+.client-tags-container {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 4px;
+    max-height: 60px;
+    overflow-y: auto;
+    padding-right: 5px;
+    align-items: center;
+}
+
+.no-tags-placeholder {
+    display: flex;
+    align-items: center;
+}
+
+/* Кастомное колесико для тегов */
+.client-tags-container::-webkit-scrollbar {
+    width: 4px;
+}
+
+.client-tags-container::-webkit-scrollbar-track {
+    background: #f1f1f1;
+    border-radius: 2px;
+}
+
+.client-tags-container::-webkit-scrollbar-thumb {
+    background: #11998E;
+    border-radius: 2px;
+}
+
+.client-tags-container::-webkit-scrollbar-thumb:hover {
+    background: #0d7a6f;
+}
+
+/* Стили для тегов в новом дизайне */
+  .tag-item {
+    display: inline-flex;
+    height: 24px;
+    background: #D8F8E4;
+    border-radius: 7px;
+    margin: 1px;
+    position: relative;
+    padding: 0 8px;
+    white-space: nowrap;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+  }
+  
+  .tag-text {
+    font-family: 'Manrope', system-ui, sans-serif;
+    font-style: normal;
+    font-weight: 400;
+    font-size: 16px;
+    line-height: 100%;
+    letter-spacing: 0%;
+    text-align: center;
+    vertical-align: middle;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #000000;
+    white-space: nowrap;
+  }
+  
+.add-tag-btn {
+    width: 16px;
+    height: 16px;
+    cursor: pointer;
+    flex-shrink: 0;
+    margin-top: 2px;
+    margin-left: 4px;
+    opacity: 1;
+    transition: opacity 0.2s ease;
+}
+
+.add-tag-btn:hover {
+    opacity: 0.7;
+}
+
+/* Разделительная линия */
+  .divider-line {
+    width: 100%;
+    height: 1px;
+    background: #D9D9D9;
+    margin-bottom: 20px;
+}
+
+.client-details {
+    margin-bottom: 20px;
+}
+
+.details-table {
+    width: 100%;
+    border-collapse: collapse;
+}
+
+.details-table tr {
+    height: 40px;
+}
+
+.details-table td {
+    padding: 8px 0;
+    vertical-align: middle;
+}
+
+.details-table .label {
+    width: 200px;
+    font-family: 'Manrope', sans-serif;
+    font-style: normal;
+    font-weight: 400;
+    font-size: 16px;
+    line-height: 100%;
+    letter-spacing: 0%;
+    color: #000000;
+}
+
+.details-table .value {
+    font-family: 'Manrope', sans-serif;
+    font-style: normal;
+    font-weight: 700;
+    font-size: 16px;
+    line-height: 100%;
+    letter-spacing: 0%;
+    color: #000000;
+    min-width: 200px;
+}
+
+.details-table .date-field {
+    font-family: 'Manrope', sans-serif;
+    font-style: normal;
+    font-weight: 700;
+    font-size: 16px;
+    line-height: 100%;
+    letter-spacing: 0%;
+    color: #000000;
+}
+
+.details-table .gender-selector,
+.details-table .communication-selector,
+.details-table .promoter-selector {
+    display: inline-flex;
+    align-items: center;
+    gap: 0px;
+    justify-content: flex-start;
+    cursor: pointer;
+}
+
+.detail-row:last-child {
+    margin-bottom: 0;
+    padding-bottom: 0;
+}
+
+/* Селекторы с выпадающими меню */
+.gender-selector,
+.communication-selector,
+.promoter-selector {
+    display: flex;
+    align-items: center;
+    gap: 0px;
+    position: relative;
+    cursor: pointer;
+}
+
+.gender-value,
+.communication-value,
+.promoter-value {
+    font-family: 'Manrope', sans-serif;
+    font-style: normal;
+    font-weight: 700;
+    font-size: 16px;
+    line-height: 100%;
+    letter-spacing: 0%;
+    color: #000000;
+    min-width: 100px;
+    text-align: left;
+    cursor: pointer;
+    padding: 2px;
+    border-radius: 4px;
+}
+
+.gender-value:hover,
+.communication-value:hover,
+.promoter-value:hover {
+    background: #F9F9F9;
+}
+
+.gender-arrow,
+.communication-arrow,
+.promoter-arrow {
+    width: 12px;
+    height: 6px;
+    cursor: pointer;
+}
+
+.edit-btn {
+    width: 100%;
+    height: 40px;
+    background: #F0F0F0;
+    border: 1px solid #D9D9D9;
+    border-radius: 8px;
+    font-family: 'Manrope', sans-serif;
+    font-style: normal;
+    font-weight: 500;
+    font-size: 16px;
+    line-height: 22px;
+    color: #000000;
+    cursor: pointer;
+    margin-bottom: 15px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.new-reservation-btn {
+    width: 100%;
+    height: 50px;
+    background: linear-gradient(270deg, #11998E 0%, #2CAB5C 100%);
+    border-radius: 30px;
+    border: none;
+    font-family: 'Manrope', sans-serif;
+    font-style: normal;
+    font-weight: 400;
+    font-size: 18px;
+    line-height: 25px;
+    color: #FFFFFF;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.right-panel {
+    position: fixed;
+    left: 670px;
+    right: 30px;
+    top: 95px;
+    height: 675px;
+    background: #FFFFFF;
+    border-radius: 20px;
+    padding: 0 30px 30px 0;
+    box-sizing: border-box;
+}
+
+.stats-header {
+    width: 100%;
+    height: 163px;
+    background: linear-gradient(270deg, #11998E 0%, #2CAB5C 100%);
+    border-radius: 20px;
+    display: flex;
+    align-items: center;
+    justify-content: space-around;
+    margin-bottom: 20px;
+    position: relative;
+    overflow: hidden;
+}
+
+.stats-vector {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    z-index: 1;
+    opacity: 0.7;
+    mix-blend-mode: overlay;
+  }
+  
+  .stat-item {
+    text-align: center;
+    position: relative;
+    z-index: 2;
+  }
+  
+  .stat-number {
+    font-family: 'Manrope', sans-serif;
+    font-style: normal;
+    font-weight: 400;
+    font-size: 60px;
+    line-height: 82px;
+    color: #FFFFFF;
+    margin-bottom: 10px;
+  }
+  
+  .stat-label {
+    font-family: 'Manrope', sans-serif;
+    font-style: normal;
+    font-weight: 400;
+    font-size: 20px;
+    line-height: 27px;
+    color: #FFFFFF;
+    position: relative;
+}
+
+.stat-label::after {
+    content: '';
+    position: absolute;
+    top: -2px;
+    left: 0;
+    width: 100%;
+    height: 1px;
+    background-color: #FFFFFF;
+  }
+  
+.reservations-list {
+    max-height: 500px;
+    overflow-y: auto;
+    padding-right: 15px;
+}
+
+/* Кастомное колесико для правой панели */
+.reservations-list::-webkit-scrollbar {
+    width: 6px;
+}
+
+.reservations-list::-webkit-scrollbar-track {
+    background: #f1f1f1;
+    border-radius: 3px;
+}
+
+.reservations-list::-webkit-scrollbar-thumb {
+    background: #11998E;
+    border-radius: 3px;
+}
+
+.reservations-list::-webkit-scrollbar-thumb:hover {
+    background: #0d7a6f;
+}
+
+.reservation-item {
+    width: 100%;
+    min-height: 67px;
+    background: #FFFFFF;
+    border: 1px solid #D9D9D9;
+    border-radius: 20px;
+    padding: 20px;
+    margin-bottom: 10px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+}
+
+.reservation-item:hover {
+    border-color: #11998E;
+    box-shadow: 0 2px 8px rgba(17, 153, 142, 0.1);
+}
+
+.reservation-main {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    width: 100%;
+}
+
+.reservation-date-time {
+    font-family: 'Manrope', sans-serif;
+    font-style: normal;
+    font-weight: 700;
+    font-size: 20px;
+    line-height: 27px;
+    color: #000000;
+    flex: 1;
+}
+
+.reservation-status {
+    font-family: 'Manrope', sans-serif;
+    font-style: normal;
+    font-weight: 700;
+    font-size: 14px;
+    line-height: 30px;
+    padding: 0 12px;
+    border-radius: 20px;
+    margin-right: 15px;
+    text-align: center;
+    height: 30px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.reservation-status:hover {
+    transform: scale(1.05);
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+/* Стили статусов как в всплывающем окне */
+.status-dogovoreno {
+    background: #FFF0BF;
+    color: #000000;
+    border: 1px solid #DBC787;
+}
+
+.status-potvrdjeno {
+    background: #D8F8E4;
+    color: #000000;
+    border: 1px solid #4CAF50;
+}
+
+.status-otkazano {
+    background: #FFBFBF;
+    color: #000000;
+    border: 1px solid #F44336;
+}
+
+.status-nisu {
+    background: #FFD59E;
+    color: #000000;
+    border: 1px solid #FF9800;
+}
+
+.status-dosli {
+    background: #C7F4FF;
+    color: #000000;
+    border: 1px solid #2196F3;
+}
+
+.status-na-cekaju {
+    background: #E8D8F8;
+    color: #000000;
+    border: 1px solid #9C27B0;
+}
+
+.status-zavrseno {
+    background: #FABEFF;
+    color: #000000;
+    border: 1px solid #E91E63;
+}
+
+.status-nacekanju {
+    background: #E8D8F8;
+    color: #000000;
+    border: 1px solid #9C27B0;
+}
+
+/* Dropdown меню для статусов в существующих бронях */
+.status-dropdown-menu {
+    position: fixed;
+    width: 211px;
+    height: 280px;
+    background: white;
+    border: 1px solid #D9D9D9;
+    border-radius: 20px;
+    box-shadow: 0px 7px 30px rgba(0, 0, 0, 0.15);
+    z-index: 1000;
+    display: none !important;
+    margin-top: 5px;
+    overflow: hidden;
+    padding: 8px;
+    opacity: 0;
+    transform: translateY(-10px);
+    transition: all 0.3s ease;
+    flex-direction: column;
+    align-items: center;
+}
+
+.status-dropdown-menu.show {
+    display: flex !important;
+    opacity: 1;
+    transform: translateY(0);
+}
+
+.status-dropdown-menu .status-option {
+    width: 100% !important;
+    margin: 0 !important;
+    margin-bottom: 4px !important;
+    display: block !important;
+    position: static !important;
+    float: none !important;
+    clear: both !important;
+    height: 40px !important;
+    padding: 0 16px !important;
+    border-radius: 20px !important;
+    font-size: 16px !important;
+    line-height: 40px !important;
+    text-align: center !important;
+    font-family: 'Manrope', sans-serif !important;
+    font-weight: 700 !important;
+    color: #000000 !important;
+    cursor: pointer !important;
+    transition: all 0.2s ease !important;
+    box-sizing: border-box !important;
+}
+
+/* Цвета статусов в dropdown */
+.status-dropdown-menu .status-option:nth-child(1) { 
+    background: #FFF0BF !important;
+    border: 1px solid #DBC787 !important;
+}
+.status-dropdown-menu .status-option:nth-child(2) { 
+    background: #D8F8E4 !important;
+    border: 1px solid #4CAF50 !important;
+}
+.status-dropdown-menu .status-option:nth-child(3) { 
+    background: #FFBFBF !important;
+    border: 1px solid #F44336 !important;
+}
+.status-dropdown-menu .status-option:nth-child(4) { 
+    background: #FFD59E !important;
+    border: 1px solid #FF9800 !important;
+}
+.status-dropdown-menu .status-option:nth-child(5) { 
+    background: #C7F4FF !important;
+    border: 1px solid #2196F3 !important;
+}
+.status-dropdown-menu .status-option:nth-child(6) { 
+    background: #E8D8F8 !important;
+    border: 1px solid #9C27B0 !important;
+}
+.status-dropdown-menu .status-option:nth-child(7) { 
+    background: #FABEFF !important;
+    border: 1px solid #E91E63 !important;
+}
+
+.status-dropdown-menu .status-option:hover {
+    opacity: 0.8 !important;
+    cursor: pointer !important;
+}
+
+.expand-arrow {
+    width: 15px;
+    height: 9px;
+    transition: transform 0.3s ease;
+    cursor: pointer;
+  }
+  
+.reservation-item.expanded .expand-arrow {
+    transform: rotate(180deg);
+  }
+  
+.reservation-details {
+    margin-top: 15px;
+    padding-top: 15px;
+    border-top: 1px solid #E5E5E5;
+    min-height: 120px;
+    display: table;
+    width: 100%;
+}
+
+.detail-line {
+    display: table-row;
+    margin-bottom: 8px;
+  }
+  
+.detail-label {
+    font-family: 'Manrope', sans-serif;
+    font-style: normal;
+    font-weight: 600;
+    font-size: 14px;
+    line-height: 19px;
+    color: #666666;
+    display: table-cell;
+    width: 190px;
+    padding: 4px 0;
+    vertical-align: top;
+  }
+  
+.detail-value {
+    font-family: 'Manrope', sans-serif;
+    font-style: normal;
+    font-weight: 400;
+    font-size: 14px;
+    line-height: 19px;
+    color: #000000;
+    text-align: left;
+    display: table-cell;
+    padding: 4px 0;
+    vertical-align: top;
+}
+
+/* Status Dropdown Menu */
+.status-dropdown-menu {
+    position: fixed;
+    width: 224px;
+    height: 141px;
+    background: #FFFFFF;
+    border: 1px solid #D9D9D9;
+    border-radius: 16px;
+    box-shadow: 0px 7px 30px rgba(0, 0, 0, 0.15);
+    z-index: 1000;
+    padding: 15px;
+    box-sizing: border-box;
+    display: none;
+  }
+  
+  .status-option {
+    position: absolute;
+    height: 24px;
+    background: #F5F5F5;
+    border-radius: 20px;
+    font-family: 'Manrope', sans-serif;
+    font-style: normal;
+    font-weight: 700;
+    font-size: 14px;
+    line-height: 19px;
+    color: #000000;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    text-align: center;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  
+  .status-option:hover {
+    background: #E0E0E0;
+    border-color: #11998E;
+}
+
+/* Стили для каждого статуса с точными позициями */
+.status-option:nth-child(1) { /* Potvrđeno */
+    width: 88px;
+    left: 0px;
+    top: 0px;
+    background: #D8F8E4;
+    border: 1px solid #000000;
+  }
+  
+.status-option:nth-child(2) { /* Dogovoreno */
+    width: 101px;
+    left: 93px;
+    top: 0px;
+    background: #FFF0BF;
+}
+
+.status-option:nth-child(3) { /* Otkazano */
+    width: 83px;
+    left: 0px;
+    top: 29px;
+    background: #FFBFBF;
+  }
+  
+.status-option:nth-child(4) { /* Nisu došli */
+    width: 82px;
+    left: 88px;
+    top: 29px;
+    background: #FFD59E;
+  }
+  
+.status-option:nth-child(5) { /* Došli */
+    width: 48px;
+    left: 0px;
+    top: 58px;
+    background: #C7F4FF;
+  }
+  
+.status-option:nth-child(6) { /* Na čekanju */
+    width: 93px;
+    left: 53px;
+    top: 58px;
+    background: #E8D8F8;
+}
+
+.status-option:nth-child(7) { /* Waitlist */
+    width: 70px;
+    left: 0px;
+    top: 87px;
+    background: #FABEFF;
+  }
+  
+.reservation-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 15px;
+}
+
+.reservation-date {
+    font-family: 'Manrope', sans-serif;
+    font-style: normal;
+    font-weight: 700;
+    font-size: 20px;
+    line-height: 27px;
+    color: #000000;
+  }
+  
+.reservation-status {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+  
+  .status-badge {
+    padding: 4px 12px;
+    border-radius: 20px;
+    font-family: 'Manrope', sans-serif;
+    font-style: normal;
+    font-weight: 700;
+    font-size: 16px;
+    line-height: 22px;
+    text-align: center;
+    cursor: pointer;
+  }
+  
+  .status-dogovoreno {
+    background: #FFF0BF;
+    color: #000000;
+  }
+  
+  .status-potvrdjeno {
+    background: #D8F8E4;
+    color: #000000;
+  }
+  
+  .status-otkazano {
+    background: #FFBFBF;
+    color: #000000;
+  }
+  
+  .status-nisu {
+    background: #FFD59E;
+    color: #000000;
+}
+
+.status-dosli {
+    background: #C7F4FF;
+    color: #000000;
+  }
+  
+  .status-waitlist {
+    background: #FABEFF;
+    color: #000000;
+}
+
+.status-dropdown {
+    width: 9px;
+    height: 15px;
+    background: #D9D9D9;
+    transform: rotate(-90deg);
+    cursor: pointer;
+}
+
+.reservation-details {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
+}
+
+.detail-item {
+    display: flex;
+    flex-direction: column;
+    gap: 5px;
+}
+
+.detail-label {
+    font-family: 'Manrope', sans-serif;
+    font-style: normal;
+    font-weight: 400;
+    font-size: 16px;
+    line-height: 22px;
+    color: #000000;
+}
+
+.detail-value {
+    font-family: 'Manrope', sans-serif;
+    font-style: normal;
+    font-weight: 700;
+    font-size: 16px;
+    line-height: 22px;
+    color: #000000;
+}
+
+.no-reservations {
+    text-align: center;
+    padding: 40px;
+    padding-top: 80px;
+    font-family: 'Manrope', sans-serif;
+    font-style: normal;
+    font-weight: 400;
+    font-size: 16px;
+    line-height: 22px;
+    color: #666666;
+}
+
+/* Стили для поиска */
+.search-results {
+    background: #ffffff;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+    border-radius: 12px;
+    border: 1px solid #e5e7eb;
+    overflow: hidden;
+    z-index: 1000;
+}
+
+.search-results-content {
+    padding: 8px;
+    height: 100%;
+    overflow-y: auto;
+}
+
+.search-result-item {
+    display: flex;
+    align-items: center;
+    padding: 12px;
+    border-bottom: 1px solid #f3f4f6;
+    cursor: pointer;
+    transition: background-color 0.2s ease;
+    border-radius: 8px;
+    margin-bottom: 4px;
+}
+
+.search-result-item:hover {
+    background-color: #f9fafb;
+}
+
+.search-result-item:last-child {
+    border-bottom: none;
+    margin-bottom: 0;
+}
+
+.search-result-main {
+    flex: 1;
+}
+
+.search-result-name {
+    font-family: 'Manrope', sans-serif;
+    font-weight: 600;
+    font-size: 14px;
+    color: #000000;
+    margin-bottom: 2px;
+}
+
+.search-result-phone {
+    font-family: 'Manrope', sans-serif;
+    font-weight: 400;
+    font-size: 12px;
+    color: #6b7280;
+    margin-bottom: 6px;
+}
+
+.search-result-last-booking {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.search-result-date {
+    font-family: 'Manrope', sans-serif;
+    font-weight: 400;
+    font-size: 11px;
+    color: #6b7280;
+}
+
+.search-result-status {
+    font-family: 'Manrope', sans-serif;
+    font-weight: 600;
+    font-size: 10px;
+    padding: 2px 6px;
+    border-radius: 8px;
+    color: #000000;
+}
+
+.search-result-status.dogovoreno { background: #FFF0BF; border: 1px solid #DBC787; }
+.search-result-status.na-cekaju { background: #E8D8F8; border: 1px solid #9C27B0; }
+.search-result-status.potvrdjeno { background: #D8F8E4; border: 1px solid #4CAF50; }
+.search-result-status.otkazano { background: #FFBFBF; border: 1px solid #F44336; }
+.search-result-status.nisu-dosli { background: #FFD59E; border: 1px solid #FF9800; }
+.search-result-status.dosli { background: #C7F4FF; border: 1px solid #2196F3; }
+
+.search-results::-webkit-scrollbar {
+    width: 4px;
+}
+
+.search-results::-webkit-scrollbar-track {
+    background: #f1f1f1;
+    border-radius: 2px;
+}
+
+.search-results::-webkit-scrollbar-thumb {
+    background: #11998E;
+    border-radius: 2px;
+}
+
+.search-results::-webkit-scrollbar-thumb:hover {
+    background: #0d7a6f;
+}
+
+.scrollbar {
+    position: absolute;
+    width: 5px;
+    height: 675px;
+    left: 1355px;
+    top: 95px;
+}
+
+.scrollbar-track {
+    position: absolute;
+    width: 5px;
+    height: 675px;
+    background: #F7F7F7;
+    border-radius: 20px;
+}
+
+.scrollbar-thumb {
+    position: absolute;
+    width: 5px;
+    height: 95px;
+    background: linear-gradient(0deg, #11998E 0%, #2CAB5C 100%);
+    border-radius: 20px;
+}
+
+/* Tag Modal */
+  .tag-modal { 
+    position: fixed; 
+    width: 260px;
+    min-height: 82px;
+    max-height: 300px;
+    background: #FFFFFF;
+    border: 1px solid #D9D9D9;
+    border-radius: 16px;
+    box-shadow: 0px 7px 30px rgba(0, 0, 0, 0.15);
+    display: none;
+    z-index: 1000;
+    overflow: hidden;
+  }
+
+  .tag-modal.show { 
+    display: block;
+  }
+  
+  .tag-modal-content {
+    width: 100%;
+    height: 100%;
+    padding: 0;
+  }
+  
+  .tag-search-container {
+    height: 41px;
+    display: flex;
+    align-items: center;
+    padding: 0 15px;
+    flex-shrink: 0;
+  }
+  
+  .tag-search {
+    width: 100%;
+    padding: 0; 
+    border: none;
+    outline: none;
+    font-size: 16px; 
+    font-family: 'Manrope', sans-serif;
+    font-weight: 400;
+    background: transparent;
+    color: #000000;
+  }
+  
+  .tag-divider {
+    width: 210px;
+    height: 1px;
+    background: #D9D9D9;
+    border-radius: 0.5px;
+    margin: 0 auto;
+    flex-shrink: 0;
+  }
+  
+  .tag-options {
+    height: 40px;
+    overflow-y: auto;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 4px;
+    padding: 8px 15px;
+    align-items: flex-start;
+}
+
+/* Кастомное колесико для контейнера опций тегов */
+.tag-options::-webkit-scrollbar {
+    width: 4px;
+}
+
+.tag-options::-webkit-scrollbar-track {
+    background: #f1f1f1;
+    border-radius: 2px;
+}
+
+.tag-options::-webkit-scrollbar-thumb {
+    background: #11998E;
+    border-radius: 2px;
+}
+
+.tag-options::-webkit-scrollbar-thumb:hover {
+    background: #0d7a6f;
+}
+
+.tag-option {
+    padding: 3px 9px;
+    background: #D8F8E4;
+    border: none;
+    border-radius: 5px;
+    font-family: 'Manrope', sans-serif;
+    font-size: 16px;
+    font-weight: 400;
+    color: #000000;
+    cursor: pointer;
+    margin: 1px;
+    transition: all 0.2s ease;
+    height: 18px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.tag-option:hover {
+    background: #C8F0D4;
+}
+
+.tag-option.selected {
+    background: #C8F0D4;
+}
+
+.no-tag-found {
+    text-align: center;
+    padding: 10px;
+}
+
+.add-new-tag-button {
+    background: #D8F8E4;
+    color: #000000;
+    border: none;
+    padding: 3px 9px;
+    border-radius: 5px;
+    cursor: pointer;
+    font-size: 16px;
+    font-family: 'Manrope', sans-serif;
+    font-weight: 400;
+    margin-top: 5px;
+    height: 18px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+/* Стили для всплывающего окна с тегами статусов */
+.status-tags-popup {
+    position: fixed;
+    z-index: 10000;
+    background: white;
+    border: 1px solid #D9D9D9;
+    border-radius: 16px;
+    box-shadow: 0px 7px 30px rgba(0, 0, 0, 0.15);
+    padding: 8px;
+    display: none;
+    flex-direction: column;
+    align-items: center;
+    gap: 4px;
+    width: 136px;
+    height: 215px;
+}
+
+.status-tags-content {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 4px;
+    width: 100%;
+    padding-left: 8px;
+}
+
+.status-tag-option {
+    height: 30px;
+    border-radius: 20px;
+    display: flex;
+    align-items: center;
+    justify-content: flex-start;
+    padding-left: 12px;
+    font-family: 'Manrope', sans-serif;
+    font-weight: 700;
+    font-size: 14px;
+    color: #000000;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    border: none;
+}
+
+/* Специфичные стили для каждого статуса */
+.status-tag-option:nth-child(1) {
+    width: 106px;
+    background: #FFF0BF;
+    border: 1px solid #DBC787;
+}
+
+.status-tag-option:nth-child(2) {
+    width: 98px;
+    background: #E8D8F8;
+    border: 1px solid #9C27B0;
+}
+
+.status-tag-option:nth-child(3) {
+    width: 93px;
+    background: #D8F8E4;
+    border: 1px solid #4CAF50;
+}
+
+.status-tag-option:nth-child(4) {
+    width: 88px;
+    background: #FFBFBF;
+    border: 1px solid #F44336;
+}
+
+.status-tag-option:nth-child(5) {
+    width: 87px;
+    background: #FFD59E;
+    border: 1px solid #FF9800;
+}
+
+.status-tag-option:nth-child(6) {
+    width: 53px;
+    background: #C7F4FF;
+    border: 1px solid #2196F3;
+}
+
+.status-tag-option:hover {
+    opacity: 0.8;
+    transform: scale(1.05);
+}
+
+/* Стили для создания нового тега */
+.add-new-tag-container {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin: 2px;
+}
+
+.add-new-tag-text {
+    font-family: 'Manrope', sans-serif;
+    font-style: normal;
+    font-weight: 400;
+    font-size: 12px;
+    line-height: 16px;
+    color: #CBCBCB;
+    width: 58px;
+    height: 16px;
+}
+
+.add-new-tag-icon {
+    width: 16px;
+    height: 5px;
+    opacity: 1;
+    border: 1px solid transparent;
+}
+
+.add-new-tag-preview {
+    background: #D8F8E4;
+    border-radius: 5px;
+    padding: 3px 9px;
+    height: 18px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-family: 'Manrope', sans-serif;
+    font-size: 16px;
+    font-weight: 400;
+    color: #000000;
+}
+
+/* Call Modal */
+.call-modal {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.5);
+    display: none;
+    z-index: 2000;
+}
+
+.call-modal.show {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.call-modal-content {
+    background: white;
+    width: 380px;
+    height: 230px;
+    border-radius: 20px;
+    text-align: center;
+    position: relative;
+    padding: 30px;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+}
+
+.close-button {
+    position: absolute;
+    top: 20px;
+    right: 20px;
+    background: none;
+    border: none;
+    cursor: pointer;
+    padding: 0;
+    width: 20px;
+    height: 20px;
+}
+
+.call-modal-content .client-name {
+    font-family: 'Manrope', sans-serif;
+    font-weight: 700;
+    font-size: 24px;
+    line-height: 30px;
+    height: 30px;
+    color: #000000;
+    margin: 0 0 0 0;
+    width: 100%;
+    text-align: center;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.call-modal-content .last-reservation-date {
+    font-family: 'Manrope', sans-serif;
+    font-weight: 700;
+    font-size: 16px;
+    line-height: 100%;
+    letter-spacing: 0%;
+    color: #000000;
+    margin: 0 0 20px 0;
+    width: 100%;
+    text-align: left;
+}
+
+.call-modal-content .client-phone {
+    font-family: 'Manrope', sans-serif;
+    font-weight: 400;
+    font-size: 20px;
+    line-height: 100%;
+    letter-spacing: 0%;
+    color: #000000;
+    margin: 0 0 20px 0;
+    width: 100%;
+    text-align: left;
+}
+
+.call-actions {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-top: auto;
+}
+
+.call-button {
+    background: linear-gradient(270deg, #11998E 0%, #2CAB5C 100%);
+    color: white;
+    border: none;
+    width: 130px;
+    height: 40px;
+    border-radius: 30px;
+    font-family: 'Manrope', sans-serif;
+    font-weight: 600;
+    font-size: 16px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.call-button:hover {
+    opacity: 0.9;
+    transform: translateY(-1px);
+}
+
+.whatsapp-button {
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    background: linear-gradient(0deg, #FFFFFF, #FFFFFF), linear-gradient(270deg, #11998E 0%, #2CAB5C 100%);
+    border: none;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.2s ease;
+}
+
+.whatsapp-button:hover {
+    opacity: 0.9;
+    transform: translateY(-1px);
+}
+
+.whatsapp-button svg {
+    width: 40px;
+    height: 40px;
+}
+
+/* Status Menu */
+.status-menu {
+    position: fixed;
+    background: white;
+    border: 1px solid #D9D9D9;
+    border-radius: 8px;
+    box-shadow: 0px 4px 20px rgba(0, 0, 0, 0.15);
+    display: none;
+    z-index: 1500;
+    min-width: 150px;
+}
+
+.status-menu.show {
+    display: block;
+}
+
+.status-option {
+    padding: 10px 15px;
+    cursor: pointer;
+    border-bottom: 1px solid #F0F0F0;
+}
+
+.status-option:hover {
+    background: #F5F5F5;
+}
+
+.status-option:last-child {
+    border-bottom: none;
+}
+
+/* Выпадающие меню */
+.dropdown-menu {
+    position: fixed;
+    background: white;
+    border: 1px solid #D9D9D9;
+    border-radius: 8px;
+    box-shadow: 0px 4px 20px rgba(0, 0, 0, 0.15);
+    display: none;
+    z-index: 1500;
+    min-width: 150px;
+}
+
+.dropdown-menu.show {
+    display: block;
+}
+
+.dropdown-option {
+    padding: 10px 15px;
+    cursor: pointer;
+    border-bottom: 1px solid #F0F0F0;
+    font-family: 'Manrope', sans-serif;
+    font-size: 16px;
+}
+
+.dropdown-option:hover {
+    background: #F5F5F5;
+}
+
+.dropdown-option:last-child {
+    border-bottom: none;
+}
+
+.tag-placeholder { 
+    color: #CBCBCB;
+    font-size: 12px;
+    font-style: italic;
+    line-height: 1;
+    padding: 2px 0;
+}
+
+/* New Booking Modal Styles */
+.new-booking-modal {
+    display: none;
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.5);
+    z-index: 2000;
+    align-items: center;
+    justify-content: center;
+}
+
+.new-booking-modal-content {
+    position: relative;
+    width: 812px;
+    height: 421px;
+    background: #FFFFFF;
+    border: 1px solid #D9D9D9;
+    border-radius: 19.5px;
+    padding: 20px 40px 40px 40px;
+    box-sizing: border-box;
+}
+
+.new-booking-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 17px;
+    position: relative;
+}
+
+.new-booking-title {
+            font-family: 'Manrope';
+    font-style: normal;
+            font-weight: 700;
+            font-size: 30px;
+            line-height: 41px;
+    color: #000000;
+    margin: 0;
+}
+
+.new-booking-close {
+    width: 20px;
+    height: 20px;
+    cursor: pointer;
+    position: absolute;
+    top: 20px;
+    right: 20px;
+}
+
+.custom-status-dropdown {
+    position: relative;
+    width: 229px;
+}
+
+.status-button {
+    width: 229px;
+    height: 40px;
+    padding: 0 16px;
+    padding-right: 40px;
+    border-radius: 20px;
+    font-family: 'Manrope', sans-serif;
+    font-weight: 700;
+    font-size: 16px;
+    border: 1px solid #D9D9D9;
+    background: white;
+    color: #000000;
+    outline: none;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    text-align: center;
+}
+
+.status-text {
+    flex: 1;
+    text-align: center;
+}
+
+.status-arrow {
+    width: 16px;
+    height: 12px;
+    transition: transform 0.3s ease;
+}
+
+        .status-dropdown-menu {
+            position: absolute;
+            top: 100%;
+            left: 0;
+            width: 211px;
+            height: 320px;
+            background: white;
+            border: 1px solid #D9D9D9;
+            border-radius: 20px;
+            box-shadow: 0px 7px 30px rgba(0, 0, 0, 0.15);
+            z-index: 1000;
+            display: none !important;
+            margin-top: 5px;
+            overflow: hidden;
+            padding: 8px;
+            opacity: 0;
+            transform: translateY(-10px);
+            transition: all 0.3s ease;
+        }
+
+        /* Специальные стили для dropdown в модальном окне */
+        #customStatusDropdown {
+            position: absolute;
+            top: 100%;
+            left: 0;
+            width: 211px;
+            height: 320px;
+            background: white;
+            border: 1px solid #D9D9D9;
+            border-radius: 20px;
+            box-shadow: 0px 7px 30px rgba(0, 0, 0, 0.15);
+            z-index: 1000;
+            display: none;
+            margin-top: 5px;
+            overflow: hidden;
+            padding: 8px;
+            opacity: 0;
+            transform: translateY(-10px);
+            transition: all 0.3s ease;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        #customStatusDropdown.show {
+            display: flex !important;
+            opacity: 1;
+            transform: translateY(0);
+        }
+
+.status-option {
+    height: 40px;
+    padding: 0 16px;
+    cursor: pointer;
+    font-family: 'Manrope', sans-serif;
+    font-weight: 700;
+    font-size: 16px;
+    border-radius: 20px;
+    margin-bottom: 4px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+    transition: all 0.2s ease;
+}
+
+/* Простая табличка статусов */
+        #customStatusDropdown .status-option {
+            width: 100% !important;
+            margin: 0 !important;
+            margin-bottom: 4px !important;
+            display: block !important;
+            position: static !important;
+            float: none !important;
+            clear: both !important;
+            height: 40px !important;
+            padding: 0 16px !important;
+            border-radius: 20px !important;
+            font-size: 16px !important;
+            line-height: 40px !important;
+            text-align: center !important;
+            font-family: 'Manrope', sans-serif !important;
+            font-weight: 700 !important;
+            color: #000000 !important;
+            cursor: pointer !important;
+            transition: all 0.2s ease !important;
+            box-sizing: border-box !important;
+        }
+
+/* Цвета статусов */
+#customStatusDropdown .status-option:nth-child(1) { 
+    background: #FFF0BF !important;
+    border: 1px solid #DBC787 !important;
+}
+#customStatusDropdown .status-option:nth-child(2) { 
+    background: #D8F8E4 !important;
+    border: 1px solid #4CAF50 !important;
+}
+#customStatusDropdown .status-option:nth-child(3) { 
+    background: #FFBFBF !important;
+    border: 1px solid #F44336 !important;
+}
+#customStatusDropdown .status-option:nth-child(4) { 
+    background: #FFD59E !important;
+    border: 1px solid #FF9800 !important;
+}
+#customStatusDropdown .status-option:nth-child(5) { 
+    background: #C7F4FF !important;
+    border: 1px solid #2196F3 !important;
+}
+#customStatusDropdown .status-option:nth-child(6) { 
+    background: #E8D8F8 !important;
+    border: 1px solid #9C27B0 !important;
+}
+#customStatusDropdown .status-option:nth-child(7) { 
+    background: #FABEFF !important;
+    border: 1px solid #E91E63 !important;
+}
+#customStatusDropdown .status-option:nth-child(8) { 
+    background: #FFE0B2 !important;
+    border: 1px solid #FF5722 !important;
+}
+
+
+.status-option:last-child {
+    margin-bottom: 0;
+}
+
+/* Простые hover эффекты */
+#customStatusDropdown .status-option:hover {
+    opacity: 0.8 !important;
+    cursor: pointer !important;
+}
+
+/* Стили статусов */
+.status-dogovoreno {
+    background: #FFF0BF;
+    color: #000000;
+    border: 1px solid #DBC787;
+}
+
+.status-potvrdjeno {
+    background: #D8F8E4;
+    color: #000000;
+    border: 1px solid #4CAF50;
+}
+
+.status-otkazano {
+    background: #FFBFBF;
+    color: #000000;
+    border: 1px solid #F44336;
+}
+
+.status-nisu {
+    background: #FFD59E;
+    color: #000000;
+    border: 1px solid #FF9800;
+}
+
+.status-dosli {
+    background: #C7F4FF;
+    color: #000000;
+    border: 1px solid #2196F3;
+}
+
+.status-na-cekaju {
+    background: #E8D8F8;
+    color: #000000;
+    border: 1px solid #9C27B0;
+}
+
+.status-waitlist {
+    background: #FABEFF;
+    color: #000000;
+    border: 1px solid #E91E63;
+}
+
+/* Стили статусов как в SVG */
+.status-dogovoreno {
+    background: #FFF0BF;
+    color: #000000;
+    border: 1px solid #DBC787;
+}
+
+.status-potvrdjeno {
+    background: #D8F8E4;
+    color: #000000;
+}
+
+.status-otkazano {
+    background: #FFBFBF;
+    color: #000000;
+}
+
+.status-nisu {
+    background: #FFD59E;
+    color: #000000;
+}
+
+.status-dosli {
+    background: #C7F4FF;
+    color: #000000;
+}
+
+.form-textarea {
+    width: 220px;
+    height: 90px;
+    padding: 12px 16px;
+    border: 1px solid #D9D9D9;
+    border-radius: 40px;
+    font-family: 'Manrope', sans-serif;
+    font-size: 16px;
+    line-height: 50px;
+    letter-spacing: 0%;
+    box-sizing: border-box;
+    resize: vertical;
+}
+
+.form-textarea:focus {
+    outline: none;
+    border-color: #11998E;
+}
+
+.form-label {
+    font-family: 'Manrope', sans-serif;
+    font-style: normal;
+    font-weight: 400;
+    font-size: 16px;
+    line-height: 100%;
+    letter-spacing: 0%;
+    color: #000000;
+    min-width: 120px;
+    margin: 0;
+}
+
+.form-input {
+    flex: 1;
+    height: 40px;
+    padding: 0 16px;
+    border: 1px solid #D9D9D9;
+    border-radius: 40px;
+    font-family: 'Manrope', sans-serif;
+    font-size: 16px;
+    line-height: 100%;
+    letter-spacing: 0%;
+    box-sizing: border-box;
+}
+
+.status-option-row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+    margin-bottom: 5px;
+}
+
+
+.status-option-badge:hover {
+    transform: scale(1.05);
+}
+
+.status-option-badge.selected {
+    border: 1px solid #000000 !important;
+    box-shadow: 0 0 0 2px rgba(0, 0, 0, 0.1) !important;
+    outline: none !important;
+    transform: scale(1.05);
+}
+
+.status-potvrdjeno { background: #D8F8E4; }
+.form-row {
+    display: flex;
+    gap: 20px;
+    margin-bottom: 17px;
+    align-items: flex-start;
+}
+
+.form-field {
+    flex: 1;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    min-height: 40px;
+}
+
+.form-field.comment-field {
+    align-items: flex-start;
+    min-height: 90px;
+}
+
+.form-field.comment-field .form-label {
+    margin-top: 8px;
+}
+
+.form-field.time-field {
+    align-items: flex-start;
+}
+
+.form-field.time-field .form-label {
+    margin-top: 16px;
+}
+
+
+.date-time-field {
+    align-items: flex-start;
+}
+
+.date-time-container {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    width: 100%;
+}
+
+.date-field-row {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.time-field-row {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+
+.time-inputs {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.time-inputs .form-input {
+    width: 100px;
+}
+
+.time-inputs span {
+    font-family: 'Manrope', sans-serif;
+    font-size: 16px;
+    color: #000000;
+}
+
+.status-option-badge {
+    padding: 6px 12px;
+    border-radius: 20px;
+    font-family: 'Manrope', sans-serif;
+    font-style: normal;
+    font-weight: 700;
+    font-size: 14px;
+    line-height: 19px;
+    color: #000000;
+    cursor: pointer;
+    border: 1px solid transparent;
+    white-space: nowrap;
+    flex-shrink: 0;
+    height: 30px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: auto;
+    writing-mode: horizontal-tb;
+    text-orientation: mixed;
+    direction: ltr;
+}
+
+.form-input:focus {
+    outline: none;
+    border-color: #11998E;
+}
+
+.form-actions {
+    display: flex;
+    justify-content: center;
+    margin-top: 15px;
+}
+
+.save-btn {
+    width: 752px;
+    height: 40px;
+    background: linear-gradient(270deg, #11998E 0%, #2CAB5C 100%), #FFF0BF;
+    border-radius: 30px;
+    border: none;
+    font-family: 'Manrope', sans-serif;
+    font-style: normal;
+    font-weight: 400;
+    font-size: 16px;
+    line-height: 22px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+    color: #FFFFFF;
+    cursor: pointer;
+}
+
+.save-btn:hover {
+    opacity: 0.8;
+}
+</style>
+
+<script>
+let currentBookingId = null;
+let currentAddTagButton = null;
+
+// Обработка фокуса на полях с placeholder'ами
+function handleFieldFocus(element) {
+    if (element.textContent === '...') {
+        element.textContent = '';
+        element.style.color = '#000000';
+        element.style.fontWeight = '400';
+        
+        // Для поля даты устанавливаем стили Manrope
+        if (element.classList.contains('date-field')) {
+            element.style.fontFamily = 'Manrope, sans-serif';
+            element.style.fontSize = '16px';
+            element.style.lineHeight = '100%';
+            element.style.letterSpacing = '0%';
+        }
+    }
+}
+
+// Обработка потери фокуса полей с placeholder'ами
+function handleFieldBlur(element, fieldName) {
+    if (element.textContent.trim() === '') {
+        element.textContent = '...';
+        element.style.color = '#000000';
+        element.style.fontWeight = '700';
+        
+        // Для поля даты устанавливаем стили Manrope
+        if (fieldName === 'birth_date') {
+            element.style.fontFamily = 'Manrope, sans-serif';
+            element.style.fontSize = '16px';
+            element.style.lineHeight = '100%';
+            element.style.letterSpacing = '0%';
+        }
+    } else {
+        element.style.color = '#000000';
+        element.style.fontWeight = '700'; // Всегда жирный для поля даты
+        
+        // Для поля даты устанавливаем стили Manrope
+        if (fieldName === 'birth_date') {
+            element.style.fontFamily = 'Manrope, sans-serif';
+            element.style.fontSize = '16px';
+            element.style.lineHeight = '100%';
+            element.style.letterSpacing = '0%';
+        }
+        
+        // Специальная обработка для поля даты
+        if (fieldName === 'birth_date' && element.textContent !== '...') {
+            const originalValue = element.textContent;
+            formatDateOnBlur(element);
+            
+            // Если дата была изменена на '...' (невалидна), не сохраняем
+            if (element.textContent === '...') {
+                return;
+            }
+        }
+        
+        // Вызываем updateField для сохранения данных
+        updateField(fieldName, element.textContent, element);
+    }
+}
+
+// Обработка фокуса на поле номера телефона
+function handlePhoneFocus(element) {
+    if (element.textContent === '+__________________') {
+        element.textContent = '';
+        element.style.color = '#000000';
+    }
+}
+
+// Обработка потери фокуса поля номера телефона
+function handlePhoneBlur(element) {
+    if (element.textContent.trim() === '') {
+        element.textContent = '+__________________';
+        element.style.color = '#D9D9D9';
+    } else {
+        element.style.color = '#000000';
+    }
+}
+
+// Форматирование ввода даты
+function formatDateInput(element) {
+    const cursorPosition = getCursorPosition(element);
+    let value = element.textContent.replace(/\D/g, ''); // Убираем все нецифровые символы
+    
+    // Сохраняем позицию курсора относительно цифр
+    let digitPosition = 0;
+    for (let i = 0; i < cursorPosition && i < element.textContent.length; i++) {
+        if (/\d/.test(element.textContent[i])) {
+            digitPosition++;
+        }
+    }
+    
+    let formattedValue = '';
+    if (value.length >= 1) {
+        formattedValue = value.substring(0, 2);
+        if (value.length >= 3) {
+            formattedValue += '.' + value.substring(2, 4);
+            if (value.length >= 5) {
+                formattedValue += '.' + value.substring(4, 8);
+            }
+        }
+    }
+    
+    element.textContent = formattedValue;
+    
+    // Восстанавливаем позицию курсора
+    setCursorPosition(element, digitPosition);
+}
+
+// Получение позиции курсора
+function getCursorPosition(element) {
+    const selection = window.getSelection();
+    if (selection.rangeCount > 0) {
+        const range = selection.getRangeAt(0);
+        return range.startOffset;
+    }
+    return 0;
+}
+
+// Установка позиции курсора
+function setCursorPosition(element, position) {
+    const range = document.createRange();
+    const sel = window.getSelection();
+    
+    // Находим позицию в тексте, соответствующую позиции цифры
+    let textPosition = 0;
+    let digitCount = 0;
+    
+    for (let i = 0; i < element.textContent.length; i++) {
+        if (/\d/.test(element.textContent[i])) {
+            if (digitCount === position) {
+                textPosition = i;
+                break;
+            }
+            digitCount++;
+        }
+        textPosition = i + 1;
+    }
+    
+    range.setStart(element.firstChild, Math.min(textPosition, element.textContent.length));
+    range.collapse(true);
+    sel.removeAllRanges();
+    sel.addRange(range);
+}
+
+// Финальное форматирование даты при потере фокуса
+function formatDateOnBlur(element) {
+    let value = element.textContent.replace(/\D/g, ''); // Убираем все нецифровые символы
+    
+    // Проверяем, что у нас есть достаточно цифр для полной даты
+    if (value.length === 8) {
+        const day = value.substring(0, 2);
+        const month = value.substring(2, 4);
+        const year = value.substring(4, 8);
+        
+        // Проверяем валидность даты
+        const dayNum = parseInt(day);
+        const monthNum = parseInt(month);
+        const yearNum = parseInt(year);
+        
+        // Проверяем базовые ограничения
+        if (dayNum >= 1 && dayNum <= 31 && monthNum >= 1 && monthNum <= 12 && yearNum >= 1900 && yearNum <= 2100) {
+            const date = new Date(yearNum, monthNum - 1, dayNum);
+            // Проверяем, что дата действительно существует (например, 31.02 не существует)
+            if (date.getFullYear() == yearNum && date.getMonth() == monthNum - 1 && date.getDate() == dayNum) {
+                element.textContent = `${day}.${month}.${year}`;
+            } else {
+                // Если дата невалидна, показываем ошибку
+                alert('Неверная дата! Проверьте правильность ввода.');
+                element.textContent = '...';
+                element.style.color = '#000000';
+                element.style.fontWeight = '700';
+                return;
+            }
+        } else {
+            // Если значения выходят за допустимые пределы
+            alert('Неверная дата! День: 1-31, Месяц: 1-12, Год: 1900-2100');
+            element.textContent = '...';
+            element.style.color = '#000000';
+            element.style.fontWeight = '700';
+            return;
+        }
+    } else if (value.length >= 6) {
+        // Если не хватает цифр, дополняем нулями
+        const paddedValue = value.padEnd(8, '0');
+        const day = paddedValue.substring(0, 2);
+        const month = paddedValue.substring(2, 4);
+        const year = paddedValue.substring(4, 8);
+        
+        const dayNum = parseInt(day);
+        const monthNum = parseInt(month);
+        const yearNum = parseInt(year);
+        
+        // Проверяем валидность дополненной даты
+        if (dayNum >= 1 && dayNum <= 31 && monthNum >= 1 && monthNum <= 12 && yearNum >= 1900 && yearNum <= 2100) {
+            const date = new Date(yearNum, monthNum - 1, dayNum);
+            if (date.getFullYear() == yearNum && date.getMonth() == monthNum - 1 && date.getDate() == dayNum) {
+                element.textContent = `${day}.${month}.${year}`;
+            } else {
+                alert('Неверная дата! Проверьте правильность ввода.');
+                element.textContent = '...';
+                element.style.color = '#000000';
+                element.style.fontWeight = '700';
+                return;
+            }
+        } else {
+            alert('Неверная дата! День: 1-31, Месяц: 1-12, Год: 1900-2100');
+            element.textContent = '...';
+            element.style.color = '#000000';
+            element.style.fontWeight = '700';
+            return;
+        }
+    }
+}
+
+// Онлайн редактирование полей
+function updateField(fieldName, value, element) {
+    // console.log('🔥 updateField called with:', fieldName, value, element);
+    const contactId = {{ contact.id }};
+    
+    // Очищаем значение от лишних пробелов
+    value = value.trim();
+    
+    // Специальная обработка для номера телефона
+    if (fieldName === 'phone') {
+        if (value === '+__________________' || value === '') {
+            value = '';
+        }
+    }
+    
+    // Специальная обработка для даты рождения
+    if (fieldName === 'birth_date') {
+        if (value === '...' || value === '') {
+            value = '';
+        } else if (value.includes('.')) {
+            // Сохраняем оригинальный формат для отображения
+            const displayValue = value;
+            // Конвертируем дату из формата DD.MM.YYYY в YYYY-MM-DD для сервера
+            const parts = value.split('.');
+            if (parts.length === 3) {
+                const day = parts[0].padStart(2, '0');
+                const month = parts[1].padStart(2, '0');
+                const year = parts[2];
+                value = `${year}-${month}-${day}`;
+                // Сохраняем оригинальный формат для отображения
+                element.setAttribute('data-display-value', displayValue);
+            }
+        }
+    }
+    
+    // console.log('Updating field:', fieldName, 'with value:', value);
+    
+    fetch(`/api/contacts/${contactId}/update`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+        body: JSON.stringify({ 
+            [fieldName]: value 
+        })
+    })
+    .then(response => {
+        // console.log('Response status:', response.status);
+        return response.json();
+    })
+    .then(data => {
+        // console.log('Response data:', data);
+      if (data.success) {
+            // console.log('Field updated successfully:', fieldName, value);
+            // Обновляем отображение для contenteditable полей
+            if (element) {
+                // Для поля даты используем сохраненный формат отображения
+                if (fieldName === 'birth_date' && element.getAttribute('data-display-value')) {
+                    element.textContent = element.getAttribute('data-display-value');
+                    element.removeAttribute('data-display-value');
+                } else {
+                element.textContent = value;
+                }
+            }
+      } else {
+            console.error('Error updating field:', data.error);
+            alert('Ошибка при обновлении поля: ' + (data.error || 'Неизвестная ошибка'));
+      }
+    })
+    .catch(error => {
+      console.error('Error:', error);
+        alert('Ошибка соединения: ' + error);
+    });
+}
+
+// Функция для закрытия модального окна тегов
+function closeTagModal() {
+    const modal = document.getElementById('tagModal');
+    if (modal) {
+        modal.style.display = 'none';
+    }
+}
+
+// Функционал для тегов - ТОЧНАЯ КОПИЯ из таблицы клиентов
+(function() {
+    const modal = document.getElementById('tagModal');
+    const searchInput = document.getElementById('tagSearch');
+    const optionsContainer = document.getElementById('tagOptions');
+    let currentClientId = {{ contact.id }};
+    
+    // Популярные теги (только 3)
+    const popularTags = ['VIP', 'Stalni gost', 'Novi gost'];
+    
+    // Все существующие теги (загружаем из базы данных)
+    let allTags = new Set();
+    
+    // Загружаем все теги из базы данных
+    async function loadAllTags() {
+      try {
+        const response = await fetch('/api/tags/all');
+        const data = await response.json();
+        
+        if (data.success) {
+          allTags = new Set(data.tags);
+          // console.log('Loaded tags from database:', Array.from(allTags));
+        } else {
+          console.error('Failed to load tags:', data.error);
+          // Fallback: добавляем популярные теги
+          popularTags.forEach(tag => allTags.add(tag));
+        }
+      } catch (error) {
+        console.error('Error loading tags:', error);
+        // Fallback: добавляем популярные теги
+        popularTags.forEach(tag => allTags.add(tag));
+      }
+    }
+    
+    // Загружаем теги при инициализации
+    loadAllTags();
+    
+    // Обработчик клика на плюсик
+    document.addEventListener('click', function(e) {
+      // console.log('Click detected on:', e.target);
+      // console.log('Has add-tag-btn class:', e.target.classList.contains('add-tag-btn'));
+      
+      if (e.target.classList.contains('add-tag-btn')) {
+        // console.log('✅ Add tag button clicked!');
+        e.preventDefault();
+        e.stopPropagation(); // Предотвращаем всплытие события
+        currentClientId = e.target.getAttribute('data-client-id');
+        // console.log('Opening tag modal for client:', currentClientId);
+        showTagModal(e.target);
+      }
+    });
+    
+    // Показать модальное окно
+    function showTagModal(button) {
+      // console.log('showTagModal called');
+      // console.log('Modal element:', modal);
+      // console.log('Modal classes before:', modal.className);
+      
+      const rect = button.getBoundingClientRect();
+      const modalWidth = 260; // Ширина модалки (можно подстроить)
+      
+      // Центрируем модалку относительно кнопки плюс
+      const leftPosition = rect.left + (rect.width / 2) - (modalWidth / 2);
+      
+      modal.style.left = leftPosition + 'px';
+      modal.style.top = (rect.bottom + 10) + 'px'; // Под кнопкой с отступом 10px
+      modal.style.display = 'block'; // Убираем инлайн display: none
+      modal.classList.add('show');
+      
+      // console.log('Modal classes after:', modal.className);
+      // console.log('Modal display:', window.getComputedStyle(modal).display);
+      
+      searchInput.focus();
+      showPopularTags();
+    }
+    
+    // Показать популярные теги
+    function showPopularTags() {
+      optionsContainer.innerHTML = '';
+      
+      // Показываем популярные теги в одну строку с фоном как в таблице
+      popularTags.forEach(tag => {
+        const tagItem = document.createElement('div');
+        tagItem.className = 'tag-item';
+        tagItem.style.margin = '2px';
+        tagItem.style.cursor = 'pointer';
+        
+        const tagText = document.createElement('div');
+        tagText.className = 'tag-text';
+        tagText.textContent = tag;
+        tagItem.appendChild(tagText);
+        
+        tagItem.addEventListener('click', () => addTag(tag));
+        optionsContainer.appendChild(tagItem);
+      });
+    }
+    
+    // Поиск тегов
+    searchInput.addEventListener('input', function() {
+      const query = this.value.trim();
+      const queryLower = query.toLowerCase();
+      optionsContainer.innerHTML = '';
+      
+      if (query.length === 0) {
+        showPopularTags();
+        return;
+      }
+      
+      // Фильтруем существующие теги
+      const filteredTags = Array.from(allTags).filter(tag => 
+        tag.toLowerCase().includes(queryLower)
+      );
+      
+      if (filteredTags.length > 0) {
+        filteredTags.forEach(tag => {
+          const tagItem = document.createElement('div');
+          tagItem.className = 'tag-item';
+          tagItem.style.margin = '2px';
+          tagItem.style.cursor = 'pointer';
+          
+          const tagText = document.createElement('div');
+          tagText.className = 'tag-text';
+          tagText.textContent = tag;
+          tagItem.appendChild(tagText);
+          
+          tagItem.addEventListener('click', () => addTag(tag));
+          optionsContainer.appendChild(tagItem);
+        });
+      } else {
+        // Показываем элементы для создания нового тега прямо в контейнере опций
+        optionsContainer.innerHTML = '';
+        
+        const addNewTagContainer = document.createElement('div');
+        addNewTagContainer.className = 'add-new-tag-container';
+        
+        const addNewTagText = document.createElement('div');
+        addNewTagText.className = 'add-new-tag-text';
+        addNewTagText.textContent = 'Dodati tag';
+        
+        const addNewTagIcon = document.createElement('img');
+        addNewTagIcon.src = '/static/images/enter logo.png';
+        addNewTagIcon.alt = 'Enter';
+        addNewTagIcon.className = 'add-new-tag-icon';
+        
+        const newTagPreview = document.createElement('div');
+        newTagPreview.className = 'add-new-tag-preview';
+        newTagPreview.textContent = query;
+        
+        addNewTagContainer.appendChild(addNewTagText);
+        addNewTagContainer.appendChild(addNewTagIcon);
+        addNewTagContainer.appendChild(newTagPreview);
+        
+        optionsContainer.appendChild(addNewTagContainer);
+      }
+    });
+    
+    // Добавить тег
+    function addTag(tag) {
+      if (!currentClientId) {
+        console.error('currentClientId is not set!');
+        return;
+      }
+      
+      // AJAX запрос для сохранения тега
+      // console.log('Adding tag:', tag, 'to client:', currentClientId);
+      
+      fetch(`/clients/${currentClientId}/add-tag`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ tag: tag })
+      })
+      .then(response => {
+        // console.log('Response status:', response.status);
+        return response.json();
+      })
+      .then(data => {
+        // console.log('Response data:', data);
+        if (data.success) {
+          // Обновляем отображение тегов
+          const tagsContainer = document.querySelector('.client-tags-container');
+          
+          if (!tagsContainer) {
+            console.error('Tags container not found!');
+            return;
+          }
+          
+          // Проверяем, нет ли уже такого тега
+          const existingTags = Array.from(tagsContainer.querySelectorAll('.tag-text')).map(el => el.textContent);
+          if (!existingTags.includes(tag)) {
+            // Создаем новый тег
+            const tagItem = document.createElement('div');
+            tagItem.className = 'tag-item';
+            const tagText = document.createElement('div');
+            tagText.className = 'tag-text';
+            tagText.textContent = tag;
+            tagItem.appendChild(tagText);
+            
+            // Находим кнопку плюсик и добавляем тег перед ней
+            const addTagBtn = tagsContainer.querySelector('.add-tag-btn');
+            if (addTagBtn) {
+              tagsContainer.insertBefore(tagItem, addTagBtn);
+            } else {
+            tagsContainer.appendChild(tagItem);
+            }
+          }
+          
+          // Добавляем в общий список тегов
+          allTags.add(tag);
+          
+          hideModal();
+        } else {
+          alert('Ошибка при добавлении тега: ' + (data.error || 'Неизвестная ошибка'));
+        }
+      })
+      .catch(error => {
+        console.error('Error:', error);
+            alert('Ошибка при добавлении тега: ' + error.message);
+      });
+    }
+    
+    // Скрыть модальное окно
+    function hideModal() {
+      // console.log('hideModal called');
+      modal.classList.remove('show');
+      modal.style.display = 'none'; // Скрываем через инлайн-стиль
+      searchInput.value = '';
+      // console.log('Modal hidden, classes:', modal.className);
+      // НЕ сбрасываем currentClientId, так как он должен оставаться постоянным на странице клиента
+    }
+    
+    // Закрыть по клику вне модального окна
+    document.addEventListener('click', function(e) {
+      // Проверяем, что модалка открыта и клик не по модалке и не по кнопке открытия
+      if (modal.classList.contains('show') && 
+          !modal.contains(e.target) && 
+          !e.target.classList.contains('add-tag-btn')) {
+        // console.log('Closing tag modal - click outside');
+        hideModal();
+      }
+    });
+    
+    // Добавить тег по Enter
+    searchInput.addEventListener('keydown', function(e) {
+      if (e.key === 'Enter') {
+        const query = this.value.trim();
+            if (query) {
+          addTag(query);
+        }
+      }
+    });
+    
+    // Закрыть по Escape
+    document.addEventListener('keydown', function(e) {
+        if (e.key === 'Escape') {
+            hideModal();
+        }
+    });
+    
+})();
+
+// Status Menu Logic
+function toggleStatusMenu(statusBadge) {
+    const menu = document.getElementById('statusMenu');
+    const rect = statusBadge.getBoundingClientRect();
+    
+    // Get booking ID from the status badge
+    currentBookingId = statusBadge.dataset.bookingId;
+    
+    menu.style.left = rect.right + 'px';
+    menu.style.top = rect.top + 'px';
+    menu.classList.add('show');
+}
+
+function updateBookingStatus(newStatus) {
+    if (!currentBookingId) return;
+    
+    fetch(`/api/bookings/${currentBookingId}/status`, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ status: newStatus })
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            location.reload();
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+    });
+}
+
+// Call Modal Logic
+function showCallModal(name, phone, lastReservation) {
+    // Обрезаем имя если оно слишком длинное
+    const maxLength = 25; // Примерная максимальная длина для 380px ширины
+    let displayName = name;
+    if (name.length > maxLength) {
+        displayName = name.substring(0, maxLength - 3) + '...';
+    }
+    
+    document.getElementById('callClientName').textContent = displayName;
+    document.getElementById('callClientPhone').textContent = phone;
+    document.getElementById('callLastReservation').textContent = lastReservation || "Nema rezervacije";
+    document.getElementById('callModal').classList.add('show');
+}
+
+function closeCallModal() {
+    document.getElementById('callModal').classList.remove('show');
+}
+
+function makeCall() {
+    const phoneNumber = document.getElementById('callClientPhone').textContent;
+    window.location.href = `tel:${phoneNumber}`;
+    closeCallModal();
+}
+
+function openWhatsApp() {
+    const phoneNumber = document.getElementById('callClientPhone').textContent;
+    // Убираем все символы кроме цифр
+    const cleanPhone = phoneNumber.replace(/\D/g, '');
+    // Добавляем код страны если нужно
+    const whatsappPhone = cleanPhone.startsWith('381') ? cleanPhone : '381' + cleanPhone;
+    window.open(`https://wa.me/${whatsappPhone}`, '_blank');
+    closeCallModal();
+}
+
+// Выпадающие меню
+function toggleGenderDropdown() {
+    const dropdown = document.getElementById('genderDropdown');
+    const rect = event.currentTarget.getBoundingClientRect();
+    
+    dropdown.style.left = rect.left + 'px';
+    dropdown.style.top = (rect.bottom + 5) + 'px';
+    dropdown.classList.toggle('show');
+    
+    // Закрываем другие меню
+    document.getElementById('communicationDropdown').classList.remove('show');
+    document.getElementById('promoterDropdown').classList.remove('show');
+}
+
+function toggleCommunicationDropdown() {
+    const dropdown = document.getElementById('communicationDropdown');
+    const rect = event.currentTarget.getBoundingClientRect();
+    
+    dropdown.style.left = rect.left + 'px';
+    dropdown.style.top = (rect.bottom + 5) + 'px';
+    dropdown.classList.toggle('show');
+    
+    // Закрываем другие меню
+    document.getElementById('genderDropdown').classList.remove('show');
+    document.getElementById('promoterDropdown').classList.remove('show');
+}
+
+function togglePromoterDropdown() {
+    const dropdown = document.getElementById('promoterDropdown');
+    const rect = event.currentTarget.getBoundingClientRect();
+    
+    dropdown.style.left = rect.left + 'px';
+    dropdown.style.top = (rect.bottom + 5) + 'px';
+    dropdown.classList.toggle('show');
+    
+    // Закрываем другие меню
+    document.getElementById('genderDropdown').classList.remove('show');
+    document.getElementById('communicationDropdown').classList.remove('show');
+}
+
+function selectGender(value, event) {
+    const element = document.querySelector('.gender-value');
+    updateField('gender', value, element);
+    document.getElementById('genderDropdown').classList.remove('show');
+    if (event) event.stopPropagation();
+}
+
+function selectCommunication(value, event) {
+    // console.log('🔥 selectCommunication called with value:', value);
+    const element = document.querySelector('.communication-value');
+    // console.log('🔥 Found element:', element);
+    updateField('communication_method', value, element);
+    document.getElementById('communicationDropdown').classList.remove('show');
+    if (event) event.stopPropagation();
+}
+
+function selectPromoter(value, event) {
+    // console.log('🔥 selectPromoter called with value:', value);
+    const element = document.querySelector('.promoter-value');
+    // console.log('🔥 Found element:', element);
+    updateField('promoter_name', value, element);
+    document.getElementById('promoterDropdown').classList.remove('show');
+    if (event) event.stopPropagation();
+}
+
+// Функция для раскрытия деталей резервации
+function toggleReservationDetails(element) {
+    const reservationItem = element.closest('.reservation-item');
+    const details = reservationItem.querySelector('.reservation-details');
+    const arrow = element;
+    
+    if (details.style.display === 'none' || details.style.display === '') {
+        details.style.display = 'block';
+        reservationItem.classList.add('expanded');
+        arrow.style.transform = 'rotate(180deg)';
+    } else {
+        details.style.display = 'none';
+        reservationItem.classList.remove('expanded');
+        arrow.style.transform = 'rotate(0deg)';
+    }
+}
+
+// Функция для открытия выпадающего меню статусов
+function toggleStatusDropdown(element) {
+    const bookingId = element.getAttribute('data-booking-id');
+    const dropdown = document.getElementById('statusDropdown' + bookingId);
+    
+    // console.log('Toggle dropdown for booking:', bookingId);
+    // console.log('Dropdown element:', dropdown);
+    // console.log('Element clicked:', element);
+    
+    if (!dropdown) {
+        console.error('Dropdown not found for booking:', bookingId);
+        return;
+    }
+    
+    // Закрываем все другие выпадающие меню
+    document.querySelectorAll('.status-dropdown-menu').forEach(menu => {
+        if (menu.id !== 'statusDropdown' + bookingId) {
+            menu.style.display = 'none';
+            menu.classList.remove('show');
+        }
+    });
+    
+    // Переключаем текущее меню
+    if (dropdown.style.display === 'none' || dropdown.style.display === '' || !dropdown.classList.contains('show')) {
+        // Позиционируем меню рядом с элементом
+        const rect = element.getBoundingClientRect();
+        
+        // console.log('Element rect:', rect);
+        
+        // Устанавливаем позицию относительно элемента
+        dropdown.style.position = 'fixed';
+        dropdown.style.left = (rect.left - 200) + 'px'; // Слева от элемента
+        dropdown.style.top = rect.bottom + 'px'; // Под элементом
+        dropdown.style.right = 'auto';
+        dropdown.style.display = 'flex';
+        dropdown.classList.add('show');
+        
+        // console.log('Opening dropdown for booking:', bookingId);
+        // console.log('Dropdown position:', dropdown.style.left, dropdown.style.top);
+    } else {
+        dropdown.style.display = 'none';
+        dropdown.classList.remove('show');
+        // console.log('Closing dropdown for booking:', bookingId);
+    }
+}
+
+// Функция для выбора статуса резервации (из букинга)
+function selectReservationStatus(bookingId, status) {
+    // console.log('updateBookingStatus called with:', bookingId, status);
+    
+    fetch(`/bookings/${bookingId}/update-status`, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ status: status })
+    })
+    .then(response => {
+        // console.log('Response received:', response.status);
+        return response.json();
+    })
+    .then(data => {
+        // console.log('Response data:', data);
+        if (data.success) {
+            // console.log('Status updated successfully');
+            
+            // Обновляем отображение статуса
+            const statusElement = document.querySelector(`[data-booking-id="${bookingId}"]`);
+            if (statusElement) {
+                const statusTexts = {
+                    'dogovoreno': 'Dogovoreno',
+                    'potvrdjeno': 'Potvrđeno', 
+                    'otkazano': 'Otkazano',
+                    'nisu': 'Nisu došli',
+                    'na_cekaju': 'Na čekanju',
+                    'dosli': 'Došli',
+                    'waitlist': 'Waitlist'
+                };
+                
+                statusElement.textContent = statusTexts[status] || status;
+                statusElement.className = `reservation-status status-${status}`;
+            }
+            
+            // Закрываем выпадающее меню
+            const dropdown = document.getElementById('statusDropdown' + bookingId);
+            if (dropdown) {
+                dropdown.style.display = 'none';
+            }
+        } else {
+            console.error('Error updating status:', data.error);
+            alert('Ошибка при обновлении статуса: ' + (data.error || 'Неизвестная ошибка'));
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        alert('Ошибка соединения: ' + error);
+    });
+}
+
+// Close modals when clicking outside
+document.addEventListener('click', function(e) {
+    const tagModal = document.getElementById('tagModal');
+    const callModal = document.getElementById('callModal');
+    const statusMenu = document.getElementById('statusMenu');
+    const genderDropdown = document.getElementById('genderDropdown');
+    const communicationDropdown = document.getElementById('communicationDropdown');
+    const promoterDropdown = document.getElementById('promoterDropdown');
+    
+    if (!tagModal.contains(e.target) && !e.target.closest('.add-tag-btn')) {
+        closeTagModal();
+    }
+    
+    if (!callModal.contains(e.target) && !e.target.closest('.phone-icon')) {
+        closeCallModal();
+    }
+    
+    if (!statusMenu.contains(e.target) && !e.target.closest('.status-badge')) {
+        statusMenu.classList.remove('show');
+    }
+    
+    // Закрываем все выпадающие меню статусов (кроме customStatusDropdown)
+    if (!e.target.closest('.status-dropdown-menu') && !e.target.closest('.reservation-status') && !e.target.closest('#customStatusDropdown')) {
+        document.querySelectorAll('.status-dropdown-menu').forEach(menu => {
+            menu.style.display = 'none';
+            // console.log('Closing dropdown by clicking outside');
+        });
+    }
+    
+    if (!genderDropdown.contains(e.target) && !e.target.closest('.gender-selector')) {
+        genderDropdown.classList.remove('show');
+    }
+    
+    if (!communicationDropdown.contains(e.target) && !e.target.closest('.communication-selector')) {
+        communicationDropdown.classList.remove('show');
+    }
+    
+    if (!promoterDropdown.contains(e.target) && !e.target.closest('.promoter-selector')) {
+        promoterDropdown.classList.remove('show');
+    }
+});
+
+// Функции для модального окна новой резервации
+function openNewBookingModal() {
+    const modal = document.getElementById('newBookingModal');
+    modal.style.display = 'flex';
+    
+    // Устанавливаем сегодняшнюю дату по умолчанию
+    const today = new Date().toISOString().split('T')[0];
+    document.getElementById('bookingDate').value = today;
+    
+    // Выбираем статус "Dogovoreno" по умолчанию
+    selectStatus('dogovoreno');
+}
+
+function closeNewBookingModal() {
+    const modal = document.getElementById('newBookingModal');
+    modal.style.display = 'none';
+}
+
+let currentStatus = 'dogovoreno';
+
+function toggleCustomDropdown() {
+    // console.log('toggleCustomDropdown called'); // Отладка
+    const dropdown = document.getElementById('customStatusDropdown');
+    const arrow = document.querySelector('.status-arrow');
+    
+    // console.log('dropdown:', dropdown); // Отладка
+    // console.log('arrow:', arrow); // Отладка
+    
+    if (!dropdown) {
+        console.error('Dropdown not found!');
+        return;
+    }
+    
+    // console.log('Current dropdown classes:', dropdown.classList.toString());
+    // console.log('Current dropdown display:', dropdown.style.display);
+    
+    if (dropdown.classList.contains('show')) {
+        dropdown.classList.remove('show');
+        if (arrow) arrow.style.transform = 'rotate(0deg)';
+        // console.log('Dropdown closed');
+    } else {
+        dropdown.classList.add('show');
+        if (arrow) arrow.style.transform = 'rotate(180deg)';
+        // console.log('Dropdown opened');
+        // console.log('Dropdown classes after opening:', dropdown.classList.toString());
+    }
+}
+
+function selectCustomStatus(status, text) {
+    currentStatus = status;
+    // console.log('Status changed to:', status); // Отладка
+    
+    // Обновляем текст в кнопке
+    document.querySelector('.status-text').textContent = text;
+    
+    // Обновляем класс кнопки для цвета
+    const button = document.querySelector('.status-button');
+    button.className = `status-button status-${status}`;
+    
+    // Закрываем dropdown
+    toggleCustomDropdown();
+}
+
+// Функция для показа всплывающего окна тегов статусов для существующих резерваций
+function showStatusTagsPopupForExisting(statusElement) {
+    const popup = document.getElementById('statusTagsPopup');
+    
+    if (popup && statusElement) {
+        // Получаем позицию элемента статуса
+        const statusRect = statusElement.getBoundingClientRect();
+        
+        // Позиционируем всплывающее окно под элементом статуса
+        popup.style.top = (statusRect.bottom + 5) + 'px';
+        popup.style.left = (statusRect.left + (statusRect.width / 2) - 68) + 'px'; // 68 = половина ширины popup (136/2)
+        
+        // Сохраняем ID резервации для обновления
+        popup.setAttribute('data-booking-id', statusElement.getAttribute('data-booking-id'));
+        
+        // Показываем всплывающее окно
+        popup.style.display = 'flex';
+        
+        // console.log('Status tags popup shown for existing reservation:', statusElement.getAttribute('data-booking-id'));
+    }
+}
+
+// Функции для работы с всплывающим окном тегов статусов
+function showStatusTagsPopup() {
+    const popup = document.getElementById('statusTagsPopup');
+    const statusButton = document.querySelector('.status-button');
+    
+    if (popup && statusButton) {
+        // Получаем позицию кнопки статуса
+        const buttonRect = statusButton.getBoundingClientRect();
+        
+        // Позиционируем всплывающее окно под кнопкой
+        popup.style.top = (buttonRect.bottom + 5) + 'px';
+        popup.style.left = (buttonRect.left + (buttonRect.width / 2) - 68) + 'px'; // 68 = половина ширины popup (136/2)
+        
+        // Показываем всплывающее окно
+        popup.style.display = 'flex';
+        
+        // console.log('Status tags popup shown at position:', popup.style.top, popup.style.left);
+    }
+}
+
+function hideStatusTagsPopup() {
+    const popup = document.getElementById('statusTagsPopup');
+    if (popup) {
+        popup.style.display = 'none';
+        // console.log('Status tags popup hidden');
+    }
+}
+
+function selectStatusTag(status, text) {
+    // console.log('Selected status tag:', status, text);
+    
+    const popup = document.getElementById('statusTagsPopup');
+    const bookingId = popup ? popup.getAttribute('data-booking-id') : null;
+    
+    if (bookingId) {
+        // Обновляем статус существующей резервации
+        updateExistingReservationStatus(bookingId, status, text);
+    } else {
+        // Обновляем кнопку статуса в модальном окне новой резервации
+        updateNewReservationStatus(status, text);
+    }
+    
+    hideStatusTagsPopup();
+}
+
+function updateNewReservationStatus(status, text) {
+    // Обновляем кнопку статуса
+    const statusButton = document.querySelector('.status-button');
+    const statusText = document.querySelector('.status-text');
+    
+    if (statusButton && statusText) {
+        // Убираем все классы статусов
+        statusButton.classList.remove('status-dogovoreno', 'status-potvrdjeno', 'status-otkazano', 'status-nisu', 'status-dosli', 'status-na-cekaju', 'status-zavrseno');
+        
+        // Добавляем новый класс статуса
+        statusButton.classList.add('status-' + status);
+        
+        // Обновляем текст
+        statusText.textContent = text;
+        
+        // Обновляем currentStatus
+        currentStatus = status;
+        
+        // console.log('New reservation status updated to:', status, text);
+    }
+}
+
+function updateExistingReservationStatus(bookingId, status, text) {
+    // Находим элемент статуса резервации
+    const statusElement = document.querySelector(`[data-booking-id="${bookingId}"]`);
+    
+    if (statusElement) {
+        // Убираем все классы статусов
+        statusElement.classList.remove('status-dogovoreno', 'status-potvrdjeno', 'status-otkazano', 'status-nisu', 'status-dosli', 'status-na-cekaju', 'status-nacekanju', 'status-zavrseno');
+        
+        // Добавляем новый класс статуса
+        if (status === 'na_cekaju' || status === 'nacekanju') {
+            statusElement.classList.add('status-na-cekaju');
+        } else {
+            statusElement.classList.add('status-' + status);
+        }
+        
+        // Обновляем текст с правильным отображением
+        let displayText = text;
+        if (status === 'nisu') displayText = 'Nisu došli';
+        else if (status === 'na_cekaju' || status === 'nacekanju') displayText = 'Na čekanju';
+        else if (status === 'dogovoreno') displayText = 'Dogovoreno';
+        else if (status === 'potvrdjeno') displayText = 'Potvrđeno';
+        else if (status === 'otkazano') displayText = 'Otkazano';
+        else if (status === 'dosli') displayText = 'Došli';
+        else if (status === 'zavrseno') displayText = 'Završeno';
+        
+        statusElement.textContent = displayText;
+        
+        // console.log('Existing reservation status updated to:', status, displayText, 'for booking:', bookingId);
+        
+        // Отправляем запрос на сервер для обновления статуса
+        updateBookingStatusOnServer(bookingId, status);
+    }
+}
+
+function updateBookingStatusOnServer(bookingId, status) {
+    fetch(`/bookings/${bookingId}/update-status`, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ status: status })
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            // console.log('Booking status updated successfully on server');
+        } else {
+            console.error('Failed to update booking status on server');
+        }
+    })
+    .catch(error => {
+        console.error('Error updating booking status:', error);
+    });
+}
+
+// Закрытие всплывающего окна при клике вне его
+document.addEventListener('click', function(event) {
+    const popup = document.getElementById('statusTagsPopup');
+    if (popup && !popup.contains(event.target) && !event.target.closest('.status-button') && !event.target.closest('.reservation-status')) {
+        hideStatusTagsPopup();
+    }
+});
+
+// Закрытие dropdown при клике вне его
+document.addEventListener('click', function(event) {
+    const dropdown = document.querySelector('.custom-status-dropdown');
+    if (dropdown && !dropdown.contains(event.target)) {
+        const menu = document.getElementById('customStatusDropdown');
+        const arrow = document.querySelector('.status-arrow');
+        if (menu && menu.classList.contains('show')) {
+            menu.classList.remove('show');
+            if (arrow) arrow.style.transform = 'rotate(0deg)';
+        }
+    }
+    
+    // Закрываем dropdown меню статусов в существующих бронях
+    if (!event.target.closest('.reservation-status') && !event.target.closest('.status-dropdown-menu')) {
+        document.querySelectorAll('.status-dropdown-menu').forEach(menu => {
+            menu.style.display = 'none';
+            menu.classList.remove('show');
+        });
+    }
+});
+
+function getStatusColor(status) {
+    // Эта функция больше не нужна, но оставляем для совместимости
+    return '#FFF0BF';
+}
+
+function saveNewBooking() {
+    const contactId = {{ contact.id }};
+    const status = currentStatus;
+    const partySize = document.getElementById('partySize').value;
+    const tableType = document.getElementById('tableType').value;
+    const bookingDate = document.getElementById('bookingDate').value;
+    const specialOccasion = document.getElementById('specialOccasion').value;
+    const timeFrom = document.getElementById('timeFrom').value;
+    const timeTo = document.getElementById('timeTo').value;
+    const comment = document.getElementById('comment').value;
+    
+    const bookingData = {
+        contact_id: contactId,
+        status: status,
+        party_size: parseInt(partySize),
+        table_type: tableType,
+        date: bookingDate,
+        special_case_note: specialOccasion,
+        time_from: timeFrom,
+        time_to: timeTo,
+        comment: comment
+    };
+    
+    fetch('/api/bookings/new', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(bookingData)
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            alert('Rezervacija je uspešno kreirana!');
+            closeNewBookingModal();
+            // Перезагружаем страницу для обновления списка резерваций
+            location.reload();
+        } else {
+            alert('Greška pri kreiranju rezervacije: ' + (data.error || 'Nepoznata greška'));
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        alert('Greška pri kreiranju rezervacije: ' + error);
+    });
+}
+
+// Конвертация даты из ISO формата (YYYY-MM-DD) в формат отображения (DD.MM.YYYY)
+function convertDateFromISO(dateString) {
+    if (!dateString || dateString === '...' || dateString === '') {
+        return '...';
+    }
+    
+    // Проверяем, если дата уже в формате DD.MM.YYYY
+    if (dateString.includes('.') && dateString.length === 10) {
+        return dateString;
+    }
+    
+    // Конвертируем из YYYY-MM-DD в DD.MM.YYYY
+    if (dateString.includes('-') && dateString.length === 10) {
+        const parts = dateString.split('-');
+        if (parts.length === 3) {
+            const year = parts[0];
+            const month = parts[1];
+            const day = parts[2];
+            return `${day}.${month}.${year}`;
+        }
+    }
+    
+    return dateString;
+}
+
+// Инициализация цвета полей при загрузке страницы
+document.addEventListener('DOMContentLoaded', function() {
+    // Инициализация поля номера телефона
+    const phoneField = document.querySelector('.phone-number');
+    if (phoneField && phoneField.textContent === '+__________________') {
+        phoneField.style.color = '#D9D9D9';
+    }
+    
+    // Инициализация полей с placeholder'ами '...'
+    const fieldsWithPlaceholders = document.querySelectorAll('.value[contenteditable="true"]');
+    fieldsWithPlaceholders.forEach(field => {
+        if (field.textContent === '...') {
+            field.style.color = '#000000';
+            field.style.fontWeight = '700';
+        }
+    });
+    
+    // Инициализация цвета кнопки статуса
+    const statusButton = document.querySelector('.status-button');
+    const dropdownMenu = document.getElementById('customStatusDropdown');
+    
+    // console.log('Status button found:', statusButton); // Отладка
+    // console.log('Dropdown menu found:', dropdownMenu); // Отладка
+    
+    if (statusButton) {
+        statusButton.className = `status-button status-${currentStatus}`;
+        // console.log('Status button initialized with class:', statusButton.className);
+    }
+    
+    if (dropdownMenu) {
+        // console.log('Dropdown menu initialized');
+    }
+    
+    // Специальная инициализация для поля даты рождения
+    const birthDateField = document.querySelector('.date-field');
+    if (birthDateField) {
+        const currentValue = birthDateField.textContent;
+        const convertedValue = convertDateFromISO(currentValue);
+        birthDateField.textContent = convertedValue;
+
+        // Устанавливаем стили Manrope и жирный шрифт
+        birthDateField.style.fontFamily = 'Manrope, sans-serif';
+        birthDateField.style.fontWeight = '700';
+        birthDateField.style.fontSize = '16px';
+        birthDateField.style.lineHeight = '100%';
+        birthDateField.style.letterSpacing = '0%';
+        birthDateField.style.color = '#000000';
+    }
+});
+
+// Mobile functionality
+function toggleMobileSearch() {
+  const modal = document.getElementById('mobileSearchModal');
+  if (modal.style.display === 'none' || modal.style.display === '') {
+    modal.style.display = 'block';
+  } else {
+    modal.style.display = 'none';
+  }
+}
+
+function toggleMobileSidebar() {
+  const sidebar = document.getElementById('mobileSidebar');
+  const overlay = document.getElementById('mobileSidebarOverlay');
+  
+  sidebar.classList.add('open');
+  overlay.classList.add('show');
+}
+
+function closeMobileSidebar() {
+  const sidebar = document.getElementById('mobileSidebar');
+  const overlay = document.getElementById('mobileSidebarOverlay');
+  
+  sidebar.classList.remove('open');
+  overlay.classList.remove('show');
+}
+
+// Close mobile search modal when clicking outside
+document.addEventListener('click', function(e) {
+  const modal = document.getElementById('mobileSearchModal');
+  const searchBtn = document.querySelector('.mobile-search-btn');
+  const searchResults = document.getElementById('search-results');
+  
+  // Проверяем, что клик не по модальному окну, кнопке поиска или результатам поиска
+  if (modal && modal.style.display === 'block' && 
+      !modal.contains(e.target) && 
+      !searchBtn.contains(e.target) && 
+      !searchResults.contains(e.target)) {
+    modal.style.display = 'none';
+    searchResults.style.display = 'none';
+  }
+});
+</script>
+
+<!-- New Booking Modal -->
+<div id="newBookingModal" class="new-booking-modal">
+    <div class="new-booking-modal-content">
+        <div class="new-booking-header">
+            <h2 class="new-booking-title">Nova rezervacija</h2>
+            <img src="/static/images/krest.png" alt="Close" class="new-booking-close" onclick="closeNewBookingModal()">
+    </div>
+        
+        <div class="new-booking-form">
+            <!-- Form Fields -->
+            <div class="form-row">
+                <div class="form-field">
+                    <label class="form-label">Status:</label>
+                    <div class="custom-status-dropdown">
+                        <div class="status-button status-dogovoreno" onclick="showStatusTagsPopup()" style="cursor: pointer;">
+                            <span class="status-text">Dogovoreno</span>
+                            <img src="/static/images/strelka vniz.png" alt="arrow" class="status-arrow">
+                        </div>
+                    </div>
+    </div>
+                <div class="form-field">
+                    <label class="form-label">Broj osoba:</label>
+                    <input type="number" class="form-input" id="partySize" min="1" value="1">
+    </div>
+        </div>
+            
+            <div class="form-row">
+                <div class="form-field">
+                    <label class="form-label">Ime i prezime:</label>
+                    <input type="text" class="form-input" id="clientName" value="{{ contact.first_name or '' }} {{ contact.last_name or '' }}">
+      </div>
+                <div class="form-field">
+                    <label class="form-label">Tip stola:</label>
+                    <input type="text" class="form-input" id="tableType" placeholder="...">
+    </div>
+            </div>
+            
+            <div class="form-row">
+                <div class="form-field">
+                    <label class="form-label">Telefon:</label>
+                    <input type="text" class="form-input" id="clientPhone" value="{{ contact.phone or '' }}">
+                </div>
+                <div class="form-field">
+                    <label class="form-label">Poseban povod:</label>
+                    <input type="text" class="form-input" id="specialOccasion" placeholder="...">
+  </div>
+</div>
+
+            <div class="form-row">
+                <div class="form-field date-time-field">
+                    <div class="date-time-container">
+                        <div class="date-field-row">
+                            <label class="form-label">Datum:</label>
+                            <input type="date" class="form-input" id="bookingDate">
+                        </div>
+                        <div class="time-field-row">
+                    <label class="form-label">Vreme:</label>
+                    <div class="time-inputs">
+                        <input type="time" class="form-input" id="timeFrom" placeholder="--:--">
+                        <span>--</span>
+                        <input type="time" class="form-input" id="timeTo" placeholder="--:--">
+                    </div>
+                </div>
+                    </div>
+                </div>
+                <div class="form-field comment-field">
+                    <label class="form-label">Komentar:</label>
+                    <textarea class="form-textarea" id="comment" placeholder="..." rows="2"></textarea>
+                </div>
+            </div>
+            
+            <!-- Action Button -->
+            <div class="form-actions">
+                <button class="save-btn" onclick="saveNewBooking()">Sačuvati</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+// Поиск клиентов в client_detail
+document.addEventListener('DOMContentLoaded', function() {
+    const searchBox = document.querySelector('.search-box'); // Используем существующий поиск
+    const searchResults = document.getElementById('search-results');
+    
+    // Данные клиентов из сервера
+    const clientsData = [
+        {% for c in all_contacts %}
+        {
+            id: {{ c.id }},
+            firstName: "{{ c.first_name or '' }}",
+            lastName: "{{ c.last_name or '' }}",
+            phone: "{{ c.phone or '' }}",
+            lastBookingDate: "{{ all_client_stats[c.id].last_visit_str if c.id in all_client_stats and all_client_stats[c.id].last_visit_str else '' }}",
+            lastBookingTime: "",
+            lastBookingStatus: "{{ all_client_stats[c.id].last_booking_status if c.id in all_client_stats and all_client_stats[c.id].last_booking_status else '' }}",
+            visitsCount: {{ all_client_stats[c.id].visits_confirmed if c.id in all_client_stats else 0 }},
+            averageSpending: {{ all_client_stats[c.id].avg_spend if c.id in all_client_stats and all_client_stats[c.id].avg_spend is not none else 0 }}
+        }{% if not loop.last %},{% endif %}
+        {% endfor %}
+    ];
+
+    // Функция поиска
+    function searchClients(query) {
+        if (!query || query.trim().length < 2) {
+            searchResults.style.display = 'none';
+            return;
+        }
+
+        const searchTerm = query.toLowerCase().trim();
+        const results = clientsData.filter(client => {
+            const fullName = `${client.firstName} ${client.lastName}`.toLowerCase();
+            const phone = client.phone.toLowerCase();
+            
+            return fullName.includes(searchTerm) || 
+                   phone.includes(searchTerm) ||
+                   client.firstName.toLowerCase().includes(searchTerm) ||
+                   client.lastName.toLowerCase().includes(searchTerm);
+        });
+
+        displaySearchResults(results);
+    }
+
+    // Функция отображения результатов
+    function displaySearchResults(results) {
+        const resultsContent = document.querySelector('.search-results-content');
+        resultsContent.innerHTML = '';
+
+        if (results.length === 0) {
+            resultsContent.innerHTML = '<div style="padding: 20px; text-align: center; color: #6b7280; font-family: \'Manrope\', sans-serif; font-size: 14px;">Nema rezultata pretrage</div>';
+        } else {
+            results.forEach(client => {
+                const resultItem = createSearchResultItem(client);
+                resultsContent.appendChild(resultItem);
+            });
+        }
+
+        searchResults.style.display = 'block';
+    }
+
+    // Функция создания элемента результата
+    function createSearchResultItem(client) {
+        const item = document.createElement('div');
+        item.className = 'search-result-item';
+        item.onclick = () => openClientDetail(client.id);
+
+        const statusText = getStatusText(client.lastBookingStatus);
+        const statusClass = getStatusClass(client.lastBookingStatus);
+
+        const lastBookingInfo = client.lastBookingDate ? 
+            `<div class="search-result-date">${client.lastBookingDate}</div>
+             ${client.lastBookingStatus ? `<div class="search-result-status ${statusClass}">${statusText}</div>` : ''}` :
+            '<div class="search-result-date" style="color: #9ca3af; font-style: italic;">Nema rezervacije</div>';
+
+        const phoneInfo = client.phone ? 
+            `<div class="search-result-phone">${client.phone}</div>` :
+            '<div class="search-result-phone" style="color: #9ca3af; font-style: italic;">Nema telefona</div>';
+
+        item.innerHTML = `
+            <div class="search-result-main">
+                <div class="search-result-name">${client.firstName} ${client.lastName}</div>
+                ${phoneInfo}
+                <div class="search-result-last-booking">
+                    ${lastBookingInfo}
+                </div>
+            </div>
+        `;
+
+        return item;
+    }
+
+    // Функция получения текста статуса
+    function getStatusText(status) {
+        const statusMap = {
+            'dogovoreno': 'Dogovoreno',
+            'na_cekaju': 'Na čekanju',
+            'nacekanju': 'Na čekanju',
+            'potvrdjeno': 'Potvrđeno',
+            'otkazano': 'Otkazano',
+            'nisu': 'Nisu došli',
+            'dosli': 'Došli'
+        };
+        return statusMap[status] || status;
+    }
+
+    // Функция получения CSS класса статуса
+    function getStatusClass(status) {
+        const classMap = {
+            'dogovoreno': 'dogovoreno',
+            'na_cekaju': 'na-cekaju',
+            'nacekanju': 'na-cekaju',
+            'potvrdjeno': 'potvrdjeno',
+            'otkazano': 'otkazano',
+            'nisu': 'nisu-dosli',
+            'dosli': 'dosli'
+        };
+        return classMap[status] || '';
+    }
+
+    // Функция открытия карточки клиента
+    function openClientDetail(clientId) {
+        window.location.href = `/clients/${clientId}`;
+    }
+
+    // Обработчик ввода в поле поиска
+    searchBox.addEventListener('input', function() {
+        searchClients(this.value);
+    });
+
+    // Обработчик очистки поиска
+    searchBox.addEventListener('blur', function() {
+        if (!this.value.trim()) {
+            setTimeout(() => {
+                if (!this.value.trim()) {
+                    searchResults.style.display = 'none';
+                }
+            }, 200);
+        }
+    });
+
+    // Mobile search
+    const mobileSearchInput = document.getElementById('mobileSearchInput');
+    if (mobileSearchInput) {
+      mobileSearchInput.addEventListener('input', function() {
+        searchClients(this.value);
+      });
+    }
+});
+</script>
+
+{% endblock %}
