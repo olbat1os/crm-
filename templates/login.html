@@ -1,0 +1,516 @@
+{% extends 'login_page_base.html' %}
+{% block content %}
+<style>
+  /* Версия стилей: v2.0 - мобильная адаптация */
+  /* Canvas matches Frame 1 measurements - now responsive */
+  .login-canvas { 
+    position: relative; 
+    width: 100vw; 
+    height: 100vh; 
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  
+  /* Logo block */
+  .logo-wrap { position: absolute; width: 550px; height: 122px; left: calc(50% - 550px/2); top: 159px; display: flex; align-items: center; justify-content: center; pointer-events: auto; }
+  .logo-wrap a { transition: opacity 0.3s ease; }
+  .logo-wrap a:hover { opacity: 0.8; }
+  .logo-img { width: 550px; height: 122px; object-fit: contain; transition: transform 0.3s ease; }
+  .logo-img:hover { transform: scale(1.05); }
+  /* Username group */
+  .u-rect { position: absolute; width: 480px; height: 50px; left: calc(50% - 480px/2); top: 362px; border: 1px solid #A8FFE9; border-radius: 120px; background: transparent; }
+  .u-label-top { position: absolute; width: 86px; height: 25px; left: calc(50% - 86px/2 - 197px); top: 326px; font-weight: 300; font-size: 18px; line-height: 25px; display: flex; align-items: center; color: #FFFFFF; }
+  /* Password group */
+  .p-rect { position: absolute; width: 480px; height: 50px; left: calc(50% - 480px/2); top: 468px; border: 1px solid #A8FFE9; border-radius: 120px; background: transparent; }
+  .p-label-top { position: absolute; width: 81px; height: 25px; left: calc(50% - 81px/2 - 199.5px); top: 432px; font-weight: 300; font-size: 18px; line-height: 25px; display: flex; align-items: center; color: #FFFFFF; }
+  
+  /* ПК версия - элементы привязаны друг к другу */
+  @media (min-width: 1200px) {
+    .logo-wrap { 
+      width: 550px; 
+      height: 122px; 
+      left: calc(50% - 550px/2); 
+      top: calc(50vh - 250px); 
+    }
+    .logo-img { 
+      width: 550px; 
+      height: 122px; 
+    }
+    .u-rect, .p-rect { 
+      width: 480px; 
+      left: calc(50% - 480px/2); 
+    }
+    .u-rect { top: calc(50vh - 80px); }
+    .p-rect { top: calc(50vh + 20px); }
+    .u-label-top { 
+      left: calc(50% - 86px/2 - 197px); 
+      top: calc(50vh - 116px); 
+    }
+    .p-label-top { 
+      left: calc(50% - 81px/2 - 199.5px); 
+      top: calc(50vh - 16px); 
+    }
+    .input-native { 
+      left: calc(50% - 480px/2 + 20px); 
+      width: 440px; 
+    }
+    .input-username { top: calc(50vh - 80px) !important; }
+    .input-password { top: calc(50vh + 20px) !important; }
+    .btn-rect { 
+      width: 480px; 
+      left: calc(50% - 480px/2); 
+      top: calc(50vh + 90px) !important; 
+    }
+    .btn-text { 
+      width: 480px; 
+      left: calc(50% - 480px/2); 
+      top: calc(50vh + 106px) !important; 
+    }
+    .signup { 
+      top: calc(50vh + 170px) !important; 
+    }
+    .error-message {
+      left: calc(50% - 480px/2);
+      width: 480px;
+      top: calc(50vh - 130px);
+    }
+  }
+  
+  /* Большие экраны - фиксированные размеры */
+  @media (min-width: 1400px) {
+    .logo-wrap { 
+      width: 550px; 
+      height: 122px; 
+      left: calc(50% - 550px/2); 
+      top: calc(50vh - 250px); 
+    }
+    .logo-img { 
+      width: 550px; 
+      height: 122px; 
+    }
+    .u-rect, .p-rect { 
+      width: 480px; 
+      left: calc(50% - 480px/2); 
+    }
+    .u-rect { top: calc(50vh - 80px); }
+    .p-rect { top: calc(50vh + 20px); }
+    .u-label-top { 
+      left: calc(50% - 86px/2 - 197px); 
+      top: calc(50vh - 116px); 
+    }
+    .p-label-top { 
+      left: calc(50% - 81px/2 - 199.5px); 
+      top: calc(50vh - 16px); 
+    }
+    .input-native { 
+      left: calc(50% - 480px/2 + 20px); 
+      width: 440px; 
+    }
+    .input-username { top: calc(50vh - 80px) !important; }
+    .input-password { top: calc(50vh + 20px) !important; }
+    .btn-rect { 
+      width: 480px; 
+      left: calc(50% - 480px/2); 
+      top: calc(50vh + 90px) !important; 
+    }
+    .btn-text { 
+      width: 480px; 
+      left: calc(50% - 480px/2); 
+      top: calc(50vh + 106px) !important; 
+    }
+    .signup { 
+      top: calc(50vh + 170px) !important; 
+    }
+    .error-message {
+      left: calc(50% - 480px/2);
+      width: 480px;
+      top: calc(50vh - 130px);
+    }
+  }
+  
+  /* Очень большие экраны - ограничение размеров */
+  @media (min-width: 2000px) {
+    .logo-wrap { 
+      width: 550px; 
+      height: 122px; 
+      left: calc(50% - 550px/2); 
+      top: calc(50vh - 250px); 
+    }
+    .logo-img { 
+      width: 550px; 
+      height: 122px; 
+    }
+    .u-rect, .p-rect { 
+      width: 480px; 
+      left: calc(50% - 480px/2); 
+    }
+    .u-rect { top: calc(50vh - 80px); }
+    .p-rect { top: calc(50vh + 20px); }
+    .u-label-top { 
+      left: calc(50% - 86px/2 - 197px); 
+      top: calc(50vh - 116px); 
+    }
+    .p-label-top { 
+      left: calc(50% - 81px/2 - 199.5px); 
+      top: calc(50vh - 16px); 
+    }
+    .input-native { 
+      left: calc(50% - 480px/2 + 20px); 
+      width: 440px; 
+    }
+    .input-username { top: calc(50vh - 80px) !important; }
+    .input-password { top: calc(50vh + 20px) !important; }
+    .btn-rect { 
+      width: 480px; 
+      left: calc(50% - 480px/2); 
+      top: calc(50vh + 90px) !important; 
+    }
+    .btn-text { 
+      width: 480px; 
+      left: calc(50% - 480px/2); 
+      top: calc(50vh + 106px) !important; 
+    }
+    .signup { 
+      top: calc(50vh + 170px) !important; 
+    }
+    .error-message {
+      left: calc(50% - 480px/2);
+      width: 480px;
+      top: calc(50vh - 130px);
+    }
+  }
+  
+  
+  /* Inputs */
+  .input-native { 
+    position: absolute; 
+    left: calc(50% - 480px/2 + 20px); 
+    width: 440px; 
+    height: 50px; 
+    background: transparent !important; 
+    border: none; 
+    outline: none; 
+    color: #FFFFFF; 
+    font-size: 18px; 
+    line-height: 25px; 
+    caret-color: #FFFFFF; 
+    font-weight: 300;
+  }
+  
+  /* Исправляем автозаполнение */
+  input:-webkit-autofill,
+  input:-webkit-autofill:hover,
+  input:-webkit-autofill:focus,
+  input:-webkit-autofill:active {
+    -webkit-box-shadow: 0 0 0 1000px transparent inset !important;
+    -webkit-text-fill-color: #FFFFFF !important;
+    background-color: transparent !important;
+    background: transparent !important;
+    font-size: 18px !important;
+    font-weight: 300 !important;
+    line-height: 25px !important;
+    transition: background-color 5000s ease-in-out 0s;
+  }
+  
+  /* Дополнительно для всех состояний input */
+  .input-native {
+    font-size: 18px !important;
+    font-weight: 300 !important;
+    line-height: 25px !important;
+  }
+  
+  .input-native:focus {
+    font-size: 18px !important;
+    font-weight: 300 !important;
+    line-height: 25px !important;
+  }
+  
+  .input-native:not(:focus) {
+    font-size: 18px !important;
+    font-weight: 300 !important;
+    line-height: 25px !important;
+  }
+  
+  .input-native::-ms-reveal { filter: invert(1); }
+  .input-native::selection { background: rgba(255,255,255,0.25); }
+  .input-username { top: 362px; }
+  .input-password { top: 468px; }
+  ::placeholder { color: rgba(255,255,255,0.6); }
+  
+  /* Кнопка */
+  .btn-rect { 
+    position: absolute; 
+    width: 480px; 
+    height: 60px; 
+    left: calc(50% - 480px/2); 
+    top: 538px; 
+    background: #FFFFFF; 
+    border: none;
+    border-radius: 120px; 
+    display: flex; 
+    align-items: center; 
+    justify-content: center; 
+    cursor: pointer;
+    outline: none;
+    box-shadow: none;
+  }
+  
+  .btn-rect:hover {
+    background: #f0f0f0;
+  }
+  
+  .btn-rect:focus {
+    outline: none;
+    box-shadow: none;
+  }
+  
+  .btn-text { 
+    position: absolute; 
+    width: 480px; 
+    height: 28.29px; 
+    left: calc(50% - 480px/2); 
+    top: 554.29px; 
+    font-weight: 300; 
+    font-size: 18px; 
+    line-height: 25px; 
+    display: flex; 
+    align-items: center; 
+    justify-content: center; 
+    color: #000000; 
+    pointer-events: none;
+  }
+  /* Sign-up link */
+  .signup { position: absolute; width: 59px; height: 22px; left: calc(50% - 59px/2 - 0.5px); top: 618px; font-weight: 300; font-size: 16px; line-height: 22px; display: flex; align-items: center; text-align: center; text-decoration: underline; color: #FFFFFF; }
+  
+  
+  /* Мобильная адаптация */
+  @media (max-width: 768px) {
+    /* Логотип */
+    .login-canvas .logo-wrap { 
+      width: 320px !important; 
+      height: 71px !important; 
+      left: calc(50% - 320px/2) !important; 
+      top: 151px !important; 
+    }
+    .login-canvas .logo-img { 
+      width: 320px !important; 
+      height: 71px !important; 
+    }
+    
+    /* Поля ввода */
+    .login-canvas .u-rect, .login-canvas .p-rect { 
+      width: calc(100% - 40px) !important; 
+      left: 20px !important; 
+    }
+    .login-canvas .u-rect { top: 262px !important; }
+    .login-canvas .p-rect { top: 341px !important; }
+    
+    /* Лейблы */
+    .login-canvas .u-label-top { 
+      width: 86px !important; 
+      left: 20px !important; 
+      top: 232px !important; 
+      font-size: 16px !important; 
+    }
+    .login-canvas .p-label-top { 
+      width: 81px !important; 
+      left: 20px !important; 
+      top: 311px !important; 
+      font-size: 16px !important; 
+    }
+    
+    /* Инпуты */
+    .login-canvas .input-native { 
+      left: 40px !important; 
+      width: calc(100% - 80px) !important; 
+      font-size: 16px !important; 
+    }
+    .login-canvas .input-username { top: 262px !important; }
+    .login-canvas .input-password { top: 341px !important; }
+    
+    /* Кнопка */
+    .login-canvas .btn-rect { 
+      width: calc(100% - 40px) !important; 
+      left: 20px !important; 
+      top: 430px !important; 
+      height: 50px !important; 
+    }
+    .login-canvas .btn-text { 
+      width: calc(100% - 40px) !important; 
+      left: 20px !important; 
+      top: 445px !important; 
+      font-size: 16px !important; 
+    }
+    
+    /* Ссылка */
+    .login-canvas .signup { 
+      width: 59px !important; 
+      left: calc(50% - 59px/2) !important; 
+      top: 490px !important; 
+      font-size: 14px !important; 
+    }
+    
+    /* Ошибка */
+    .error-message {
+      left: calc(50% - 320px/2) !important;
+      width: 320px !important;
+      top: 200px !important;
+      font-size: 12px !important;
+    }
+  }
+  
+  /* Адаптация для очень маленьких экранов */
+  @media (max-width: 480px) {
+    .login-canvas .logo-wrap {
+      width: 100% !important;
+      height: 210px !important;
+      left: 0 !important;
+      top: 60px !important;
+      padding: 0 20px !important;
+      box-sizing: border-box !important;
+    }
+    .login-canvas .logo-img { 
+      width: 100% !important; 
+      height: 210px !important; 
+    }
+    
+    .u-rect, .p-rect { 
+      width: 280px; 
+      left: calc(50% - 280px/2); 
+    }
+    .u-rect { top: 180px; }
+    .p-rect { top: 250px; }
+    
+    .u-label-top { 
+      left: calc(50% - 86px/2 - 97px); 
+      top: 150px; 
+      font-size: 14px; 
+    }
+    .p-label-top { 
+      left: calc(50% - 81px/2 - 99.5px); 
+      top: 220px; 
+      font-size: 14px; 
+    }
+    
+    .input-native { 
+      left: calc(50% - 280px/2 + 20px); 
+      width: 240px; 
+      font-size: 14px; 
+    }
+    .input-username { top: 180px; }
+    .input-password { top: 250px; }
+    
+    .btn-rect { 
+      width: 280px; 
+      left: calc(50% - 280px/2); 
+      top: 320px; 
+      height: 45px; 
+    }
+    .btn-text { 
+      width: 280px; 
+      left: calc(50% - 280px/2); 
+      top: 332px; 
+      font-size: 14px; 
+    }
+    
+    .signup { 
+      top: 380px; 
+      font-size: 12px; 
+    }
+    
+    .error-message {
+      left: calc(50% - 280px/2) !important;
+      width: 280px !important;
+      top: 120px !important;
+      font-size: 11px !important;
+    }
+  }
+
+  /* Стили для error-message с анимацией - вверху страницы */
+  .error-message {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    width: 100%;
+    z-index: 9999;
+    transition: all 0.3s ease-in-out;
+    opacity: 0;
+    transform: translateY(-100%);
+    pointer-events: auto;
+    cursor: pointer;
+    margin: 0;
+    border-radius: 0;
+    box-shadow: 0 4px 12px rgba(220,53,69,0.3);
+  }
+</style>
+
+<div class="login-canvas">
+  <!-- Logo -->
+  <div class="logo-wrap">
+    <a href="/" style="cursor: pointer; display: inline-block;">
+      <img src="/static/images/logo_login.svg.png" alt="LOVACRM" class="logo-img" style="cursor: pointer;" />
+    </a>
+  </div>
+
+  <!-- Username block -->
+  <div class="u-rect"></div>
+  <div class="u-label-top">Username</div>
+
+  <!-- Password block -->
+  <div class="p-rect"></div>
+  <div class="p-label-top">Password</div>
+
+  {% if error %}
+    <div class="error-message" style="color:#ffffff; font-size:14px; background-color:#dc3545; padding:12px 20px; border:1px solid #c82333; text-align:center;">{{ error }}</div>
+  {% endif %}
+
+  <!-- Form native inputs placed over rectangles -->
+  <form method="post">
+    <input class="input-native input-username" name="username" placeholder="" autocomplete="username" required />
+    <input class="input-native input-password" name="password" type="password" placeholder="" autocomplete="current-password" required />
+    <button type="submit" class="btn-rect" aria-label="Login"></button>
+  </form>
+  <div class="btn-text">Login</div>
+
+  <a class="signup" href="/#final">Sign-up</a>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const errorMessage = document.querySelector('.error-message');
+    
+    if (errorMessage) {
+        // Запускаем анимацию появления сверху
+        errorMessage.style.opacity = '1';
+        errorMessage.style.transform = 'translateY(0)';
+        
+        // Устанавливаем таймер для скрытия через 5 секунд
+        setTimeout(function() {
+            errorMessage.style.opacity = '0';
+            errorMessage.style.transform = 'translateY(-100%)';
+            
+            // Полностью удаляем элемент через 0.3 секунды (время transition)
+            setTimeout(function() {
+                if (errorMessage.parentNode) {
+                    errorMessage.parentNode.removeChild(errorMessage);
+                }
+            }, 300);
+        }, 5000);
+        
+        // Добавляем возможность закрыть по клику
+        errorMessage.addEventListener('click', function() {
+            errorMessage.style.opacity = '0';
+            errorMessage.style.transform = 'translateY(-100%)';
+            
+            setTimeout(function() {
+                if (errorMessage.parentNode) {
+                    errorMessage.parentNode.removeChild(errorMessage);
+                }
+            }, 300);
+        });
+    }
+});
+</script>
+{% endblock %}

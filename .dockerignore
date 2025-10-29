@@ -1,0 +1,41 @@
+# VCS
+.git
+.gitignore
+
+# Python
+__pycache__/ 
+*.py[cod]
+*.pyo
+*.pyd
+.pytest_cache/
+.venv/
+.env
+*.sqlite3
+
+# Byte-compiled / optimized / DLL files
+*.so
+
+# OS / IDE
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
+
+# Tests and local scripts
+*test*.py
+tests/
+backup.sh
+update.sh
+
+# Docs not needed in image
+*.md
+
+# Node / frontend cache (if any)
+node_modules/
+
+# Misc
+*.log
+
+# OneDrive artifacts
+~$*
+*.tmp

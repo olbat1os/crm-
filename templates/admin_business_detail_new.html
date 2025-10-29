@@ -1,0 +1,451 @@
+{% extends 'admin_base.html' %}
+
+{% block content %}
+<div class="admin-page-header">
+  <h1 class="admin-page-title">Detalji biznisa</h1>
+  <p class="admin-page-subtitle">{{ business.business_name }} - {{ business.email }}</p>
+</div>
+
+<!-- Основная информация -->
+<div class="admin-card">
+  <div class="admin-page-header" style="margin-bottom: 20px;">
+    <h2 class="admin-page-title" style="font-size: 20px; margin: 0;">Osnovne informacije</h2>
+  </div>
+  
+  <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 24px;">
+    <div>
+      <label class="admin-form-label">Naziv biznisa</label>
+      <div style="padding: 16px; background: #f8f9fa; border-radius: 12px; font-weight: 600; color: #111827;">
+        {{ business.business_name }}
+      </div>
+    </div>
+    
+    <div>
+      <label class="admin-form-label">Email adresa</label>
+      <div style="padding: 16px; background: #f8f9fa; border-radius: 12px; font-weight: 600; color: #111827;">
+        {{ business.email }}
+      </div>
+    </div>
+    
+    <div>
+      <label class="admin-form-label">Telefon</label>
+      <div style="padding: 16px; background: #f8f9fa; border-radius: 12px; font-weight: 600; color: #111827;">
+        {{ business.phone or 'N/A' }}
+      </div>
+    </div>
+    
+    <div>
+      <label class="admin-form-label">Status</label>
+      <div style="padding: 16px; background: #f8f9fa; border-radius: 12px;">
+        {% if business.status.value == 'pending' %}
+          <span class="admin-status admin-status-pending">Na čekanju</span>
+        {% elif business.status.value == 'active' %}
+          <span class="admin-status admin-status-active">Aktivan</span>
+        {% elif business.status.value == 'suspended' %}
+          <span class="admin-status admin-status-suspended">Suspendovan</span>
+        {% elif business.status.value == 'expired' %}
+          <span class="admin-status admin-status-expired">Istekao rok</span>
+        {% endif %}
+      </div>
+    </div>
+    
+    <div>
+      <label class="admin-form-label">Datum registracije</label>
+      <div style="padding: 16px; background: #f8f9fa; border-radius: 12px; font-weight: 600; color: #111827;">
+        {{ business.created_at.strftime('%d.%m.%Y %H:%M') if business.created_at else 'N/A' }}
+      </div>
+    </div>
+    
+    <div>
+      <label class="admin-form-label">Poslednja aktivnost</label>
+      <div style="padding: 16px; background: #f8f9fa; border-radius: 12px; font-weight: 600; color: #111827;">
+        {{ business.updated_at.strftime('%d.%m.%Y %H:%M') if business.updated_at else 'N/A' }}
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Информация о доступе -->
+<div class="admin-card">
+  <div class="admin-page-header" style="margin-bottom: 20px;">
+    <h2 class="admin-page-title" style="font-size: 20px; margin: 0;">Informacije o pristupu</h2>
+  </div>
+  
+  <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 24px;">
+    <div>
+      <label class="admin-form-label">Početak pristupa</label>
+      <div style="padding: 16px; background: #f8f9fa; border-radius: 12px; font-weight: 600; color: #111827;">
+        {{ business.access_start_date.strftime('%d.%m.%Y %H:%M') if business.access_start_date else 'N/A' }}
+      </div>
+    </div>
+    
+    <div>
+      <label class="admin-form-label">Kraj pristupa</label>
+      <div style="padding: 16px; background: #f8f9fa; border-radius: 12px; font-weight: 600; color: #111827;">
+        {{ business.access_end_date.strftime('%d.%m.%Y %H:%M') if business.access_end_date else 'N/A' }}
+      </div>
+    </div>
+    
+    <div>
+      <label class="admin-form-label">Preostalo dana</label>
+      <div style="padding: 16px; background: #f8f9fa; border-radius: 12px; font-weight: 600; color: #111827;">
+        {% if business.access_end_date %}
+          {% set days_left = (business.access_end_date - now).days %}
+          {% if days_left > 0 %}
+            <span style="color: #10b981;">{{ days_left }} dana</span>
+          {% elif days_left == 0 %}
+            <span style="color: #f59e0b;">Danas ističe</span>
+          {% else %}
+            <span style="color: #ef4444;">Istekao pre {{ -days_left }} dana</span>
+          {% endif %}
+        {% else %}
+          N/A
+        {% endif %}
+      </div>
+    </div>
+    
+    <div>
+      <label class="admin-form-label">Valuta</label>
+      <div style="padding: 16px; background: #f8f9fa; border-radius: 12px; font-weight: 600; color: #111827;">
+        {{ business.currency or 'EUR' }}
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Действия -->
+<div class="admin-card">
+  <div class="admin-page-header" style="margin-bottom: 20px;">
+    <h2 class="admin-page-title" style="font-size: 20px; margin: 0;">Akcije</h2>
+  </div>
+  
+  <div style="display: flex; gap: 16px; flex-wrap: wrap;">
+    {% if business.status.value == 'pending' %}
+      <button class="admin-btn admin-btn-primary" onclick="activateBusiness({{ business.id }})">
+        <i class="fas fa-check"></i> Aktiviraj biznis
+      </button>
+    {% elif business.status.value == 'active' %}
+      <button class="admin-btn admin-btn-danger" onclick="suspendBusiness({{ business.id }})">
+        <i class="fas fa-pause"></i> Suspenduj biznis
+      </button>
+    {% elif business.status.value == 'suspended' %}
+      <button class="admin-btn admin-btn-success" onclick="unsuspendBusiness({{ business.id }})">
+        <i class="fas fa-play"></i> Aktiviraj biznis
+      </button>
+    {% elif business.status.value == 'expired' %}
+      <button class="admin-btn admin-btn-warning" onclick="unfreezeBusiness({{ business.id }})">
+        <i class="fas fa-snowflake"></i> Razmrznuti biznis
+      </button>
+    {% endif %}
+    
+    <button class="admin-btn admin-btn-secondary" onclick="resetPassword({{ business.id }})">
+      <i class="fas fa-key"></i> Resetuj lozinku
+    </button>
+    
+    <a href="/admin/businesses" class="admin-btn admin-btn-secondary">
+      <i class="fas fa-arrow-left"></i> Nazad na listu
+    </a>
+  </div>
+</div>
+
+<!-- Статистика -->
+<div class="admin-stats-grid">
+  <div class="admin-stat-card">
+    <h3 class="admin-stat-number">{{ business.created_at.strftime('%d') if business.created_at else 'N/A' }}</h3>
+    <p class="admin-stat-label">Datum registracije</p>
+  </div>
+  
+  <div class="admin-stat-card">
+    <h3 class="admin-stat-number">
+      {% if business.access_end_date %}
+        {% set days_left = (business.access_end_date - now).days %}
+        {{ days_left if days_left > 0 else 0 }}
+      {% else %}
+        N/A
+      {% endif %}
+    </h3>
+    <p class="admin-stat-label">Preostalo dana</p>
+  </div>
+  
+  <div class="admin-stat-card">
+    <h3 class="admin-stat-number">{{ business.currency or 'EUR' }}</h3>
+    <p class="admin-stat-label">Valuta</p>
+  </div>
+  
+  <div class="admin-stat-card">
+    <h3 class="admin-stat-number">
+      {% if business.status.value == 'active' %}
+        <span style="color: #10b981;">✓</span>
+      {% elif business.status.value == 'pending' %}
+        <span style="color: #f59e0b;">⏳</span>
+      {% elif business.status.value == 'suspended' %}
+        <span style="color: #ef4444;">⏸</span>
+      {% elif business.status.value == 'expired' %}
+        <span style="color: #6b7280;">❌</span>
+      {% endif %}
+    </h3>
+    <p class="admin-stat-label">Status</p>
+  </div>
+</div>
+
+<!-- Модальные окна -->
+<!-- Активация -->
+<div class="admin-modal" id="activateModal">
+  <div class="admin-modal-content">
+    <div class="admin-modal-header">
+      <h3 class="admin-modal-title">Aktiviraj biznis</h3>
+    </div>
+    <div class="admin-modal-body">
+      <form id="activateForm">
+        <input type="hidden" id="activateBusinessId" name="business_id">
+        
+        <div class="admin-form-group">
+          <label class="admin-form-label">Rok pristupa (dana)</label>
+          <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px; margin-bottom: 16px;">
+            <button type="button" class="admin-btn admin-btn-secondary" onclick="setQuickAccess(7)">7 dana</button>
+            <button type="button" class="admin-btn admin-btn-secondary" onclick="setQuickAccess(30)">30 dana</button>
+            <button type="button" class="admin-btn admin-btn-secondary" onclick="setQuickAccess(90)">90 dana</button>
+            <button type="button" class="admin-btn admin-btn-secondary" onclick="setQuickAccess(365)">1 godina</button>
+          </div>
+          <input type="number" class="admin-form-input" id="accessDays" name="access_days" min="1" max="365" value="30">
+        </div>
+        
+        <div class="admin-form-group">
+          <label class="admin-form-label">Dodatni sati</label>
+          <input type="number" class="admin-form-input" id="accessHours" name="access_hours" min="0" max="23" value="0">
+        </div>
+        
+        <div class="admin-form-group">
+          <label class="admin-form-label">Dodatni minuti</label>
+          <input type="number" class="admin-form-input" id="accessMinutes" name="access_minutes" min="0" max="59" value="0">
+        </div>
+        
+        <div style="padding: 16px; background: rgba(44, 171, 92, 0.1); border-radius: 12px; border-left: 4px solid #2CAB5C;">
+          <strong style="color: #065f46;">Napomena:</strong>
+          <p style="color: #065f46; margin: 8px 0 0 0; font-size: 14px;">
+            Biznis će biti aktiviran i dobijeće novi rok pristupa. 
+            Klijent će biti obavešten o aktivaciji naloga.
+          </p>
+        </div>
+      </form>
+    </div>
+    <div class="admin-modal-footer">
+      <button type="button" class="admin-btn admin-btn-secondary" onclick="closeModal('activateModal')">Otkaži</button>
+      <button type="button" class="admin-btn admin-btn-primary" onclick="confirmActivation()">Aktiviraj</button>
+    </div>
+  </div>
+</div>
+
+<!-- Размораживание -->
+<div class="admin-modal" id="unfreezeModal">
+  <div class="admin-modal-content">
+    <div class="admin-modal-header">
+      <h3 class="admin-modal-title">Razmrznuti biznis</h3>
+    </div>
+    <div class="admin-modal-body">
+      <form id="unfreezeForm">
+        <input type="hidden" id="unfreezeBusinessId" name="business_id">
+        
+        <div class="admin-form-group">
+          <label class="admin-form-label">Novi rok pristupa (dana)</label>
+          <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px; margin-bottom: 16px;">
+            <button type="button" class="admin-btn admin-btn-secondary" onclick="setQuickUnfreeze(7)">7 dana</button>
+            <button type="button" class="admin-btn admin-btn-secondary" onclick="setQuickUnfreeze(30)">30 dana</button>
+            <button type="button" class="admin-btn admin-btn-secondary" onclick="setQuickUnfreeze(90)">90 dana</button>
+            <button type="button" class="admin-btn admin-btn-secondary" onclick="setQuickUnfreeze(365)">1 godina</button>
+          </div>
+          <input type="number" class="admin-form-input" id="newAccessDays" name="new_access_days" min="1" max="365" value="30">
+        </div>
+        
+        <div style="padding: 16px; background: rgba(44, 171, 92, 0.1); border-radius: 12px; border-left: 4px solid #2CAB5C;">
+          <strong style="color: #065f46;">Napomena:</strong>
+          <p style="color: #065f46; margin: 8px 0 0 0; font-size: 14px;">
+            Biznis će biti razmrznut i dobijeće novi rok pristupa. 
+            Klijent će biti obavešten o aktivaciji naloga.
+          </p>
+        </div>
+      </form>
+    </div>
+    <div class="admin-modal-footer">
+      <button type="button" class="admin-btn admin-btn-secondary" onclick="closeModal('unfreezeModal')">Otkaži</button>
+      <button type="button" class="admin-btn admin-btn-primary" onclick="confirmUnfreeze()">Razmrznuti</button>
+    </div>
+  </div>
+</div>
+
+<script>
+// Активация бизнеса
+function activateBusiness(businessId) {
+  document.getElementById('activateBusinessId').value = businessId;
+  setQuickAccess(30);
+  showModal('activateModal');
+}
+
+function setQuickAccess(days) {
+  document.getElementById('accessDays').value = days;
+  document.getElementById('accessHours').value = 0;
+  document.getElementById('accessMinutes').value = 0;
+}
+
+function confirmActivation() {
+  const form = document.getElementById('activateForm');
+  const formData = new FormData(form);
+  const businessId = document.getElementById('activateBusinessId').value;
+  
+  const days = parseInt(document.getElementById('accessDays').value) || 0;
+  const hours = parseInt(document.getElementById('accessHours').value) || 0;
+  const minutes = parseInt(document.getElementById('accessMinutes').value) || 0;
+  
+  if (days <= 0) {
+    alert('Molimo unesite broj dana za rok pristupa');
+    return;
+  }
+  
+  fetch(`/admin/businesses/${businessId}/activate`, {
+    method: 'POST',
+    body: formData
+  })
+  .then(response => response.json())
+  .then(data => {
+    if (data.success) {
+      location.reload();
+    } else {
+      alert('Greška: ' + data.error);
+    }
+  })
+  .catch(error => {
+    alert('Greška: ' + error);
+  });
+}
+
+// Размораживание бизнеса
+function unfreezeBusiness(businessId) {
+  document.getElementById('unfreezeBusinessId').value = businessId;
+  setQuickUnfreeze(30);
+  showModal('unfreezeModal');
+}
+
+function setQuickUnfreeze(days) {
+  document.getElementById('newAccessDays').value = days;
+}
+
+function confirmUnfreeze() {
+  const form = document.getElementById('unfreezeForm');
+  const formData = new FormData(form);
+  const businessId = document.getElementById('unfreezeBusinessId').value;
+  
+  const days = parseInt(document.getElementById('newAccessDays').value) || 0;
+  
+  if (days <= 0) {
+    alert('Molimo unesite broj dana za novi rok pristupa');
+    return;
+  }
+  
+  fetch(`/admin/businesses/${businessId}/unfreeze`, {
+    method: 'POST',
+    body: formData
+  })
+  .then(response => response.json())
+  .then(data => {
+    if (data.success) {
+      location.reload();
+    } else {
+      alert('Greška: ' + data.error);
+    }
+  })
+  .catch(error => {
+    alert('Greška: ' + error);
+  });
+}
+
+// Приостановка бизнеса
+function suspendBusiness(businessId) {
+  if (confirm('Da li ste sigurni da želite da suspendujete ovaj biznis?')) {
+    fetch('/admin/businesses/suspend', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        business_id: businessId
+      })
+    })
+    .then(response => response.json())
+    .then(data => {
+      if (data.success) {
+        location.reload();
+      } else {
+        alert('Greška: ' + data.error);
+      }
+    })
+    .catch(error => {
+      alert('Greška: ' + error);
+    });
+  }
+}
+
+// Активация приостановленного бизнеса
+function unsuspendBusiness(businessId) {
+  if (confirm('Da li ste sigurni da želite da aktivirate ovaj biznis?')) {
+    fetch(`/admin/businesses/${businessId}/unsuspend`, {
+      method: 'POST'
+    })
+    .then(response => response.json())
+    .then(data => {
+      if (data.success) {
+        location.reload();
+      } else {
+        alert('Greška: ' + data.error);
+      }
+    })
+    .catch(error => {
+      alert('Greška: ' + error);
+    });
+  }
+}
+
+// Сброс пароля
+function resetPassword(businessId) {
+  if (confirm('Da li ste sigurni da želite da resetujete lozinku za ovaj biznis?')) {
+    fetch(`/admin/businesses/${businessId}/reset-password`, {
+      method: 'POST'
+    })
+    .then(response => response.json())
+    .then(data => {
+      if (data.success) {
+        alert('Lozinka je uspešno resetovana i poslana na email.');
+      } else {
+        alert('Greška: ' + data.error);
+      }
+    })
+    .catch(error => {
+      alert('Greška: ' + error);
+    });
+  }
+}
+
+// Управление модальными окнами
+function showModal(modalId) {
+  const modal = document.getElementById(modalId);
+  modal.classList.add('show');
+}
+
+function closeModal(modalId) {
+  const modal = document.getElementById(modalId);
+  modal.classList.remove('show');
+}
+
+// Закрытие модальных окон по клику вне их
+document.addEventListener('click', function(event) {
+  if (event.target.classList.contains('admin-modal')) {
+    event.target.classList.remove('show');
+  }
+});
+</script>
+
+<!-- Font Awesome для иконок -->
+<link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+{% endblock %}
+
+
+

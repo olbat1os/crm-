@@ -1,0 +1,415 @@
+<!DOCTYPE html>
+<html lang="sr">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Verifikacija - LOVACRM Admin</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@200;300;400;500;600;700;800&display=swap" rel="stylesheet">
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    html, body { 
+      height: 100%; 
+      margin: 0; 
+      font-family: 'Manrope', system-ui, sans-serif;
+      background: #f8f9fa;
+      overflow: hidden;
+    }
+    
+    /* Анимации */
+    @keyframes fadeInUp {
+      from {
+        opacity: 0;
+        transform: translateY(30px);
+      }
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+    
+    @keyframes shimmer {
+      0% {
+        background-position: -200px 0;
+      }
+      100% {
+        background-position: calc(200px + 100%) 0;
+      }
+    }
+    
+    @keyframes pulse {
+      0%, 100% {
+        opacity: 1;
+      }
+      50% {
+        opacity: 0.6;
+      }
+    }
+    
+    /* Контейнер верификации */
+    .verify-container {
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: #f8f9fa;
+      padding: 20px;
+    }
+    
+    /* Карточка верификации */
+    .verify-card {
+      background: #FFFFFF;
+      border-radius: 20px;
+      padding: 50px;
+      max-width: 500px;
+      width: 100%;
+      box-shadow: 0 8px 25px rgba(0, 0, 0, 0.1);
+      border: 1px solid #e5e7eb;
+      animation: fadeInUp 0.8s ease-out;
+      position: relative;
+      overflow: hidden;
+    }
+    
+    .verify-card::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      height: 4px;
+      background: linear-gradient(90deg, #2CAB5C 0%, #11998E 50%, #2CAB5C 100%);
+      background-size: 200% 100%;
+      animation: shimmer 2s ease-in-out infinite;
+    }
+    
+    /* Логотип */
+    .logo-container {
+      text-align: center;
+      margin-bottom: 35px;
+    }
+    
+    .logo-image {
+      width: 120px;
+      height: auto;
+      margin: 0 auto 20px;
+      display: block;
+    }
+    
+    /* Заголовок */
+    .verify-title {
+      font-size: 28px;
+      font-weight: 700;
+      color: #1F2937;
+      text-align: center;
+      margin-bottom: 12px;
+      letter-spacing: -0.5px;
+    }
+    
+    .verify-subtitle {
+      font-size: 15px;
+      color: #6B7280;
+      text-align: center;
+      margin-bottom: 35px;
+      line-height: 1.6;
+    }
+    
+    /* Информационный блок */
+    .info-box {
+      background: linear-gradient(135deg, #EBF8F2 0%, #E0F4ED 100%);
+      border-left: 4px solid #2CAB5C;
+      padding: 18px 20px;
+      border-radius: 12px;
+      margin-bottom: 30px;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+    
+    .info-icon {
+      font-size: 24px;
+      flex-shrink: 0;
+    }
+    
+    .info-text {
+      font-size: 14px;
+      color: #1F2937;
+      line-height: 1.5;
+    }
+    
+    .info-text strong {
+      color: #2CAB5C;
+      font-weight: 600;
+    }
+    
+    /* Поле ввода кода */
+    .code-input-group {
+      position: relative;
+      margin-bottom: 25px;
+    }
+    
+    .code-input {
+      width: 100%;
+      padding: 18px 20px;
+      font-size: 32px;
+      font-weight: 700;
+      letter-spacing: 12px;
+      text-align: center;
+      border: 2px solid #E5E7EB;
+      border-radius: 12px;
+      transition: all 0.3s ease;
+      font-family: 'Courier New', monospace;
+      background: #FAFAFA;
+    }
+    
+    .code-input:focus {
+      outline: none;
+      border-color: #2CAB5C;
+      background: #FFFFFF;
+      box-shadow: 0 0 0 4px rgba(44, 171, 92, 0.1);
+    }
+    
+    .code-input::placeholder {
+      color: #D1D5DB;
+      font-weight: 400;
+    }
+    
+    /* Кнопка */
+    .verify-btn {
+      width: 100%;
+      padding: 16px 24px;
+      font-size: 16px;
+      font-weight: 600;
+      color: #FFFFFF;
+      background: linear-gradient(135deg, #2CAB5C 0%, #11998E 100%);
+      border: none;
+      border-radius: 12px;
+      cursor: pointer;
+      transition: all 0.3s ease;
+      box-shadow: 0 4px 12px rgba(44, 171, 92, 0.25);
+      margin-bottom: 20px;
+    }
+    
+    .verify-btn:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 6px 20px rgba(44, 171, 92, 0.35);
+    }
+    
+    .verify-btn:active {
+      transform: translateY(0);
+    }
+    
+    .verify-btn:disabled {
+      opacity: 0.6;
+      cursor: not-allowed;
+      transform: none;
+    }
+    
+    /* Ссылка "Назад" */
+    .back-link {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      color: #6B7280;
+      text-decoration: none;
+      font-size: 14px;
+      font-weight: 500;
+      transition: all 0.2s ease;
+      justify-content: center;
+      width: 100%;
+    }
+    
+    .back-link:hover {
+      color: #2CAB5C;
+      gap: 12px;
+    }
+    
+    .back-arrow {
+      transition: transform 0.2s ease;
+    }
+    
+    .back-link:hover .back-arrow {
+      transform: translateX(-3px);
+    }
+    
+    /* Ошибка */
+    .error-box {
+      background: linear-gradient(135deg, #FEE2E2 0%, #FECACA 100%);
+      border-left: 4px solid #EF4444;
+      color: #991B1B;
+      padding: 16px 20px;
+      border-radius: 12px;
+      margin-bottom: 25px;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      font-size: 14px;
+      font-weight: 500;
+      animation: fadeInUp 0.4s ease-out;
+    }
+    
+    .error-icon {
+      font-size: 20px;
+      flex-shrink: 0;
+    }
+    
+    /* Таймер */
+    .timer-text {
+      text-align: center;
+      color: #9CA3AF;
+      font-size: 13px;
+      margin-top: 15px;
+      animation: pulse 2s ease-in-out infinite;
+    }
+    
+    /* Адаптивность */
+    @media (max-width: 640px) {
+      .verify-card {
+        padding: 35px 25px;
+      }
+      
+      .verify-title {
+        font-size: 24px;
+      }
+      
+      .verify-subtitle {
+        font-size: 14px;
+      }
+      
+      .code-input {
+        font-size: 28px;
+        letter-spacing: 8px;
+        padding: 16px;
+      }
+      
+      .logo-image {
+        width: 100px;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="verify-container">
+    <div class="verify-card">
+      <!-- Логотип -->
+      <div class="logo-container">
+        <img src="/static/images/logo home.png" alt="LovaCRM Logo" class="logo-image" onerror="this.style.display='none'">
+        <h1 class="verify-title">🔐 Verifikacija</h1>
+        <p class="verify-subtitle">
+          Unesite 6-cifreni kod koji je poslat na vaš email
+        </p>
+      </div>
+      
+      <!-- Информационный блок -->
+      <div class="info-box">
+        <span class="info-icon">📧</span>
+        <div class="info-text">
+          <strong>Proverite email!</strong><br>
+          Kod je važeći 5 minuta
+        </div>
+      </div>
+      
+      <!-- Ошибка -->
+      {% if error %}
+      <div class="error-box">
+        <span class="error-icon">⚠️</span>
+        <span>{{ error }}</span>
+      </div>
+      {% endif %}
+      
+      <!-- Форма -->
+      <form method="POST" action="/admin/verify-code" id="verifyForm">
+        <div class="code-input-group">
+          <input 
+            type="text" 
+            name="code" 
+            id="codeInput"
+            class="code-input"
+            placeholder="000000" 
+            maxlength="6" 
+            pattern="[0-9]{6}" 
+            required 
+            autofocus
+            autocomplete="off"
+            inputmode="numeric"
+          >
+        </div>
+        
+        <button type="submit" class="verify-btn" id="submitBtn">
+          ✓ Potvrdite kod
+        </button>
+        
+        <p class="timer-text" id="timerText">
+          ⏰ Kod ističe za <span id="countdown">5:00</span>
+        </p>
+      </form>
+      
+      <!-- Ссылка назад -->
+      <a href="/admin/login" class="back-link">
+        <span class="back-arrow">←</span>
+        <span>Nazad na prijavu</span>
+      </a>
+    </div>
+  </div>
+
+  <script>
+    // Автофокус и обработка ввода
+    document.addEventListener('DOMContentLoaded', function() {
+      const input = document.getElementById('codeInput');
+      const form = document.getElementById('verifyForm');
+      const submitBtn = document.getElementById('submitBtn');
+      
+      // Фокус на поле
+      input.focus();
+      
+      // Только цифры
+      input.addEventListener('input', function(e) {
+        this.value = this.value.replace(/[^0-9]/g, '');
+        
+        // Автоотправка при 6 цифрах
+        if (this.value.length === 6) {
+          submitBtn.textContent = '⏳ Proveravam...';
+          submitBtn.disabled = true;
+          setTimeout(() => {
+            form.submit();
+          }, 300);
+        }
+      });
+      
+      // Обратный отсчет (5 минут)
+      let timeLeft = 300; // 5 минут в секундах
+      const countdownEl = document.getElementById('countdown');
+      const timerText = document.getElementById('timerText');
+      
+      function updateTimer() {
+        const minutes = Math.floor(timeLeft / 60);
+        const seconds = timeLeft % 60;
+        countdownEl.textContent = `${minutes}:${seconds.toString().padStart(2, '0')}`;
+        
+        if (timeLeft <= 60) {
+          timerText.style.color = '#EF4444';
+          timerText.style.fontWeight = '600';
+        }
+        
+        if (timeLeft <= 0) {
+          clearInterval(timerInterval);
+          countdownEl.textContent = '0:00';
+          input.disabled = true;
+          submitBtn.disabled = true;
+          submitBtn.textContent = '⏰ Kod je istekao';
+          timerText.innerHTML = '❌ Kod je istekao. <a href="/admin/login" style="color: #2CAB5C; text-decoration: underline;">Prijavite se ponovo</a>';
+        }
+        
+        timeLeft--;
+      }
+      
+      const timerInterval = setInterval(updateTimer, 1000);
+      updateTimer();
+    });
+  </script>
+</body>
+</html>

@@ -1,0 +1,576 @@
+<!DOCTYPE html>
+<html lang="sr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{ title }} - Admin Panel</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <style>
+        .sidebar {
+            min-height: 100vh;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        }
+        .sidebar .nav-link {
+            color: rgba(255, 255, 255, 0.8);
+            padding: 12px 20px;
+            border-radius: 8px;
+            margin: 4px 0;
+            transition: all 0.3s ease;
+        }
+        .sidebar .nav-link:hover,
+        .sidebar .nav-link.active {
+            color: white;
+            background: rgba(255, 255, 255, 0.1);
+        }
+        .main-content {
+            background-color: #f8f9fa;
+            min-height: 100vh;
+        }
+        .card {
+            border: none;
+            box-shadow: 0 0.125rem 0.25rem rgba(0, 0, 0, 0.075);
+            border-radius: 12px;
+        }
+        .status-badge {
+            font-size: 0.75rem;
+            padding: 0.25rem 0.5rem;
+        }
+        .status-pending { background-color: #ffc107; color: #000; }
+        .status-active { background-color: #198754; color: #fff; }
+        .status-suspended { background-color: #dc3545; color: #fff; }
+        .status-expired { background-color: #6c757d; color: #fff; }
+        .info-card {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+        }
+        .action-buttons {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+    </style>
+</head>
+<body>
+    <div class="container-fluid">
+        <div class="row">
+            <!-- Sidebar -->
+            <div class="col-md-3 col-lg-2 sidebar p-0">
+                <div class="p-3">
+                    <h4 class="text-white mb-4">
+                        <i class="fas fa-shield-alt me-2"></i>
+                        Admin Panel
+                    </h4>
+                    <nav class="nav flex-column">
+                        <a class="nav-link" href="/admin">
+                            <i class="fas fa-tachometer-alt me-2"></i>
+                            Dashboard
+                        </a>
+                        <a class="nav-link active" href="/admin/businesses">
+                            <i class="fas fa-building me-2"></i>
+                            Businesses
+                        </a>
+                        <a class="nav-link" href="/admin/pending">
+                            <i class="fas fa-clock me-2"></i>
+                            Pending Requests
+                        </a>
+                        <a class="nav-link" href="/admin/settings">
+                            <i class="fas fa-cog me-2"></i>
+                            Settings
+                        </a>
+                        <hr class="text-white-50">
+                        <a class="nav-link" href="/admin/logout">
+                            <i class="fas fa-sign-out-alt me-2"></i>
+                            Logout
+                        </a>
+                    </nav>
+                </div>
+            </div>
+
+            <!-- Main Content -->
+            <div class="col-md-9 col-lg-10 main-content">
+                <div class="p-4">
+                    <!-- Header -->
+                    <div class="d-flex justify-content-between align-items-center mb-4">
+                        <div>
+                            <h2 class="mb-0">{{ business.business_name }}</h2>
+                            <nav aria-label="breadcrumb">
+                                <ol class="breadcrumb">
+                                    <li class="breadcrumb-item"><a href="/admin">Dashboard</a></li>
+                                    <li class="breadcrumb-item"><a href="/admin/businesses">Businesses</a></li>
+                                    <li class="breadcrumb-item active">{{ business.business_name }}</li>
+                                </ol>
+                            </nav>
+                        </div>
+                        <div class="action-buttons">
+                            <a href="/admin/businesses" class="btn btn-outline-secondary">
+                                <i class="fas fa-arrow-left me-1"></i> Back to List
+                            </a>
+                            {% if business.status.value == 'pending' %}
+                            <button class="btn btn-success" onclick="activateBusiness({{ business.id }})">
+                                <i class="fas fa-check me-1"></i> Activate
+                            </button>
+                            {% elif business.status.value == 'active' %}
+                            <button class="btn btn-warning" onclick="suspendBusiness({{ business.id }})">
+                                <i class="fas fa-pause me-1"></i> Suspend
+                            </button>
+                            {% elif business.status.value == 'suspended' %}
+                            <button class="btn btn-success" onclick="activateBusiness({{ business.id }})">
+                                <i class="fas fa-play me-1"></i> Reactivate
+                            </button>
+                            {% elif business.status.value == 'expired' %}
+                            <button class="btn btn-primary" onclick="unfreezeBusiness({{ business.id }})">
+                                <i class="fas fa-snowflake me-1"></i> Razmrznuti
+                            </button>
+                            {% endif %}
+                            <button class="btn btn-primary" onclick="resetPassword({{ business.id }})">
+                                <i class="fas fa-key me-1"></i> Reset Password
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Business Info Cards -->
+                    <div class="row mb-4">
+                        <div class="col-md-6">
+                            <div class="card info-card">
+                                <div class="card-body">
+                                    <h5 class="card-title">
+                                        <i class="fas fa-info-circle me-2"></i>
+                                        Basic Information
+                                    </h5>
+                                    <div class="row">
+                                        <div class="col-6">
+                                            <strong>Business Name:</strong><br>
+                                            {{ business.business_name }}
+                                        </div>
+                                        <div class="col-6">
+                                            <strong>Contact Person:</strong><br>
+                                            {{ business.contact_person }}
+                                        </div>
+                                    </div>
+                                    <hr class="text-white-50">
+                                    <div class="row">
+                                        <div class="col-6">
+                                            <strong>Email:</strong><br>
+                                            <a href="mailto:{{ business.email }}" class="text-white">
+                                                {{ business.email }}
+                                            </a>
+                                        </div>
+                                        <div class="col-6">
+                                            <strong>Phone:</strong><br>
+                                            <a href="tel:{{ business.phone }}" class="text-white">
+                                                {{ business.phone }}
+                                            </a>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="card">
+                                <div class="card-body">
+                                    <h5 class="card-title">
+                                        <i class="fas fa-map-marker-alt me-2"></i>
+                                        Location & Details
+                                    </h5>
+                                    <div class="row">
+                                        <div class="col-6">
+                                            <strong>City:</strong><br>
+                                            {{ business.city or 'Not specified' }}
+                                        </div>
+                                        <div class="col-6">
+                                            <strong>Country:</strong><br>
+                                            {{ business.country or 'Not specified' }}
+                                        </div>
+                                    </div>
+                                    <hr>
+                                    <div class="row">
+                                        <div class="col-6">
+                                            <strong>Business Type:</strong><br>
+                                            {{ business.business_type or 'Not specified' }}
+                                        </div>
+                                        <div class="col-6">
+                                            <strong>Address:</strong><br>
+                                            {{ business.address or 'Not specified' }}
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Status & Access -->
+                    <div class="row mb-4">
+                        <div class="col-md-6">
+                            <div class="card">
+                                <div class="card-body">
+                                    <h5 class="card-title">
+                                        <i class="fas fa-shield-alt me-2"></i>
+                                        Account Status
+                                    </h5>
+                                    <div class="d-flex align-items-center mb-3">
+                                        <span class="badge status-badge status-{{ business.status.value }} me-3">
+                                            {{ business.status.value.title() }}
+                                        </span>
+                                        <small class="text-muted">
+                                            Registered: {{ business.created_at.strftime('%Y-%m-%d %H:%M') }}
+                                        </small>
+                                    </div>
+                                    {% if business.password_hash %}
+                                    <div class="alert alert-success">
+                                        <i class="fas fa-check-circle me-2"></i>
+                                        Password is set
+                                    </div>
+                                    {% else %}
+                                    <div class="alert alert-warning">
+                                        <i class="fas fa-exclamation-triangle me-2"></i>
+                                        No password set
+                                    </div>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="card">
+                                <div class="card-body">
+                                    <h5 class="card-title">
+                                        <i class="fas fa-calendar-alt me-2"></i>
+                                        Access Period
+                                    </h5>
+                                    {% if business.access_start_date and business.access_end_date %}
+                                    <div class="mb-2">
+                                        <strong>Start:</strong> {{ business.access_start_date.strftime('%Y-%m-%d') }}
+                                    </div>
+                                    <div class="mb-2">
+                                        <strong>End:</strong> {{ business.access_end_date.strftime('%Y-%m-%d') }}
+                                    </div>
+                                    <div class="mb-2">
+                                        <strong>Trial Days:</strong> {{ business.trial_days }}
+                                    </div>
+                                    {% else %}
+                                    <div class="text-muted">
+                                        <i class="fas fa-info-circle me-2"></i>
+                                        Access period not set
+                                    </div>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Description & Notes -->
+                    {% if business.description or business.notes %}
+                    <div class="row">
+                        <div class="col-md-6">
+                            {% if business.description %}
+                            <div class="card">
+                                <div class="card-body">
+                                    <h5 class="card-title">
+                                        <i class="fas fa-file-alt me-2"></i>
+                                        Description
+                                    </h5>
+                                    <p>{{ business.description }}</p>
+                                </div>
+                            </div>
+                            {% endif %}
+                        </div>
+                        <div class="col-md-6">
+                            {% if business.notes %}
+                            <div class="card">
+                                <div class="card-body">
+                                    <h5 class="card-title">
+                                        <i class="fas fa-sticky-note me-2"></i>
+                                        Admin Notes
+                                    </h5>
+                                    <p>{{ business.notes }}</p>
+                                </div>
+                            </div>
+                            {% endif %}
+                        </div>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Activation Modal -->
+    <div class="modal fade" id="activationModal" tabindex="-1">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Activate Business</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <form id="activationForm">
+                        <input type="hidden" id="businessId" name="business_id" value="{{ business.id }}">
+                        
+                        <!-- Быстрый выбор -->
+                        <div class="mb-3">
+                            <label class="form-label">Quick Selection</label>
+                            <div class="btn-group w-100" role="group">
+                                <button type="button" class="btn btn-outline-primary btn-sm" onclick="setQuickAccess(7, 0, 0)">7 дней</button>
+                                <button type="button" class="btn btn-outline-primary btn-sm" onclick="setQuickAccess(30, 0, 0)">30 дней</button>
+                                <button type="button" class="btn btn-outline-primary btn-sm" onclick="setQuickAccess(90, 0, 0)">90 дней</button>
+                                <button type="button" class="btn btn-outline-primary btn-sm" onclick="setQuickAccess(365, 0, 0)">1 год</button>
+                            </div>
+                        </div>
+                        
+                        <!-- Детальный выбор -->
+                        <div class="mb-3">
+                            <label class="form-label">Custom Duration</label>
+                            <div class="row">
+                                <div class="col-4">
+                                    <label for="accessDays" class="form-label small">Days</label>
+                                    <input type="number" class="form-control" id="accessDays" name="access_days" min="0" max="365" value="7">
+                                </div>
+                                <div class="col-4">
+                                    <label for="accessHours" class="form-label small">Hours</label>
+                                    <input type="number" class="form-control" id="accessHours" name="access_hours" min="0" max="23" value="0">
+                                </div>
+                                <div class="col-4">
+                                    <label for="accessMinutes" class="form-label small">Minutes</label>
+                                    <input type="number" class="form-control" id="accessMinutes" name="access_minutes" min="0" max="59" value="0">
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- Предварительный просмотр -->
+                        <div class="mb-3">
+                            <div class="alert alert-info">
+                                <strong>Total Duration:</strong> <span id="durationPreview">7 days, 0 hours, 0 minutes</span>
+                            </div>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label for="notes" class="form-label">Notes (optional)</label>
+                            <textarea class="form-control" id="notes" name="notes" rows="3"></textarea>
+                        </div>
+                    </form>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="button" class="btn btn-success" onclick="confirmActivation()">Activate</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Unfreeze Modal -->
+    <div class="modal fade" id="unfreezeModal" tabindex="-1">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Razmrznuti Biznis</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <form id="unfreezeForm">
+                        <input type="hidden" id="unfreezeBusinessId" name="business_id" value="{{ business.id }}">
+                        
+                        <div class="mb-3">
+                            <label for="newAccessDays" class="form-label">Novi rok pristupa (dana)</label>
+                            <div class="row">
+                                <div class="col-6">
+                                    <button type="button" class="btn btn-outline-primary btn-sm w-100" onclick="setQuickUnfreeze(7)">7 dana</button>
+                                </div>
+                                <div class="col-6">
+                                    <button type="button" class="btn btn-outline-primary btn-sm w-100" onclick="setQuickUnfreeze(30)">30 dana</button>
+                                </div>
+                            </div>
+                            <div class="row mt-2">
+                                <div class="col-6">
+                                    <button type="button" class="btn btn-outline-primary btn-sm w-100" onclick="setQuickUnfreeze(90)">90 dana</button>
+                                </div>
+                                <div class="col-6">
+                                    <button type="button" class="btn btn-outline-primary btn-sm w-100" onclick="setQuickUnfreeze(365)">1 godina</button>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label for="newAccessDays" class="form-label">Ili unesite broj dana</label>
+                            <input type="number" class="form-control" id="newAccessDays" name="new_access_days" min="1" max="365" value="30">
+                        </div>
+                        
+                        <div class="alert alert-info">
+                            <strong>Napomena:</strong> Biznis će biti razmrznut i dobijeće novi rok pristupa. 
+                            Klijent će biti obavešten o aktivaciji naloga.
+                        </div>
+                    </form>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Otkaži</button>
+                    <button type="button" class="btn btn-primary" onclick="confirmUnfreeze()">Razmrznuti</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        function activateBusiness(businessId) {
+            document.getElementById('businessId').value = businessId;
+            // Сброс значений по умолчанию
+            setQuickAccess(7, 0, 0);
+            const modal = new bootstrap.Modal(document.getElementById('activationModal'));
+            modal.show();
+        }
+
+        function setQuickAccess(days, hours, minutes) {
+            document.getElementById('accessDays').value = days;
+            document.getElementById('accessHours').value = hours;
+            document.getElementById('accessMinutes').value = minutes;
+            updateDurationPreview();
+        }
+
+        function updateDurationPreview() {
+            const days = parseInt(document.getElementById('accessDays').value) || 0;
+            const hours = parseInt(document.getElementById('accessHours').value) || 0;
+            const minutes = parseInt(document.getElementById('accessMinutes').value) || 0;
+            
+            let preview = '';
+            if (days > 0) preview += `${days} day${days !== 1 ? 's' : ''}`;
+            if (hours > 0) preview += (preview ? ', ' : '') + `${hours} hour${hours !== 1 ? 's' : ''}`;
+            if (minutes > 0) preview += (preview ? ', ' : '') + `${minutes} minute${minutes !== 1 ? 's' : ''}`;
+            
+            if (!preview) preview = '0 minutes';
+            
+            document.getElementById('durationPreview').textContent = preview;
+        }
+
+        function confirmActivation() {
+            const form = document.getElementById('activationForm');
+            const formData = new FormData(form);
+            const businessId = document.getElementById('businessId').value;
+            
+            // Проверяем, что указано хотя бы какое-то время
+            const days = parseInt(document.getElementById('accessDays').value) || 0;
+            const hours = parseInt(document.getElementById('accessHours').value) || 0;
+            const minutes = parseInt(document.getElementById('accessMinutes').value) || 0;
+            
+            if (days === 0 && hours === 0 && minutes === 0) {
+                alert('Пожалуйста, укажите продолжительность доступа');
+                return;
+            }
+            
+            fetch(`/admin/businesses/${businessId}/activate`, {
+                method: 'POST',
+                body: formData
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    location.reload();
+                } else {
+                    alert('Error: ' + data.message);
+                }
+            })
+            .catch(error => {
+                alert('Error: ' + error);
+            });
+        }
+
+        function unfreezeBusiness(businessId) {
+            document.getElementById('unfreezeBusinessId').value = businessId;
+            // Сброс значений по умолчанию
+            setQuickUnfreeze(30);
+            const modal = new bootstrap.Modal(document.getElementById('unfreezeModal'));
+            modal.show();
+        }
+
+        function setQuickUnfreeze(days) {
+            document.getElementById('newAccessDays').value = days;
+        }
+
+        function confirmUnfreeze() {
+            const form = document.getElementById('unfreezeForm');
+            const formData = new FormData(form);
+            const businessId = document.getElementById('unfreezeBusinessId').value;
+            
+            // Проверяем, что указано количество дней
+            const days = parseInt(document.getElementById('newAccessDays').value) || 0;
+            
+            if (days <= 0) {
+                alert('Molimo unesite broj dana za novi rok pristupa');
+                return;
+            }
+            
+            fetch(`/admin/businesses/${businessId}/unfreeze`, {
+                method: 'POST',
+                body: formData
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    location.reload();
+                } else {
+                    alert('Greška: ' + data.error);
+                }
+            })
+            .catch(error => {
+                alert('Greška: ' + error);
+            });
+        }
+
+        function suspendBusiness(businessId) {
+            if (confirm('Are you sure you want to suspend this business?')) {
+                fetch('/admin/businesses/suspend', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({ business_id: businessId })
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        location.reload();
+                    } else {
+                        alert('Error: ' + data.message);
+                    }
+                })
+                .catch(error => {
+                    alert('Error: ' + error);
+                });
+            }
+        }
+
+        function resetPassword(businessId) {
+            if (confirm('Вы уверены, что хотите сбросить пароль для этого бизнеса? Новый пароль будет отправлен на email.')) {
+                fetch(`/admin/businesses/${businessId}/reset-password`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    }
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        alert(data.message);
+                    } else {
+                        alert('Ошибка: ' + data.message);
+                    }
+                })
+                .catch(error => {
+                    alert('Ошибка: ' + error);
+                });
+            }
+        }
+
+        // Добавляем обработчики событий для обновления предварительного просмотра
+        document.addEventListener('DOMContentLoaded', function() {
+            const accessDays = document.getElementById('accessDays');
+            const accessHours = document.getElementById('accessHours');
+            const accessMinutes = document.getElementById('accessMinutes');
+            
+            if (accessDays) {
+                accessDays.addEventListener('input', updateDurationPreview);
+                accessHours.addEventListener('input', updateDurationPreview);
+                accessMinutes.addEventListener('input', updateDurationPreview);
+            }
+        });
+    </script>
+</body>
+</html>

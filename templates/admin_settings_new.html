@@ -1,0 +1,371 @@
+{% extends 'admin_base.html' %}
+
+{% block content %}
+<div class="admin-page-header">
+  <h1 class="admin-page-title">Postavke sistema</h1>
+  <p class="admin-page-subtitle">Upravljanje konfiguracijom i podešavanjima</p>
+</div>
+
+<!-- Основные настройки -->
+<div class="admin-card">
+  <div class="admin-page-header" style="margin-bottom: 20px;">
+    <h2 class="admin-page-title" style="font-size: 20px; margin: 0;">Osnovne postavke</h2>
+  </div>
+  
+  <form id="systemSettingsForm">
+    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 24px;">
+      <div class="admin-form-group">
+        <label class="admin-form-label">Naziv sistema</label>
+        <input type="text" class="admin-form-input" value="LovaCRM" readonly>
+        <small style="color: #6b7280; font-size: 12px;">Naziv sistema se ne može menjati</small>
+      </div>
+      
+      <div class="admin-form-group">
+        <label class="admin-form-label">Verzija sistema</label>
+        <input type="text" class="admin-form-input" value="1.1.0" readonly>
+        <small style="color: #6b7280; font-size: 12px;">Trenutna verzija</small>
+      </div>
+      
+      <div class="admin-form-group">
+        <label class="admin-form-label">Email sistema</label>
+        <input type="email" class="admin-form-input" value="lovacrmhelp@gmail.com" readonly>
+        <small style="color: #6b7280; font-size: 12px;">Email za slanje obaveštenja</small>
+      </div>
+      
+      <div class="admin-form-group">
+        <label class="admin-form-label">Status email sistema</label>
+        <div style="display: flex; align-items: center; gap: 12px;">
+          <span class="admin-status admin-status-active">Aktivan</span>
+          <button type="button" class="admin-btn admin-btn-secondary" onclick="testEmailSystem()">
+            <i class="fas fa-envelope"></i> Testiraj
+          </button>
+        </div>
+      </div>
+    </div>
+  </form>
+</div>
+
+<!-- Статистика системы -->
+<div class="admin-stats-grid">
+  <div class="admin-stat-card">
+    <h3 class="admin-stat-number">{{ system_stats.total_users }}</h3>
+    <p class="admin-stat-label">Ukupno korisnika</p>
+  </div>
+  
+  <div class="admin-stat-card">
+    <h3 class="admin-stat-number">{{ system_stats.total_bookings }}</h3>
+    <p class="admin-stat-label">Ukupno rezervacija</p>
+  </div>
+  
+  <div class="admin-stat-card">
+    <h3 class="admin-stat-number">{{ system_stats.emails_sent }}</h3>
+    <p class="admin-stat-label">Poslato emailova</p>
+  </div>
+  
+  <div class="admin-stat-card">
+    <h3 class="admin-stat-number">{{ system_stats.system_uptime }}</h3>
+    <p class="admin-stat-label">Radno vreme (sati)</p>
+  </div>
+</div>
+
+<!-- Email konfiguracija -->
+<div class="admin-card">
+  <div class="admin-page-header" style="margin-bottom: 20px;">
+    <h2 class="admin-page-title" style="font-size: 20px; margin: 0;">Email konfiguracija</h2>
+  </div>
+  
+  <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 20px;">
+    <div>
+      <label class="admin-form-label">SMTP Server</label>
+      <input type="text" class="admin-form-input" value="smtp.gmail.com" readonly>
+    </div>
+    
+    <div>
+      <label class="admin-form-label">SMTP Port</label>
+      <input type="text" class="admin-form-input" value="465" readonly>
+    </div>
+    
+    <div>
+      <label class="admin-form-label">Email adresa</label>
+      <input type="email" class="admin-form-input" value="lovacrmhelp@gmail.com" readonly>
+    </div>
+    
+    <div>
+      <label class="admin-form-label">Status</label>
+      <div style="display: flex; align-items: center; gap: 8px;">
+        <span class="admin-status admin-status-active">Aktivan</span>
+        <button type="button" class="admin-btn admin-btn-warning" onclick="toggleEmailSystem()">
+          <i class="fas fa-power-off"></i> Uključi/Isključi
+        </button>
+      </div>
+    </div>
+  </div>
+  
+  <div style="margin-top: 20px; padding: 16px; background: rgba(44, 171, 92, 0.1); border-radius: 12px; border-left: 4px solid #2CAB5C;">
+    <strong style="color: #065f46;">Napomena:</strong>
+    <p style="color: #065f46; margin: 8px 0 0 0; font-size: 14px;">
+      Email sistem je konfigurisan za Gmail SMTP. Svi obaveštenja se šalju na konfigurisanu adresu.
+    </p>
+  </div>
+</div>
+
+<!-- Sigurnost sistema -->
+<div class="admin-card">
+  <div class="admin-page-header" style="margin-bottom: 20px;">
+    <h2 class="admin-page-title" style="font-size: 20px; margin: 0;">Sigurnost sistema</h2>
+  </div>
+  
+  <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 24px;">
+    <div>
+      <label class="admin-form-label">Dvofaktorska autentifikacija</label>
+      <div style="display: flex; align-items: center; gap: 12px;">
+        <span class="admin-status admin-status-active">Omogućena</span>
+        <button type="button" class="admin-btn admin-btn-secondary" onclick="configure2FA()">
+          <i class="fas fa-shield-alt"></i> Konfiguriši
+        </button>
+      </div>
+    </div>
+    
+    <div>
+      <label class="admin-form-label">Automatska provera isteka</label>
+      <div style="display: flex; align-items: center; gap: 12px;">
+        <span class="admin-status admin-status-active">Aktivna</span>
+        <button type="button" class="admin-btn admin-btn-secondary" onclick="runExpiryCheck()">
+          <i class="fas fa-search"></i> Pokreni sada
+        </button>
+      </div>
+    </div>
+    
+    <div>
+      <label class="admin-form-label">Backup sistema</label>
+      <div style="display: flex; align-items: center; gap: 12px;">
+        <span class="admin-status admin-status-pending">Nedostaje</span>
+        <button type="button" class="admin-btn admin-btn-primary" onclick="createBackup()">
+          <i class="fas fa-download"></i> Kreiraj backup
+        </button>
+      </div>
+    </div>
+    
+    <div>
+      <label class="admin-form-label">Logovi sistema</label>
+      <div style="display: flex; align-items: center; gap: 12px;">
+        <span class="admin-status admin-status-active">Aktivni</span>
+        <button type="button" class="admin-btn admin-btn-secondary" onclick="viewLogs()">
+          <i class="fas fa-file-alt"></i> Pregledaj
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Brze akcije -->
+<div class="admin-card">
+  <div class="admin-page-header" style="margin-bottom: 20px;">
+    <h2 class="admin-page-title" style="font-size: 20px; margin: 0;">Brze akcije</h2>
+  </div>
+  
+  <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 16px;">
+    <button class="admin-btn admin-btn-primary" onclick="restartSystem()" style="justify-content: center; padding: 16px;">
+      <i class="fas fa-redo" style="margin-right: 8px;"></i>
+      Restart sistema
+    </button>
+    
+    <button class="admin-btn admin-btn-warning" onclick="clearCache()" style="justify-content: center; padding: 16px;">
+      <i class="fas fa-broom" style="margin-right: 8px;"></i>
+      Očisti cache
+    </button>
+    
+    <button class="admin-btn admin-btn-success" onclick="optimizeDatabase()" style="justify-content: center; padding: 16px;">
+      <i class="fas fa-database" style="margin-right: 8px;"></i>
+      Optimizuj bazu
+    </button>
+    
+    <button class="admin-btn admin-btn-secondary" onclick="exportData()" style="justify-content: center; padding: 16px;">
+      <i class="fas fa-file-export" style="margin-right: 8px;"></i>
+      Izvezi podatke
+    </button>
+  </div>
+</div>
+
+<!-- Informacije o sistemu -->
+<div class="admin-card">
+  <div class="admin-page-header" style="margin-bottom: 20px;">
+    <h2 class="admin-page-title" style="font-size: 20px; margin: 0;">Informacije o sistemu</h2>
+  </div>
+  
+  <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 20px;">
+    <div>
+      <strong style="color: #374151;">Operativni sistem:</strong>
+      <p style="margin: 4px 0; color: #6b7280;">Windows 10</p>
+    </div>
+    
+    <div>
+      <strong style="color: #374151;">Python verzija:</strong>
+      <p style="margin: 4px 0; color: #6b7280;">3.8.0</p>
+    </div>
+    
+    <div>
+      <strong style="color: #374151;">FastAPI verzija:</strong>
+      <p style="margin: 4px 0; color: #6b7280;">0.115.2</p>
+    </div>
+    
+    <div>
+      <strong style="color: #374151;">Baza podataka:</strong>
+      <p style="margin: 4px 0; color: #6b7280;">SQLite 3</p>
+    </div>
+    
+    <div>
+      <strong style="color: #374151;">Poslednji update:</strong>
+      <p style="margin: 4px 0; color: #6b7280;">{{ last_update }}</p>
+    </div>
+    
+    <div>
+      <strong style="color: #374151;">Status sistema:</strong>
+      <span class="admin-status admin-status-active">Funkcionalan</span>
+    </div>
+  </div>
+</div>
+
+<script>
+// Testiranje email sistema
+function testEmailSystem() {
+  fetch('/admin/test-email', {
+    method: 'POST'
+  })
+  .then(response => response.json())
+  .then(data => {
+    if (data.success) {
+      alert('✅ Email sistem je funkcionalan!');
+    } else {
+      alert('❌ Greška: ' + data.error);
+    }
+  })
+  .catch(error => {
+    alert('❌ Greška: ' + error);
+  });
+}
+
+// Uključivanje/isključivanje email sistema
+function toggleEmailSystem() {
+  if (confirm('Da li ste sigurni da želite da promenite status email sistema?')) {
+    fetch('/admin/toggle-email', {
+      method: 'POST'
+    })
+    .then(response => response.json())
+    .then(data => {
+      if (data.success) {
+        location.reload();
+      } else {
+        alert('❌ Greška: ' + data.error);
+      }
+    })
+    .catch(error => {
+      alert('❌ Greška: ' + error);
+    });
+  }
+}
+
+// Konfiguracija 2FA
+function configure2FA() {
+  alert('🔐 Konfiguracija dvofaktorske autentifikacije je u razvoju.');
+}
+
+// Pokretanje provere isteka
+function runExpiryCheck() {
+  fetch('/admin/check-expired', {
+    method: 'POST'
+  })
+  .then(response => response.json())
+  .then(data => {
+    if (data.success) {
+      alert(`✅ Provereno ${data.frozen_count} biznisa. Zamrznuto: ${data.frozen_count}`);
+    } else {
+      alert('❌ Greška: ' + data.error);
+    }
+  })
+  .catch(error => {
+    alert('❌ Greška: ' + error);
+  });
+}
+
+// Kreiranje backup-a
+function createBackup() {
+  if (confirm('Da li želite da kreirate backup sistema?')) {
+    fetch('/admin/create-backup', {
+      method: 'POST'
+    })
+    .then(response => response.json())
+    .then(data => {
+      if (data.success) {
+        alert('✅ Backup je uspešno kreiran!');
+      } else {
+        alert('❌ Greška: ' + data.error);
+      }
+    })
+    .catch(error => {
+      alert('❌ Greška: ' + error);
+    });
+  }
+}
+
+// Pregled logova
+function viewLogs() {
+  alert('📋 Pregled logova sistema je u razvoju.');
+}
+
+// Restart sistema
+async function restartSystem() {
+  if (confirm('Da li ste sigurni da želite da restartujete sistem?')) {
+    try {
+      const response = await fetch('/admin/restart-system', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        }
+      });
+      
+      const data = await response.json();
+      
+      if (data.success) {
+        alert('✅ ' + data.message);
+        // Опционально: перезагрузить страницу
+        setTimeout(() => {
+          window.location.reload();
+        }, 1000);
+      } else {
+        alert('❌ ' + data.message);
+      }
+    } catch (error) {
+      alert('❌ Greška pri restartovanju sistema: ' + error.message);
+    }
+  }
+}
+
+// Čišćenje cache-a
+function clearCache() {
+  if (confirm('Da li želite da očistite cache?')) {
+    alert('🧹 Čišćenje cache-a je u razvoju.');
+  }
+}
+
+// Optimizacija baze
+function optimizeDatabase() {
+  if (confirm('Da li želite da optimizujete bazu podataka?')) {
+    alert('🗄️ Optimizacija baze podataka je u razvoju.');
+  }
+}
+
+// Izvoz podataka
+function exportData() {
+  if (confirm('Da li želite da izvezete podatke?')) {
+    alert('📤 Izvoz podataka je u razvoju.');
+  }
+}
+</script>
+
+<!-- Font Awesome za ikone -->
+<link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+{% endblock %}
+
+
+
