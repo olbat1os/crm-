@@ -1,0 +1,418 @@
+{% extends 'admin_base.html' %}
+
+{% block content %}
+<div class="admin-page-header">
+  <h1 class="admin-page-title">Admin Dashboard</h1>
+  <p class="admin-page-subtitle">Pregled sistema i statistike</p>
+</div>
+
+<!-- Статистические карточки -->
+<div class="admin-stats-grid">
+  <div class="admin-stat-card">
+    <h3 class="admin-stat-number">{{ stats.total_businesses }}</h3>
+    <p class="admin-stat-label">Ukupno biznisa</p>
+  </div>
+  
+  <div class="admin-stat-card">
+    <h3 class="admin-stat-number">{{ stats.active_businesses }}</h3>
+    <p class="admin-stat-label">Aktivni biznisi</p>
+  </div>
+  
+  <div class="admin-stat-card">
+    <h3 class="admin-stat-number">{{ stats.pending_businesses }}</h3>
+    <p class="admin-stat-label">Na čekanju</p>
+  </div>
+  
+  <div class="admin-stat-card">
+    <h3 class="admin-stat-number">{{ stats.suspended_businesses }}</h3>
+    <p class="admin-stat-label">Suspendovani</p>
+  </div>
+  
+  <div class="admin-stat-card">
+    <h3 class="admin-stat-number">{{ stats.expired_businesses }}</h3>
+    <p class="admin-stat-label">Istekli rok</p>
+  </div>
+  
+  <div class="admin-stat-card">
+    <h3 class="admin-stat-number">{{ stats.total_bookings }}</h3>
+    <p class="admin-stat-label">Ukupno rezervacija</p>
+  </div>
+</div>
+
+<!-- Последние бизнесы -->
+<div class="admin-card">
+  <div class="admin-page-header" style="margin-bottom: 20px;">
+    <h2 class="admin-page-title" style="font-size: 20px; margin: 0;">Poslednji biznisi</h2>
+  </div>
+  
+  <div class="admin-table-container">
+    <table class="admin-table">
+      <thead>
+        <tr>
+          <th>Naziv</th>
+          <th>Email</th>
+          <th>Status</th>
+          <th>Datum registracije</th>
+          <th>Rok pristupa</th>
+          <th>Akcije</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for business in recent_businesses %}
+        <tr>
+          <td>
+            <strong>{{ business.business_name }}</strong>
+          </td>
+          <td>{{ business.email }}</td>
+          <td>
+            {% if business.status.value == 'pending' %}
+              <span class="admin-status admin-status-pending">Na čekanju</span>
+            {% elif business.status.value == 'active' %}
+              <span class="admin-status admin-status-active">Aktivan</span>
+            {% elif business.status.value == 'suspended' %}
+              <span class="admin-status admin-status-suspended">Suspendovan</span>
+            {% elif business.status.value == 'expired' %}
+              <span class="admin-status admin-status-expired">Istekao rok</span>
+            {% endif %}
+          </td>
+          <td>{{ business.created_at.strftime('%d.%m.%Y') if business.created_at else 'N/A' }}</td>
+          <td>
+            {% if business.access_end_date %}
+              {{ business.access_end_date.strftime('%d.%m.%Y') }}
+            {% else %}
+              N/A
+            {% endif %}
+          </td>
+          <td>
+            <div style="display: flex; gap: 6px; align-items: center; flex-wrap: nowrap; height: 40px;">
+              {% if business.status.value == 'pending' %}
+                <button class="admin-btn admin-btn-primary" onclick="activateBusiness({{ business.id }})" style="height: 32px; width: 80px; display: flex; align-items: center; justify-content: center;">
+                  <i class="fas fa-check"></i> Aktiviraj
+                </button>
+              {% elif business.status.value == 'active' %}
+                <button class="admin-btn admin-btn-danger" onclick="suspendBusiness({{ business.id }})" style="height: 32px; width: 80px; display: flex; align-items: center; justify-content: center;">
+                  <i class="fas fa-pause"></i> Suspenduj
+                </button>
+              {% elif business.status.value == 'suspended' %}
+                <button class="admin-btn admin-btn-success" onclick="unsuspendBusiness({{ business.id }})" style="height: 32px; width: 80px; display: flex; align-items: center; justify-content: center;">
+                  <i class="fas fa-play"></i> Aktiviraj
+                </button>
+              {% elif business.status.value == 'expired' %}
+                <button class="admin-btn admin-btn-warning" onclick="unfreezeBusiness({{ business.id }})" style="height: 32px; width: 80px; display: flex; align-items: center; justify-content: center;">
+                  <i class="fas fa-snowflake"></i> Razmrznuti
+                </button>
+              {% endif %}
+              
+              <a href="/admin/businesses/{{ business.id }}" class="admin-btn admin-btn-secondary" style="height: 32px; width: 80px; display: flex; align-items: center; justify-content: center;">
+                <i class="fas fa-eye"></i> Detalji
+              </a>
+            </div>
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<!-- Быстрые действия -->
+<div class="admin-card">
+  <div class="admin-page-header" style="margin-bottom: 20px;">
+    <h2 class="admin-page-title" style="font-size: 20px; margin: 0;">Brze akcije</h2>
+  </div>
+  
+  <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 16px;">
+    <a href="/admin/businesses" class="admin-btn admin-btn-primary" style="justify-content: center; padding: 16px;">
+      <i class="fas fa-building" style="margin-right: 8px;"></i>
+      Upravljaj biznisima
+    </a>
+    
+    <a href="/admin/pending" class="admin-btn admin-btn-warning" style="justify-content: center; padding: 16px;">
+      <i class="fas fa-clock" style="margin-right: 8px;"></i>
+      Na čekanju ({{ stats.pending_businesses }})
+    </a>
+    
+    <button class="admin-btn admin-btn-secondary" onclick="checkExpiredBusinesses()" style="justify-content: center; padding: 16px;">
+      <i class="fas fa-search" style="margin-right: 8px;"></i>
+      Proveri istekle rokove
+    </button>
+    
+    <a href="/admin/settings" class="admin-btn admin-btn-secondary" style="justify-content: center; padding: 16px;">
+      <i class="fas fa-cog" style="margin-right: 8px;"></i>
+      Postavke sistema
+    </a>
+  </div>
+</div>
+
+<!-- Модальное окно для активации -->
+<div id="activateModal" class="admin-modal">
+  <div class="admin-modal-content">
+    <div class="admin-modal-header">
+      <h3 class="admin-modal-title">Aktiviraj biznis</h3>
+    </div>
+    <div class="admin-modal-body">
+      <form id="activateForm">
+        <input type="hidden" id="activateBusinessId" name="business_id">
+        
+        <div class="admin-form-group">
+          <label class="admin-form-label">Rok pristupa (dana)</label>
+          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 12px;">
+            <button type="button" class="admin-btn admin-btn-secondary" onclick="setQuickAccess(7)">7 dana</button>
+            <button type="button" class="admin-btn admin-btn-secondary" onclick="setQuickAccess(30)">30 dana</button>
+            <button type="button" class="admin-btn admin-btn-secondary" onclick="setQuickAccess(90)">90 dana</button>
+            <button type="button" class="admin-btn admin-btn-secondary" onclick="setQuickAccess(365)">1 godina</button>
+          </div>
+          <input type="number" class="admin-form-input" id="accessDays" name="access_days" min="1" max="365" value="30">
+        </div>
+        
+        <div class="admin-form-group">
+          <label class="admin-form-label">Dodatni sati</label>
+          <input type="number" class="admin-form-input" id="accessHours" name="access_hours" min="0" max="23" value="0">
+        </div>
+        
+        <div class="admin-form-group">
+          <label class="admin-form-label">Dodatni minuti</label>
+          <input type="number" class="admin-form-input" id="accessMinutes" name="access_minutes" min="0" max="59" value="0">
+        </div>
+        
+        <div style="background: #f0f9ff; padding: 16px; border-radius: 12px; margin-top: 16px;">
+          <strong>Pregled:</strong> <span id="durationPreview">30 dana</span>
+        </div>
+      </form>
+    </div>
+    <div class="admin-modal-footer">
+      <button type="button" class="admin-btn admin-btn-secondary" onclick="closeActivateModal()">Otkaži</button>
+      <button type="button" class="admin-btn admin-btn-primary" onclick="confirmActivation()">Aktiviraj</button>
+    </div>
+  </div>
+</div>
+
+<!-- Модальное окно для размораживания -->
+<div id="unfreezeModal" class="admin-modal">
+  <div class="admin-modal-content">
+    <div class="admin-modal-header">
+      <h3 class="admin-modal-title">Razmrznuti biznis</h3>
+    </div>
+    <div class="admin-modal-body">
+      <form id="unfreezeForm">
+        <input type="hidden" id="unfreezeBusinessId" name="business_id">
+        
+        <div class="admin-form-group">
+          <label class="admin-form-label">Novi rok pristupa (dana)</label>
+          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 12px;">
+            <button type="button" class="admin-btn admin-btn-secondary" onclick="setQuickUnfreeze(7)">7 dana</button>
+            <button type="button" class="admin-btn admin-btn-secondary" onclick="setQuickUnfreeze(30)">30 dana</button>
+            <button type="button" class="admin-btn admin-btn-secondary" onclick="setQuickUnfreeze(90)">90 dana</button>
+            <button type="button" class="admin-btn admin-btn-secondary" onclick="setQuickUnfreeze(365)">1 godina</button>
+          </div>
+          <input type="number" class="admin-form-input" id="newAccessDays" name="new_access_days" min="1" max="365" value="30">
+        </div>
+        
+        <div style="background: #f0f9ff; padding: 16px; border-radius: 12px; margin-top: 16px;">
+          <strong>Napomena:</strong> Biznis će biti razmrznut i dobijeće novi rok pristupa. 
+          Klijent će biti obavešten o aktivaciji naloga.
+        </div>
+      </form>
+    </div>
+    <div class="admin-modal-footer">
+      <button type="button" class="admin-btn admin-btn-secondary" onclick="closeUnfreezeModal()">Otkaži</button>
+      <button type="button" class="admin-btn admin-btn-primary" onclick="confirmUnfreeze()">Razmrznuti</button>
+    </div>
+  </div>
+</div>
+
+<script>
+// Функции для активации
+function activateBusiness(businessId) {
+  document.getElementById('activateBusinessId').value = businessId;
+  setQuickAccess(30);
+  document.getElementById('activateModal').classList.add('show');
+}
+
+function setQuickAccess(days) {
+  document.getElementById('accessDays').value = days;
+  document.getElementById('accessHours').value = 0;
+  document.getElementById('accessMinutes').value = 0;
+  updateDurationPreview();
+}
+
+function updateDurationPreview() {
+  const days = parseInt(document.getElementById('accessDays').value) || 0;
+  const hours = parseInt(document.getElementById('accessHours').value) || 0;
+  const minutes = parseInt(document.getElementById('accessMinutes').value) || 0;
+  
+  let preview = '';
+  if (days > 0) preview += `${days} dana`;
+  if (hours > 0) preview += (preview ? ', ' : '') + `${hours} sati`;
+  if (minutes > 0) preview += (preview ? ', ' : '') + `${minutes} minuta`;
+  
+  document.getElementById('durationPreview').textContent = preview || '0 dana';
+}
+
+function confirmActivation() {
+  const form = document.getElementById('activateForm');
+  const formData = new FormData(form);
+  const businessId = document.getElementById('activateBusinessId').value;
+  
+  const days = parseInt(document.getElementById('accessDays').value) || 0;
+  const hours = parseInt(document.getElementById('accessHours').value) || 0;
+  const minutes = parseInt(document.getElementById('accessMinutes').value) || 0;
+  
+  if (days <= 0 && hours <= 0 && minutes <= 0) {
+    alert('Molimo unesite rok pristupa');
+    return;
+  }
+  
+  fetch(`/admin/businesses/${businessId}/activate`, {
+    method: 'POST',
+    body: formData
+  })
+  .then(response => response.json())
+  .then(data => {
+    if (data.success) {
+      location.reload();
+    } else {
+      alert('Greška: ' + data.error);
+    }
+  })
+  .catch(error => {
+    alert('Greška: ' + error);
+  });
+}
+
+function closeActivateModal() {
+  document.getElementById('activateModal').classList.remove('show');
+}
+
+// Функции для размораживания
+function unfreezeBusiness(businessId) {
+  document.getElementById('unfreezeBusinessId').value = businessId;
+  setQuickUnfreeze(30);
+  document.getElementById('unfreezeModal').classList.add('show');
+}
+
+function setQuickUnfreeze(days) {
+  document.getElementById('newAccessDays').value = days;
+}
+
+function confirmUnfreeze() {
+  const form = document.getElementById('unfreezeForm');
+  const formData = new FormData(form);
+  const businessId = document.getElementById('unfreezeBusinessId').value;
+  
+  const days = parseInt(document.getElementById('newAccessDays').value) || 0;
+  
+  if (days <= 0) {
+    alert('Molimo unesite broj dana za novi rok pristupa');
+    return;
+  }
+  
+  fetch(`/admin/businesses/${businessId}/unfreeze`, {
+    method: 'POST',
+    body: formData
+  })
+  .then(response => response.json())
+  .then(data => {
+    if (data.success) {
+      location.reload();
+    } else {
+      alert('Greška: ' + data.error);
+    }
+  })
+  .catch(error => {
+    alert('Greška: ' + error);
+  });
+}
+
+function closeUnfreezeModal() {
+  document.getElementById('unfreezeModal').classList.remove('show');
+}
+
+// Функции для приостановки
+function suspendBusiness(businessId) {
+  if (confirm('Da li ste sigurni da želite da suspendujete ovaj biznis?')) {
+    fetch('/admin/businesses/suspend', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        business_id: businessId
+      })
+    })
+    .then(response => response.json())
+    .then(data => {
+      if (data.success) {
+        location.reload();
+      } else {
+        alert('Greška: ' + data.error);
+      }
+    })
+    .catch(error => {
+      alert('Greška: ' + error);
+    });
+  }
+}
+
+function unsuspendBusiness(businessId) {
+  if (confirm('Da li ste sigurni da želite da aktivirate ovaj biznis?')) {
+    fetch(`/admin/businesses/${businessId}/unsuspend`, {
+      method: 'POST'
+    })
+    .then(response => response.json())
+    .then(data => {
+      if (data.success) {
+        location.reload();
+      } else {
+        alert('Greška: ' + data.error);
+      }
+    })
+    .catch(error => {
+      alert('Greška: ' + error);
+    });
+  }
+}
+
+// Проверка истекших сроков
+function checkExpiredBusinesses() {
+  fetch('/admin/check-expired', {
+    method: 'POST'
+  })
+  .then(response => response.json())
+  .then(data => {
+    if (data.success) {
+      alert(`Provereno ${data.frozen_count} biznisa. Zamrznuto: ${data.frozen_count}`);
+      location.reload();
+    } else {
+      alert('Greška: ' + data.error);
+    }
+  })
+  .catch(error => {
+    alert('Greška: ' + error);
+  });
+}
+
+// Обновление предварительного просмотра при изменении полей
+document.addEventListener('DOMContentLoaded', function() {
+  const accessDays = document.getElementById('accessDays');
+  const accessHours = document.getElementById('accessHours');
+  const accessMinutes = document.getElementById('accessMinutes');
+  
+  if (accessDays) {
+    accessDays.addEventListener('input', updateDurationPreview);
+    accessHours.addEventListener('input', updateDurationPreview);
+    accessMinutes.addEventListener('input', updateDurationPreview);
+  }
+  
+  // Закрытие модальных окон при клике вне их
+  document.addEventListener('click', function(e) {
+    if (e.target.classList.contains('admin-modal')) {
+      e.target.classList.remove('show');
+    }
+  });
+});
+</script>
+
+<!-- Font Awesome для иконок -->
+<link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+{% endblock %}

@@ -1,0 +1,869 @@
+{% extends 'admin_base.html' %}
+
+{% block content %}
+<style>
+  /* Стили для поиска из map.html */
+  .search-results {
+    background: #ffffff;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+    border-radius: 12px;
+    border: 1px solid #e5e7eb;
+    overflow: hidden;
+    z-index: 1000;
+  }
+
+  .search-results-content {
+    padding: 8px;
+    height: 100%;
+    overflow-y: auto;
+  }
+
+  .search-result-item {
+    display: flex;
+    align-items: center;
+    padding: 12px;
+    border-bottom: 1px solid #f3f4f6;
+    cursor: pointer;
+    transition: background-color 0.2s ease;
+    border-radius: 8px;
+    margin-bottom: 4px;
+  }
+
+  .search-result-item:hover {
+    background-color: #f9fafb;
+  }
+
+  .search-result-item:last-child {
+    border-bottom: none;
+    margin-bottom: 0;
+  }
+
+  .search-result-main {
+    flex: 1;
+  }
+
+  .search-result-name {
+    font-family: 'Manrope', sans-serif;
+    font-weight: 600;
+    font-size: 14px;
+    color: #000000;
+    margin-bottom: 2px;
+  }
+
+  .search-result-phone {
+    font-family: 'Manrope', sans-serif;
+    font-weight: 400;
+    font-size: 12px;
+    color: #6b7280;
+    margin-bottom: 6px;
+  }
+
+  .search-result-last-booking {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .search-result-date {
+    font-family: 'Manrope', sans-serif;
+    font-weight: 400;
+    font-size: 11px;
+    color: #6b7280;
+  }
+
+  .search-result-status {
+    font-family: 'Manrope', sans-serif;
+    font-weight: 600;
+    font-size: 10px;
+    padding: 2px 6px;
+    border-radius: 8px;
+    color: #000000;
+  }
+
+  .search-result-status.dogovoreno { background: #FFF0BF; border: 1px solid #DBC787; }
+  .search-result-status.na-cekaju { background: #E8D8F8; border: 1px solid #9C27B0; }
+  .search-result-status.potvrdjeno { background: #D8F8E4; border: 1px solid #4CAF50; }
+  .search-result-status.otkazano { background: #FFBFBF; border: 1px solid #F44336; }
+  .search-result-status.nisu-dosli { background: #FFD59E; border: 1px solid #FF9800; }
+  .search-result-status.dosli { background: #C7F4FF; border: 1px solid #2196F3; }
+
+  .search-results::-webkit-scrollbar {
+    width: 4px;
+  }
+
+  .search-results::-webkit-scrollbar-track {
+    background: #f1f1f1;
+    border-radius: 2px;
+  }
+
+  .search-results::-webkit-scrollbar-thumb {
+    background: #11998E;
+    border-radius: 2px;
+  }
+
+  .search-results::-webkit-scrollbar-thumb:hover {
+    background: #0d7a6f;
+  }
+
+  /* Исправление модальных окон */
+  .admin-modal {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(0, 0, 0, 0.5);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 1000;
+    opacity: 0;
+    visibility: hidden;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  }
+
+  .admin-modal.show {
+    opacity: 1;
+    visibility: visible;
+  }
+
+  .admin-modal-content {
+    background: #FFFFFF;
+    border-radius: 20px;
+    padding: 40px;
+    max-width: 500px;
+    width: 90%;
+    max-height: 90vh;
+    overflow-y: auto;
+    box-shadow: 0 20px 40px rgba(0, 0, 0, 0.2);
+    transform: scale(0.9) translateY(20px);
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  }
+
+  .admin-modal.show .admin-modal-content {
+    transform: scale(1) translateY(0);
+  }
+
+  .admin-modal-header {
+    margin-bottom: 24px;
+  }
+
+  .admin-modal-title {
+    font-family: 'Manrope', system-ui, sans-serif;
+    font-weight: 700;
+    font-size: 24px;
+    line-height: 32px;
+    color: #111827;
+    margin: 0;
+    background: linear-gradient(135deg, #2CAB5C 0%, #11998E 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+  }
+
+  .admin-modal-body {
+    margin-bottom: 24px;
+  }
+
+  .admin-modal-footer {
+    display: flex;
+    gap: 16px;
+    justify-content: flex-end;
+  }
+
+  /* Стили для форм в модальных окнах */
+  .admin-form-group {
+    margin-bottom: 24px;
+  }
+
+  .admin-form-label {
+    display: block;
+    font-family: 'Manrope', system-ui, sans-serif;
+    font-weight: 600;
+    font-size: 14px;
+    line-height: 20px;
+    color: #374151;
+    margin-bottom: 8px;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+  }
+
+  .admin-form-input {
+    width: 100%;
+    padding: 16px 20px;
+    border: 2px solid #d1d5db;
+    border-radius: 12px;
+    font-family: 'Manrope', system-ui, sans-serif;
+    font-weight: 400;
+    font-size: 14px;
+    line-height: 20px;
+    color: #111827;
+    background: #FFFFFF;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  }
+
+  .admin-form-input:focus {
+    outline: none;
+    border-color: #2CAB5C;
+    box-shadow: 0 0 0 4px rgba(44, 171, 92, 0.1);
+    transform: translateY(-2px);
+  }
+
+  .admin-form-input:hover {
+    border-color: #2CAB5C;
+  }
+</style>
+
+<!-- Результаты поиска -->
+<div id="search-results" class="search-results" style="position:fixed; right:25px; top:120px; width:290px; height:250px; display:none; z-index: 1001;">
+  <div class="search-results-content">
+    <!-- Результаты будут добавлены динамически -->
+  </div>
+</div>
+<div class="admin-page-header">
+  <h1 class="admin-page-title">Upravljanje biznisima</h1>
+  <p class="admin-page-subtitle">Pregled i upravljanje svim biznisima u sistemu</p>
+</div>
+
+<!-- Фильтры -->
+<div class="admin-card">
+  <div style="display: flex; gap: 16px; align-items: center; flex-wrap: wrap;">
+    <div>
+      <label class="admin-form-label">Status:</label>
+      <select class="admin-form-input" id="statusFilter" style="width: auto; min-width: 150px;">
+        <option value="">Svi statusi</option>
+        <option value="pending">Na čekanju</option>
+        <option value="active">Aktivni</option>
+        <option value="suspended">Suspendovani</option>
+        <option value="expired">Istekli rok</option>
+      </select>
+    </div>
+    
+    <div>
+      <label class="admin-form-label">Pretraga:</label>
+      <input type="text" class="admin-form-input" id="searchInput" placeholder="Naziv ili email..." style="width: auto; min-width: 200px;">
+    </div>
+    
+    <div style="margin-left: auto;">
+      <button class="admin-btn admin-btn-primary" onclick="refreshTable()">
+        <i class="fas fa-sync"></i> Osveži
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- Таблица бизнесов -->
+<div class="admin-table-container">
+  <table class="admin-table" id="businessesTable">
+    <thead>
+      <tr>
+        <th>Naziv</th>
+        <th>Email</th>
+        <th>Status</th>
+        <th>Datum registracije</th>
+        <th>Rok pristupa</th>
+        <th>Akcije</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for business in businesses %}
+      <tr data-status="{{ business.status.value }}" data-search="{{ business.business_name|lower }} {{ business.email|lower }}" data-business-id="{{ business.id }}">
+        <td>
+          <strong>{{ business.business_name }}</strong>
+        </td>
+        <td>{{ business.email }}</td>
+        <td>
+          {% if business.status.value == 'pending' %}
+            <span class="admin-status admin-status-pending">Na čekanju</span>
+          {% elif business.status.value == 'active' %}
+            <span class="admin-status admin-status-active">Aktivan</span>
+          {% elif business.status.value == 'suspended' %}
+            <span class="admin-status admin-status-suspended">Suspendovan</span>
+          {% elif business.status.value == 'expired' %}
+            <span class="admin-status admin-status-expired">Istekao rok</span>
+          {% endif %}
+        </td>
+        <td>{{ business.created_at.strftime('%d.%m.%Y') if business.created_at else 'N/A' }}</td>
+        <td>
+          {% if business.access_end_date %}
+            {{ business.access_end_date.strftime('%d.%m.%Y') }}
+          {% else %}
+            N/A
+          {% endif %}
+        </td>
+        <td>
+          <div style="display: flex; gap: 6px; align-items: center; flex-wrap: nowrap; height: 40px;">
+            {% if business.status.value == 'pending' %}
+              <button class="admin-btn admin-btn-primary" onclick="activateBusiness({{ business.id }})" title="Aktiviraj" style="height: 32px; width: 32px; display: flex; align-items: center; justify-content: center; padding: 0;">
+                <i class="fas fa-check"></i>
+              </button>
+            {% elif business.status.value == 'active' %}
+              <button class="admin-btn admin-btn-danger" onclick="suspendBusiness({{ business.id }})" title="Suspenduj" style="height: 32px; width: 32px; display: flex; align-items: center; justify-content: center; padding: 0;">
+                <i class="fas fa-pause"></i>
+              </button>
+            {% elif business.status.value == 'suspended' %}
+              <button class="admin-btn admin-btn-success" onclick="unsuspendBusiness({{ business.id }})" title="Aktiviraj" style="height: 32px; width: 32px; display: flex; align-items: center; justify-content: center; padding: 0;">
+                <i class="fas fa-play"></i>
+              </button>
+            {% elif business.status.value == 'expired' %}
+              <button class="admin-btn admin-btn-warning" onclick="unfreezeBusiness({{ business.id }})" title="Razmrznuti" style="height: 32px; width: 32px; display: flex; align-items: center; justify-content: center; padding: 0;">
+                <i class="fas fa-snowflake"></i>
+              </button>
+            {% endif %}
+            
+            <a href="/admin/businesses/{{ business.id }}" class="admin-btn admin-btn-secondary" title="Detalji" style="height: 32px; width: 32px; display: flex; align-items: center; justify-content: center; padding: 0;">
+              <i class="fas fa-eye"></i>
+            </a>
+            
+            <button class="admin-btn admin-btn-secondary" onclick="resetPassword({{ business.id }})" title="Resetuj lozinku" style="height: 32px; width: 32px; display: flex; align-items: center; justify-content: center; padding: 0;">
+              <i class="fas fa-key"></i>
+            </button>
+            
+            <button class="admin-btn admin-btn-danger" onclick="deleteBusiness({{ business.id }})" title="Obriši biznis" style="height: 32px; width: 32px; display: flex; align-items: center; justify-content: center; padding: 0; background: #ef4444; border-color: #ef4444; color: white; font-size: 20px; font-weight: bold; line-height: 1;">
+              ×
+            </button>
+          </div>
+        </td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+
+<!-- Модальное окно для активации -->
+<div id="activateModal" class="admin-modal">
+  <div class="admin-modal-content">
+    <div class="admin-modal-header">
+      <h3 class="admin-modal-title">Aktiviraj biznis</h3>
+    </div>
+    <div class="admin-modal-body">
+      <form id="activateForm">
+        <input type="hidden" id="activateBusinessId" name="business_id">
+        
+        <div class="admin-form-group">
+          <label class="admin-form-label">Rok pristupa (dana)</label>
+          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 12px;">
+            <button type="button" class="admin-btn admin-btn-secondary" onclick="setQuickAccess(7)">7 dana</button>
+            <button type="button" class="admin-btn admin-btn-secondary" onclick="setQuickAccess(30)">30 dana</button>
+            <button type="button" class="admin-btn admin-btn-secondary" onclick="setQuickAccess(90)">90 dana</button>
+            <button type="button" class="admin-btn admin-btn-secondary" onclick="setQuickAccess(365)">1 godina</button>
+          </div>
+          <input type="number" class="admin-form-input" id="accessDays" name="access_days" min="1" max="365" value="30">
+        </div>
+        
+        <div class="admin-form-group">
+          <label class="admin-form-label">Dodatni sati</label>
+          <input type="number" class="admin-form-input" id="accessHours" name="access_hours" min="0" max="23" value="0">
+        </div>
+        
+        <div class="admin-form-group">
+          <label class="admin-form-label">Dodatni minuti</label>
+          <input type="number" class="admin-form-input" id="accessMinutes" name="access_minutes" min="0" max="59" value="0">
+        </div>
+        
+        <div style="background: #f0f9ff; padding: 16px; border-radius: 12px; margin-top: 16px;">
+          <strong>Pregled:</strong> <span id="durationPreview">30 dana</span>
+        </div>
+      </form>
+    </div>
+    <div class="admin-modal-footer">
+      <button type="button" class="admin-btn admin-btn-secondary" onclick="closeActivateModal()">Otkaži</button>
+      <button type="button" class="admin-btn admin-btn-primary" onclick="confirmActivation()">Aktiviraj</button>
+    </div>
+  </div>
+</div>
+
+
+<!-- Модальное окно для размораживания -->
+<div id="unfreezeModal" class="admin-modal">
+  <div class="admin-modal-content">
+    <div class="admin-modal-header">
+      <h3 class="admin-modal-title">Razmrznuti biznis</h3>
+    </div>
+    <div class="admin-modal-body">
+      <form id="unfreezeForm">
+        <input type="hidden" id="unfreezeBusinessId" name="business_id">
+        
+        <div class="admin-form-group">
+          <label class="admin-form-label">Novi rok pristupa (dana)</label>
+          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 12px;">
+            <button type="button" class="admin-btn admin-btn-secondary" onclick="setQuickUnfreeze(7)">7 dana</button>
+            <button type="button" class="admin-btn admin-btn-secondary" onclick="setQuickUnfreeze(30)">30 dana</button>
+            <button type="button" class="admin-btn admin-btn-secondary" onclick="setQuickUnfreeze(90)">90 dana</button>
+            <button type="button" class="admin-btn admin-btn-secondary" onclick="setQuickUnfreeze(365)">1 godina</button>
+          </div>
+          <input type="number" class="admin-form-input" id="newAccessDays" name="new_access_days" min="1" max="365" value="30">
+        </div>
+        
+        <div style="background: #f0f9ff; padding: 16px; border-radius: 12px; margin-top: 16px;">
+          <strong>Napomena:</strong> Biznis će biti razmrznut i dobijeće novi rok pristupa. 
+          Klijent će biti obavešten o aktivaciji naloga.
+        </div>
+      </form>
+    </div>
+    <div class="admin-modal-footer">
+      <button type="button" class="admin-btn admin-btn-secondary" onclick="closeUnfreezeModal()">Otkaži</button>
+      <button type="button" class="admin-btn admin-btn-primary" onclick="confirmUnfreeze()">Razmrznuti</button>
+    </div>
+  </div>
+</div>
+
+<script>
+// Фильтрация таблицы
+function filterTable() {
+  const statusFilter = document.getElementById('statusFilter').value;
+  const searchInput = document.getElementById('searchInput').value.toLowerCase();
+  const rows = document.querySelectorAll('#businessesTable tbody tr');
+  
+  rows.forEach(row => {
+    const status = row.getAttribute('data-status');
+    const searchText = row.getAttribute('data-search');
+    
+    const statusMatch = !statusFilter || status === statusFilter;
+    const searchMatch = !searchInput || searchText.includes(searchInput);
+    
+    if (statusMatch && searchMatch) {
+      row.style.display = '';
+    } else {
+      row.style.display = 'none';
+    }
+  });
+}
+
+function refreshTable() {
+  location.reload();
+}
+
+// Функции для активации
+function activateBusiness(businessId) {
+  // console.log('activateBusiness called with ID:', businessId);
+  document.getElementById('activateBusinessId').value = businessId;
+  setQuickAccess(30);
+  const modal = document.getElementById('activateModal');
+  if (modal) {
+    modal.classList.add('show');
+    // console.log('Modal shown');
+  } else {
+    console.error('Modal not found!');
+  }
+}
+
+function setQuickAccess(days) {
+  document.getElementById('accessDays').value = days;
+  document.getElementById('accessHours').value = 0;
+  document.getElementById('accessMinutes').value = 0;
+  updateDurationPreview();
+}
+
+function updateDurationPreview() {
+  const days = parseInt(document.getElementById('accessDays').value) || 0;
+  const hours = parseInt(document.getElementById('accessHours').value) || 0;
+  const minutes = parseInt(document.getElementById('accessMinutes').value) || 0;
+  
+  let preview = '';
+  if (days > 0) preview += `${days} dana`;
+  if (hours > 0) preview += (preview ? ', ' : '') + `${hours} sati`;
+  if (minutes > 0) preview += (preview ? ', ' : '') + `${minutes} minuta`;
+  
+  document.getElementById('durationPreview').textContent = preview || '0 dana';
+}
+
+function confirmActivation() {
+  const form = document.getElementById('activateForm');
+  const formData = new FormData(form);
+  const businessId = document.getElementById('activateBusinessId').value;
+  
+  const days = parseInt(document.getElementById('accessDays').value) || 0;
+  const hours = parseInt(document.getElementById('accessHours').value) || 0;
+  const minutes = parseInt(document.getElementById('accessMinutes').value) || 0;
+  
+  if (days <= 0 && hours <= 0 && minutes <= 0) {
+    alert('Molimo unesite rok pristupa');
+    return;
+  }
+  
+  fetch(`/admin/businesses/${businessId}/activate`, {
+    method: 'POST',
+    body: formData
+  })
+  .then(response => response.json())
+  .then(data => {
+    if (data.success) {
+      location.reload();
+    } else {
+      alert('Greška: ' + data.error);
+    }
+  })
+  .catch(error => {
+    alert('Greška: ' + error);
+  });
+}
+
+function closeActivateModal() {
+  document.getElementById('activateModal').classList.remove('show');
+}
+
+// Функции для размораживания
+function unfreezeBusiness(businessId) {
+  // console.log('unfreezeBusiness called with ID:', businessId);
+  document.getElementById('unfreezeBusinessId').value = businessId;
+  setQuickUnfreeze(30);
+  const modal = document.getElementById('unfreezeModal');
+  if (modal) {
+    modal.classList.add('show');
+    // console.log('Unfreeze modal shown');
+  } else {
+    console.error('Unfreeze modal not found!');
+  }
+}
+
+function setQuickUnfreeze(days) {
+  document.getElementById('newAccessDays').value = days;
+}
+
+function confirmUnfreeze() {
+  const form = document.getElementById('unfreezeForm');
+  const formData = new FormData(form);
+  const businessId = document.getElementById('unfreezeBusinessId').value;
+  
+  const days = parseInt(document.getElementById('newAccessDays').value) || 0;
+  
+  if (days <= 0) {
+    alert('Molimo unesite broj dana za novi rok pristupa');
+    return;
+  }
+  
+  fetch(`/admin/businesses/${businessId}/unfreeze`, {
+    method: 'POST',
+    body: formData
+  })
+  .then(response => response.json())
+  .then(data => {
+    if (data.success) {
+      location.reload();
+    } else {
+      alert('Greška: ' + data.error);
+    }
+  })
+  .catch(error => {
+    alert('Greška: ' + error);
+  });
+}
+
+function closeUnfreezeModal() {
+  document.getElementById('unfreezeModal').classList.remove('show');
+}
+
+// Функции для приостановки
+function suspendBusiness(businessId) {
+  if (confirm('Da li ste sigurni da želite da suspendujete ovaj biznis?')) {
+    fetch('/admin/businesses/suspend', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        business_id: businessId
+      })
+    })
+    .then(response => response.json())
+    .then(data => {
+      if (data.success) {
+        location.reload();
+      } else {
+        alert('Greška: ' + data.error);
+      }
+    })
+    .catch(error => {
+      alert('Greška: ' + error);
+    });
+  }
+}
+
+function unsuspendBusiness(businessId) {
+  if (confirm('Da li ste sigurni da želite da aktivirate ovaj biznis?')) {
+    fetch(`/admin/businesses/${businessId}/unsuspend`, {
+      method: 'POST'
+    })
+    .then(response => response.json())
+    .then(data => {
+      if (data.success) {
+        location.reload();
+      } else {
+        alert('Greška: ' + data.error);
+      }
+    })
+    .catch(error => {
+      alert('Greška: ' + error);
+    });
+  }
+}
+
+// Сброс пароля
+function resetPassword(businessId) {
+  if (confirm('Da li ste sigurni da želite da resetujete lozinku za ovaj biznis?')) {
+    fetch(`/admin/businesses/${businessId}/reset-password`, {
+      method: 'POST'
+    })
+    .then(response => response.json())
+    .then(data => {
+      if (data.success) {
+        alert('Lozinka je uspešno resetovana i poslata na email');
+        location.reload();
+      } else {
+        alert('Greška: ' + data.error);
+      }
+    })
+    .catch(error => {
+      alert('Greška: ' + error);
+    });
+  }
+}
+
+// Удаление бизнеса и всех связанных данных
+function deleteBusiness(businessId) {
+  // Сначала получаем название бизнеса
+  const businessRow = document.querySelector(`tr[data-business-id="${businessId}"]`);
+  const businessName = businessRow ? businessRow.querySelector('td strong')?.textContent || 'ovaj biznis' : 'ovaj biznis';
+  
+  if (!confirm(`⚠️ PAŽNJA! Da li ste sigurni da želite da obrišete BIZNIS "${businessName}"?\n\nOvo će obrisati:\n- Ceo biznis\n- Sve klijente\n- Sve rezervacije\n- Sve korisnike (zaposlene)\n\nOva akcija je NEPOVRATNA!`)) {
+    return;
+  }
+  
+  // Дополнительное подтверждение
+  if (!confirm(`Poslednja šansa! Zaista obrisati biznis "${businessName}"?\n\nOvo je trajno brisanje svih podataka!`)) {
+    return;
+  }
+  
+  // Удаляем бизнес
+  fetch(`/admin/businesses/${businessId}`, {
+    method: 'DELETE'
+  })
+    .then(response => response.json())
+    .then(data => {
+      if (data.success) {
+        alert(data.message || `Biznis "${businessName}" je uspešno obrisan`);
+        location.reload();
+      } else {
+        alert('Greška: ' + (data.error || 'Nepoznata greška'));
+      }
+    })
+    .catch(err => {
+      alert('Greška pri brisanju biznisa: ' + err.message);
+    });
+}
+
+// Инициализация
+document.addEventListener('DOMContentLoaded', function() {
+  // console.log('Admin businesses page loaded');
+  
+  // Проверяем наличие элементов
+  const activateModal = document.getElementById('activateModal');
+  const unfreezeModal = document.getElementById('unfreezeModal');
+  const searchInput = document.getElementById('searchInput');
+  
+  // console.log('Elements found:');
+  // console.log('- activateModal:', activateModal);
+  // console.log('- unfreezeModal:', unfreezeModal);
+  // console.log('- searchInput:', searchInput);
+  
+  // Проверяем кнопки активации
+  const activateButtons = document.querySelectorAll('[onclick*="activateBusiness"]');
+  // console.log('Activate buttons found:', activateButtons.length);
+  
+  // Проверяем кнопки размораживания
+  const unfreezeButtons = document.querySelectorAll('[onclick*="unfreezeBusiness"]');
+  // console.log('Unfreeze buttons found:', unfreezeButtons.length);
+  
+  // Добавляем тестовую функцию для проверки модальных окон
+  window.testModal = function() {
+    // console.log('Testing modal...');
+    const modal = document.getElementById('activateModal');
+    if (modal) {
+      modal.classList.add('show');
+      // console.log('Modal should be visible now');
+    } else {
+      console.error('Modal not found!');
+    }
+  };
+  
+  // console.log('Test function added: window.testModal()');
+  // Фильтры
+  document.getElementById('statusFilter').addEventListener('change', filterTable);
+  document.getElementById('searchInput').addEventListener('input', filterTable);
+  
+  // Обновление предварительного просмотра
+  const accessDays = document.getElementById('accessDays');
+  const accessHours = document.getElementById('accessHours');
+  const accessMinutes = document.getElementById('accessMinutes');
+  
+  if (accessDays) {
+    accessDays.addEventListener('input', updateDurationPreview);
+    accessHours.addEventListener('input', updateDurationPreview);
+    accessMinutes.addEventListener('input', updateDurationPreview);
+  }
+  
+  // Закрытие модальных окон при клике вне их
+  document.addEventListener('click', function(e) {
+    if (e.target.classList.contains('admin-modal')) {
+      e.target.classList.remove('show');
+    }
+  });
+
+  // Search functionality из map.html
+  const searchBox = document.getElementById('searchInput');
+  const searchResults = document.getElementById('search-results');
+  
+  // console.log('Search elements found:');
+  // console.log('- searchBox:', searchBox);
+  // console.log('- searchResults:', searchResults);
+  
+  // Данные бизнесов из сервера
+  const businessesData = [
+    {% for business in businesses %}
+    {
+      id: {{ business.id }},
+      name: "{{ business.business_name|replace('"', '\\"') }}",
+      email: "{{ business.email|replace('"', '\\"') }}",
+      phone: "{{ (business.phone or '')|replace('"', '\\"') }}",
+      status: "{{ business.status.value }}",
+      createdDate: "{{ business.created_at.strftime('%d.%m.%Y') if business.created_at else '' }}",
+      accessEndDate: "{{ business.access_end_date.strftime('%d.%m.%Y') if business.access_end_date else '' }}"
+    }{% if not loop.last %},{% endif %}
+    {% endfor %}
+  ];
+
+  function searchBusinesses(query) {
+    // console.log('searchBusinesses called with query:', query);
+    if (!query || query.trim().length < 2) {
+      searchResults.style.display = 'none';
+      return;
+    }
+
+    const searchTerm = query.toLowerCase().trim();
+    // console.log('Search term:', searchTerm);
+    const results = businessesData.filter(business => {
+      const name = business.name.toLowerCase();
+      const email = business.email.toLowerCase();
+      const phone = business.phone.toLowerCase();
+      
+      return name.includes(searchTerm) || 
+             email.includes(searchTerm) ||
+             phone.includes(searchTerm);
+    });
+
+    // console.log('Search results:', results);
+    displaySearchResults(results);
+  }
+
+  function displaySearchResults(results) {
+    // console.log('displaySearchResults called with:', results);
+    const resultsContent = document.querySelector('.search-results-content');
+    // console.log('Results content element:', resultsContent);
+    resultsContent.innerHTML = '';
+
+    if (results.length === 0) {
+      resultsContent.innerHTML = '<div style="padding: 20px; text-align: center; color: #6b7280; font-family: \'Manrope\', sans-serif; font-size: 14px;">Nema rezultata pretrage</div>';
+    } else {
+      results.forEach(business => {
+        const resultItem = createSearchResultItem(business);
+        resultsContent.appendChild(resultItem);
+      });
+    }
+
+    // console.log('Setting search results display to block');
+    searchResults.style.display = 'block';
+  }
+
+  // Функция создания элемента результата
+  function createSearchResultItem(business) {
+    const item = document.createElement('div');
+    item.className = 'search-result-item';
+    item.onclick = () => window.location.href = `/admin/businesses/${business.id}`;
+
+    const statusText = getStatusText(business.status);
+    const statusClass = getStatusClass(business.status);
+
+    const accessInfo = business.accessEndDate ? 
+      `<div class="search-result-date">Rok: ${business.accessEndDate}</div>` :
+      '<div class="search-result-date" style="color: #9ca3af; font-style: italic;">Nema roka</div>';
+
+    const phoneInfo = business.phone ? 
+      `<div class="search-result-phone">${business.phone}</div>` :
+      '<div class="search-result-phone" style="color: #9ca3af; font-style: italic;">Nema telefona</div>';
+
+    item.innerHTML = `
+      <div class="search-result-main">
+        <div class="search-result-name">${business.name}</div>
+        ${phoneInfo}
+        <div class="search-result-last-booking">
+          ${accessInfo}
+          <div class="search-result-status ${statusClass}">${statusText}</div>
+        </div>
+      </div>
+    `;
+
+    return item;
+  }
+
+  // Функция получения текста статуса
+  function getStatusText(status) {
+    const statusMap = {
+      'pending': 'Na čekanju',
+      'active': 'Aktivan',
+      'suspended': 'Suspendovan',
+      'expired': 'Istekao rok'
+    };
+    return statusMap[status] || status;
+  }
+
+  // Функция получения CSS класса статуса
+  function getStatusClass(status) {
+    const classMap = {
+      'pending': 'pending',
+      'active': 'active',
+      'suspended': 'suspended',
+      'expired': 'expired'
+    };
+    return classMap[status] || '';
+  }
+
+  // Desktop search
+  if (searchBox) {
+    // console.log('Adding event listeners to search box');
+    searchBox.addEventListener('input', function() {
+      // console.log('Search input event triggered, value:', this.value);
+      searchBusinesses(this.value);
+    });
+
+    searchBox.addEventListener('blur', function() {
+      // console.log('Search blur event triggered');
+      if (!this.value.trim()) {
+        setTimeout(() => {
+          if (!this.value.trim()) {
+            searchResults.style.display = 'none';
+          }
+        }, 200);
+      }
+    });
+  } else {
+    console.error('Search box not found!');
+  }
+
+  // Close search results when clicking outside
+  document.addEventListener('click', function(e) {
+    const searchResults = document.getElementById('search-results');
+    const searchInput = document.getElementById('searchInput');
+    
+    if (searchResults && searchInput && 
+        !searchResults.contains(e.target) && 
+        !searchInput.contains(e.target)) {
+      searchResults.style.display = 'none';
+    }
+  });
+});
+</script>
+
+<!-- Font Awesome для иконок -->
+<link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+{% endblock %}

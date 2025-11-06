@@ -1,0 +1,407 @@
+<!DOCTYPE html>
+<html lang="sr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{ title }} - Admin Panel</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <style>
+        .sidebar {
+            min-height: 100vh;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        }
+        .sidebar .nav-link {
+            color: rgba(255, 255, 255, 0.8);
+            padding: 12px 20px;
+            border-radius: 8px;
+            margin: 4px 0;
+            transition: all 0.3s ease;
+        }
+        .sidebar .nav-link:hover,
+        .sidebar .nav-link.active {
+            color: white;
+            background: rgba(255, 255, 255, 0.1);
+        }
+        .main-content {
+            background-color: #f8f9fa;
+            min-height: 100vh;
+        }
+        .card {
+            border: none;
+            box-shadow: 0 0.125rem 0.25rem rgba(0, 0, 0, 0.075);
+            border-radius: 12px;
+        }
+        .form-control:focus {
+            border-color: #667eea;
+            box-shadow: 0 0 0 0.2rem rgba(102, 126, 234, 0.25);
+        }
+        .btn-primary {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            border: none;
+        }
+        .btn-primary:hover {
+            background: linear-gradient(135deg, #5a6fd8 0%, #6a4190 100%);
+        }
+    </style>
+</head>
+<body>
+    <div class="container-fluid">
+        <div class="row">
+            <!-- Sidebar -->
+            <div class="col-md-3 col-lg-2 sidebar p-0">
+                <div class="p-3">
+                    <h4 class="text-white mb-4">
+                        <i class="fas fa-shield-alt me-2"></i>
+                        Admin Panel
+                    </h4>
+                    <nav class="nav flex-column">
+                        <a class="nav-link" href="/admin">
+                            <i class="fas fa-tachometer-alt me-2"></i>
+                            Dashboard
+                        </a>
+                        <a class="nav-link active" href="/admin/businesses">
+                            <i class="fas fa-building me-2"></i>
+                            Businesses
+                        </a>
+                        <a class="nav-link" href="/admin/pending">
+                            <i class="fas fa-clock me-2"></i>
+                            Pending Requests
+                        </a>
+                        <a class="nav-link" href="/admin/settings">
+                            <i class="fas fa-cog me-2"></i>
+                            Settings
+                        </a>
+                        <hr class="text-white-50">
+                        <a class="nav-link" href="/admin/logout">
+                            <i class="fas fa-sign-out-alt me-2"></i>
+                            Logout
+                        </a>
+                    </nav>
+                </div>
+            </div>
+
+            <!-- Main Content -->
+            <div class="col-md-9 col-lg-10 main-content">
+                <div class="p-4">
+                    <!-- Header -->
+                    <div class="d-flex justify-content-between align-items-center mb-4">
+                        <div>
+                            <h2 class="mb-0">Edit Business</h2>
+                            <nav aria-label="breadcrumb">
+                                <ol class="breadcrumb">
+                                    <li class="breadcrumb-item"><a href="/admin">Dashboard</a></li>
+                                    <li class="breadcrumb-item"><a href="/admin/businesses">Businesses</a></li>
+                                    <li class="breadcrumb-item"><a href="/admin/businesses/{{ business.id }}">{{ business.business_name }}</a></li>
+                                    <li class="breadcrumb-item active">Edit</li>
+                                </ol>
+                            </nav>
+                        </div>
+                        <div>
+                            <a href="/admin/businesses/{{ business.id }}" class="btn btn-outline-secondary me-2">
+                                <i class="fas fa-arrow-left me-1"></i> Back to Details
+                            </a>
+                            <a href="/admin/businesses" class="btn btn-outline-secondary">
+                                <i class="fas fa-list me-1"></i> All Businesses
+                            </a>
+                        </div>
+                    </div>
+
+                    <!-- Edit Form -->
+                    <div class="row">
+                        <div class="col-lg-8">
+                            <div class="card">
+                                <div class="card-header">
+                                    <h5 class="card-title mb-0">
+                                        <i class="fas fa-edit me-2"></i>
+                                        Business Information
+                                    </h5>
+                                </div>
+                                <div class="card-body">
+                                    <form id="editForm">
+                                        <input type="hidden" name="business_id" value="{{ business.id }}">
+                                        
+                                        <div class="row">
+                                            <div class="col-md-6 mb-3">
+                                                <label for="business_name" class="form-label">Business Name *</label>
+                                                <input type="text" class="form-control" id="business_name" name="business_name" 
+                                                       value="{{ business.business_name }}" required>
+                                            </div>
+                                            <div class="col-md-6 mb-3">
+                                                <label for="contact_person" class="form-label">Contact Person *</label>
+                                                <input type="text" class="form-control" id="contact_person" name="contact_person" 
+                                                       value="{{ business.contact_person }}" required>
+                                            </div>
+                                        </div>
+
+                                        <div class="row">
+                                            <div class="col-md-6 mb-3">
+                                                <label for="email" class="form-label">Email *</label>
+                                                <input type="email" class="form-control" id="email" name="email" 
+                                                       value="{{ business.email }}" required>
+                                            </div>
+                                            <div class="col-md-6 mb-3">
+                                                <label for="phone" class="form-label">Phone *</label>
+                                                <input type="tel" class="form-control" id="phone" name="phone" 
+                                                       value="{{ business.phone }}" required>
+                                            </div>
+                                        </div>
+
+                                        <div class="row">
+                                            <div class="col-md-6 mb-3">
+                                                <label for="city" class="form-label">City</label>
+                                                <input type="text" class="form-control" id="city" name="city" 
+                                                       value="{{ business.city or '' }}">
+                                            </div>
+                                            <div class="col-md-6 mb-3">
+                                                <label for="country" class="form-label">Country</label>
+                                                <input type="text" class="form-control" id="country" name="country" 
+                                                       value="{{ business.country or '' }}">
+                                            </div>
+                                        </div>
+
+                                        <div class="mb-3">
+                                            <label for="address" class="form-label">Address</label>
+                                            <textarea class="form-control" id="address" name="address" rows="2">{{ business.address or '' }}</textarea>
+                                        </div>
+
+                                        <div class="mb-3">
+                                            <label for="business_type" class="form-label">Business Type</label>
+                                            <select class="form-select" id="business_type" name="business_type">
+                                                <option value="">Select business type</option>
+                                                <option value="restaurant" {% if business.business_type == 'restaurant' %}selected{% endif %}>Restaurant</option>
+                                                <option value="bar" {% if business.business_type == 'bar' %}selected{% endif %}>Bar</option>
+                                                <option value="club" {% if business.business_type == 'club' %}selected{% endif %}>Club</option>
+                                                <option value="cafe" {% if business.business_type == 'cafe' %}selected{% endif %}>Cafe</option>
+                                                <option value="hotel" {% if business.business_type == 'hotel' %}selected{% endif %}>Hotel</option>
+                                                <option value="other" {% if business.business_type == 'other' %}selected{% endif %}>Other</option>
+                                            </select>
+                                        </div>
+
+                                        <div class="mb-3">
+                                            <label for="description" class="form-label">Description</label>
+                                            <textarea class="form-control" id="description" name="description" rows="4">{{ business.description or '' }}</textarea>
+                                        </div>
+
+                                        <div class="mb-3">
+                                            <label for="notes" class="form-label">Admin Notes</label>
+                                            <textarea class="form-control" id="notes" name="notes" rows="3">{{ business.notes or '' }}</textarea>
+                                            <div class="form-text">Internal notes visible only to admins</div>
+                                        </div>
+
+                                        <div class="d-flex justify-content-between">
+                                            <a href="/admin/businesses/{{ business.id }}" class="btn btn-outline-secondary">
+                                                <i class="fas fa-times me-1"></i> Cancel
+                                            </a>
+                                            <button type="submit" class="btn btn-primary">
+                                                <i class="fas fa-save me-1"></i> Save Changes
+                                            </button>
+                                        </div>
+                                    </form>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Sidebar Info -->
+                        <div class="col-lg-4">
+                            <div class="card">
+                                <div class="card-header">
+                                    <h6 class="card-title mb-0">
+                                        <i class="fas fa-info-circle me-2"></i>
+                                        Business Status
+                                    </h6>
+                                </div>
+                                <div class="card-body">
+                                    <div class="mb-3">
+                                        <strong>Status:</strong><br>
+                                        <span class="badge bg-{% if business.status.value == 'active' %}success{% elif business.status.value == 'pending' %}warning{% elif business.status.value == 'suspended' %}danger{% else %}secondary{% endif %}">
+                                            {{ business.status.value.title() }}
+                                        </span>
+                                    </div>
+                                    <div class="mb-3">
+                                        <strong>Registered:</strong><br>
+                                        {{ business.created_at.strftime('%Y-%m-%d %H:%M') }}
+                                    </div>
+                                    <div class="mb-3">
+                                        <strong>Last Updated:</strong><br>
+                                        {{ business.updated_at.strftime('%Y-%m-%d %H:%M') }}
+                                    </div>
+                                    {% if business.password_hash %}
+                                    <div class="alert alert-success">
+                                        <i class="fas fa-check-circle me-2"></i>
+                                        Password is set
+                                    </div>
+                                    {% else %}
+                                    <div class="alert alert-warning">
+                                        <i class="fas fa-exclamation-triangle me-2"></i>
+                                        No password set
+                                    </div>
+                                    {% endif %}
+                                </div>
+                            </div>
+
+                            <div class="card mt-3">
+                                <div class="card-header">
+                                    <h6 class="card-title mb-0">
+                                        <i class="fas fa-tools me-2"></i>
+                                        Quick Actions
+                                    </h6>
+                                </div>
+                                <div class="card-body">
+                                    <div class="d-grid gap-2">
+                                        {% if business.status.value == 'pending' %}
+                                        <button class="btn btn-success btn-sm" onclick="activateBusiness({{ business.id }})">
+                                            <i class="fas fa-check me-1"></i> Activate Business
+                                        </button>
+                                        {% elif business.status.value == 'active' %}
+                                        <button class="btn btn-warning btn-sm" onclick="suspendBusiness({{ business.id }})">
+                                            <i class="fas fa-pause me-1"></i> Suspend Business
+                                        </button>
+                                        {% elif business.status.value == 'suspended' %}
+                                        <button class="btn btn-success btn-sm" onclick="activateBusiness({{ business.id }})">
+                                            <i class="fas fa-play me-1"></i> Reactivate Business
+                                        </button>
+                                        {% endif %}
+                                        <button class="btn btn-primary btn-sm" onclick="resetPassword({{ business.id }})">
+                                            <i class="fas fa-key me-1"></i> Reset Password
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Activation Modal -->
+    <div class="modal fade" id="activationModal" tabindex="-1">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Activate Business</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <form id="activationForm">
+                        <input type="hidden" id="businessId" name="business_id" value="{{ business.id }}">
+                        <div class="mb-3">
+                            <label for="accessDays" class="form-label">Access Duration (days)</label>
+                            <select class="form-select" id="accessDays" name="access_days" required>
+                                <option value="7">7 days (Trial)</option>
+                                <option value="30">30 days</option>
+                                <option value="90">90 days</option>
+                                <option value="365">1 year</option>
+                            </select>
+                        </div>
+                    </form>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="button" class="btn btn-success" onclick="confirmActivation()">Activate</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        document.getElementById('editForm').addEventListener('submit', function(e) {
+            e.preventDefault();
+            
+            const formData = new FormData(this);
+            
+            fetch(`/admin/businesses/{{ business.id }}/edit`, {
+                method: 'POST',
+                body: formData
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    alert('Business updated successfully!');
+                    window.location.href = `/admin/businesses/{{ business.id }}`;
+                } else {
+                    alert('Error: ' + data.message);
+                }
+            })
+            .catch(error => {
+                alert('Error: ' + error);
+            });
+        });
+
+        function activateBusiness(businessId) {
+            document.getElementById('businessId').value = businessId;
+            const modal = new bootstrap.Modal(document.getElementById('activationModal'));
+            modal.show();
+        }
+
+        function confirmActivation() {
+            const form = document.getElementById('activationForm');
+            const formData = new FormData(form);
+            const businessId = document.getElementById('businessId').value;
+            
+            fetch(`/admin/businesses/${businessId}/activate`, {
+                method: 'POST',
+                body: formData
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    location.reload();
+                } else {
+                    alert('Error: ' + data.message);
+                }
+            })
+            .catch(error => {
+                alert('Error: ' + error);
+            });
+        }
+
+        function suspendBusiness(businessId) {
+            if (confirm('Are you sure you want to suspend this business?')) {
+                fetch('/admin/businesses/suspend', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({ business_id: businessId })
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        location.reload();
+                    } else {
+                        alert('Error: ' + data.message);
+                    }
+                })
+                .catch(error => {
+                    alert('Error: ' + error);
+                });
+            }
+        }
+
+        function resetPassword(businessId) {
+            if (confirm('Вы уверены, что хотите сбросить пароль для этого бизнеса? Новый пароль будет отправлен на email.')) {
+                fetch(`/admin/businesses/${businessId}/reset-password`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    }
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        alert(data.message);
+                    } else {
+                        alert('Ошибка: ' + data.message);
+                    }
+                })
+                .catch(error => {
+                    alert('Ошибка: ' + error);
+                });
+            }
+        }
+    </script>
+</body>
+</html>

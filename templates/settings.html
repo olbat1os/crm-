@@ -1,0 +1,3327 @@
+{% extends 'settings_base.html' %}
+{% block content %}
+<style>
+  /* Mobile Header */
+  .mobile-header {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 70px;
+    background: #FFFFFF;
+    display: none;
+    align-items: center;
+    z-index: 1000;
+  }
+
+
+  .mobile-logo {
+    position: absolute;
+    width: 109px;
+    height: 24px;
+    top: 23px;
+    left: 20px;
+  }
+
+  .mobile-search-btn {
+    position: absolute;
+    width: 22px;
+    height: 22px;
+    top: 20px;
+    right: 84px;
+    cursor: pointer;
+  }
+
+  .mobile-notification-btn {
+    position: absolute;
+    width: 22px;
+    height: 22px;
+    top: 20px;
+    right: 52px;
+    cursor: pointer;
+  }
+
+  .mobile-menu-btn {
+    position: absolute;
+    width: 22px;
+    height: 22px;
+    top: 20px;
+    right: 20px;
+    cursor: pointer;
+  }
+
+  .mobile-search-modal {
+    position: fixed;
+    top: 70px;
+    left: 0;
+    right: 0;
+    background: #FFFFFF;
+    border-top: 1px solid #D9D9D9;
+    padding: 20px;
+    z-index: 999;
+    display: none;
+  }
+
+  .mobile-search-input {
+    width: 100%;
+    height: 40px;
+    border: 1px solid #D9D9D9;
+    border-radius: 20px;
+    padding: 0 20px;
+    font-family: 'Manrope', sans-serif;
+    font-size: 16px;
+    outline: none;
+  }
+
+  /* Mobile Sidebar */
+  .mobile-sidebar {
+    position: fixed;
+    top: 0;
+    right: 0;
+    width: 235px;
+    height: 100vh;
+    background: linear-gradient(179.27deg, #2CAB5C 0%, #11998E 100%);
+    border-radius: 1px;
+    transition: transform 0.3s ease;
+    z-index: 2000;
+    overflow-y: auto;
+    transform: translateX(100%);
+  }
+
+  .mobile-sidebar-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.5);
+    z-index: 1500;
+    display: none;
+  }
+
+  .mobile-sidebar-overlay.show {
+    display: block;
+  }
+
+  .mobile-sidebar.open {
+    transform: translateX(0);
+  }
+
+  /* Mobile Sidebar Content */
+  .mobile-sidebar-content {
+    padding: 20px;
+    color: #FFFFFF;
+  }
+
+  .mobile-sidebar-item {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    height: 60px;
+    padding: 0 20px;
+    cursor: pointer;
+    color: #FFFFFF;
+    text-decoration: none;
+    font-family: 'Manrope', sans-serif;
+  }
+
+  .mobile-sidebar-item:hover {
+    background: rgba(255, 255, 255, 0.1);
+  }
+
+  .mobile-sidebar-arrow {
+    width: 7px;
+    height: 14px;
+  }
+
+  .mobile-sidebar-logo {
+    position: absolute;
+    bottom: 20px;
+    left: 20px;
+    width: 136px;
+    height: 30px;
+  }
+
+  /* Стили для поиска */
+  .search-results {
+    background: #ffffff;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+    border-radius: 12px;
+    border: 1px solid #e5e7eb;
+    overflow: hidden;
+    z-index: 1000;
+  }
+
+  .search-results-content {
+    padding: 8px;
+    height: 100%;
+    overflow-y: auto;
+  }
+
+  .search-result-item {
+    display: flex;
+    align-items: center;
+    padding: 12px;
+    border-bottom: 1px solid #f3f4f6;
+    cursor: pointer;
+    transition: background-color 0.2s ease;
+    border-radius: 8px;
+    margin-bottom: 4px;
+  }
+
+  .search-result-item:hover {
+    background-color: #f9fafb;
+  }
+
+  .search-result-item:last-child {
+    border-bottom: none;
+    margin-bottom: 0;
+  }
+
+  .search-result-main {
+    flex: 1;
+  }
+
+  .search-result-name {
+    font-family: 'Manrope', sans-serif;
+    font-weight: 600;
+    font-size: 14px;
+    color: #000000;
+    margin-bottom: 2px;
+  }
+
+  .search-result-phone {
+    font-family: 'Manrope', sans-serif;
+    font-weight: 400;
+    font-size: 12px;
+    color: #6b7280;
+    margin-bottom: 6px;
+  }
+
+  .search-result-last-booking {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .search-result-date {
+    font-family: 'Manrope', sans-serif;
+    font-weight: 400;
+    font-size: 11px;
+    color: #6b7280;
+  }
+
+  .search-result-status {
+    font-family: 'Manrope', sans-serif;
+    font-weight: 600;
+    font-size: 10px;
+    padding: 2px 6px;
+    border-radius: 8px;
+    color: #000000;
+  }
+
+  .search-result-status.dogovoreno { background: #FFF0BF; border: 1px solid #DBC787; }
+  .search-result-status.na-cekaju { background: #E8D8F8; border: 1px solid #9C27B0; }
+  .search-result-status.potvrdjeno { background: #D8F8E4; border: 1px solid #4CAF50; }
+  .search-result-status.otkazano { background: #FFBFBF; border: 1px solid #F44336; }
+  .search-result-status.nisu-dosli { background: #FFD59E; border: 1px solid #FF9800; }
+  .search-result-status.dosli { background: #C7F4FF; border: 1px solid #2196F3; }
+
+  .search-results::-webkit-scrollbar {
+    width: 4px;
+  }
+
+  .search-results::-webkit-scrollbar-track {
+    background: #f1f1f1;
+    border-radius: 2px;
+  }
+
+  .search-results::-webkit-scrollbar-thumb {
+    background: #11998E;
+    border-radius: 2px;
+  }
+
+  .search-results::-webkit-scrollbar-thumb:hover {
+    background: #0d7a6f;
+  }
+
+  /* Mobile Responsive Styles */
+  @media (max-width: 768px) {
+    .mobile-header {
+      display: flex;
+    }
+    
+    .sidebar {
+      display: none !important;
+    }
+    
+    .logo-home {
+      display: none !important;
+    }
+    
+    .search-container {
+      display: none !important;
+    }
+    
+    .bell-icon {
+      display: none !important;
+    }
+    
+    .top-right {
+      display: none !important;
+    }
+
+    .main {
+      margin-left: 0 !important;
+    }
+
+    .main-inner {
+      padding-top: 0 !important;
+    }
+
+    /* Mobile client-info-panel */
+    .client-info-panel {
+      margin-top: 70px !important;
+    }
+
+    /* Mobile schedule layout */
+    .schedule-header-row {
+      flex-direction: column !important;
+      align-items: flex-start !important;
+    }
+
+    .schedule-header-row .detail-label {
+      width: 100% !important;
+      margin-bottom: 10px !important;
+    }
+
+    .schedule-table {
+      width: 100% !important;
+    }
+
+    /* Mobile right panel layout */
+    .right-panel-header {
+      flex-direction: column !important;
+      align-items: center !important;
+      gap: 10px !important;
+    }
+
+    .header-content {
+      width: 100% !important;
+      flex-direction: column !important;
+      align-items: center !important;
+      gap: 10px !important;
+    }
+
+    .add-user-section {
+      justify-content: center !important;
+    }
+
+    .add-user-btn {
+      width: 100% !important;
+      max-width: none !important;
+    }
+
+    /* Mobile search results */
+    #search-results {
+      position: fixed !important;
+      top: 130px !important;
+      left: 20px !important;
+      right: 20px !important;
+      width: auto !important;
+      height: 250px !important;
+    }
+  }
+</style>
+
+<!-- Mobile Header -->
+<div class="mobile-header">
+  <img src="/static/images/logo home.png" alt="LOVACRM" class="mobile-logo">
+  <img src="/static/images/poisk.png" alt="Search" class="mobile-search-btn" onclick="toggleMobileSearch()">
+  <img src="/static/images/kolokolchik logo.png" alt="Notifications" class="mobile-notification-btn">
+  <img src="/static/images/menu.png" alt="Menu" class="mobile-menu-btn" onclick="toggleMobileSidebar()">
+</div>
+
+<!-- Mobile Search Modal -->
+<div class="mobile-search-modal" id="mobileSearchModal">
+  <input type="text" class="mobile-search-input" placeholder="Search..." id="mobileSearchInput">
+</div>
+
+<!-- Mobile Sidebar Overlay -->
+<div class="mobile-sidebar-overlay" id="mobileSidebarOverlay" onclick="closeMobileSidebar()"></div>
+
+<!-- Mobile Sidebar -->
+<div class="mobile-sidebar" id="mobileSidebar">
+  <div class="mobile-sidebar-content">
+    <a href="/dashboard" class="mobile-sidebar-item">
+      <div style="display: flex; align-items: center;">
+        <img src="/static/images/logo dashbord.png" alt="Dashboard" style="width: 20px; height: 20px; margin-right: 15px;">
+        Dashboard
+      </div>
+      <img src="/static/images/strelka logo.png" alt="Arrow" class="mobile-sidebar-arrow">
+    </a>
+    <a href="/booking" class="mobile-sidebar-item">
+      <div style="display: flex; align-items: center;">
+        <img src="/static/images/booking logo.png" alt="Booking" style="width: 20px; height: 20px; margin-right: 15px;">
+        Booking
+      </div>
+      <img src="/static/images/strelka logo.png" alt="Arrow" class="mobile-sidebar-arrow">
+    </a>
+    <a href="/clients" class="mobile-sidebar-item">
+      <div style="display: flex; align-items: center;">
+        <img src="/static/images/klijenti logo.png" alt="Klijenti" style="width: 20px; height: 20px; margin-right: 15px;">
+        Klijenti
+      </div>
+      <img src="/static/images/strelka logo.png" alt="Arrow" class="mobile-sidebar-arrow">
+    </a>
+    <a href="/map" class="mobile-sidebar-item">
+      <div style="display: flex; align-items: center;">
+        <img src="/static/images/mapa logo.png" alt="Mapa" style="width: 20px; height: 20px; margin-right: 15px;">
+        Mapa
+      </div>
+      <img src="/static/images/strelka logo.png" alt="Arrow" class="mobile-sidebar-arrow">
+    </a>
+    <a href="/marketing" class="mobile-sidebar-item">
+      <div style="display: flex; align-items: center;">
+        <img src="/static/images/marketing logo.png" alt="Marketing" style="width: 20px; height: 20px; margin-right: 15px;">
+        Marketing
+      </div>
+      <img src="/static/images/strelka logo.png" alt="Arrow" class="mobile-sidebar-arrow">
+    </a>
+    <a href="/settings" class="mobile-sidebar-item">
+      <div style="display: flex; align-items: center;">
+        <img src="/static/images/setting logo.png" alt="Podešavanja" style="width: 20px; height: 20px; margin-right: 15px;">
+        Podešavanja
+      </div>
+      <img src="/static/images/strelka logo.png" alt="Arrow" class="mobile-sidebar-arrow">
+    </a>
+  </div>
+  <img src="/static/images/logo_login.svg.png" alt="Logo" class="mobile-sidebar-logo">
+</div>
+
+<!-- Результаты поиска -->
+<div id="search-results" class="search-results" style="position:absolute; right:25px; top:75px; width:290px; height:250px; display:none;">
+  <div class="search-results-content">
+    <!-- Результаты будут добавлены динамически -->
+  </div>
+</div>
+
+<script>
+  // Mobile sidebar functions
+  function toggleMobileSidebar() {
+    const sidebar = document.getElementById('mobileSidebar');
+    const overlay = document.getElementById('mobileSidebarOverlay');
+    
+    sidebar.classList.toggle('open');
+    overlay.classList.toggle('show');
+  }
+
+  function closeMobileSidebar() {
+    const sidebar = document.getElementById('mobileSidebar');
+    const overlay = document.getElementById('mobileSidebarOverlay');
+    
+    sidebar.classList.remove('open');
+    overlay.classList.remove('show');
+  }
+
+  // Mobile search functions
+  function toggleMobileSearch() {
+    const modal = document.getElementById('mobileSearchModal');
+    const isVisible = modal.style.display === 'block';
+    
+    if (isVisible) {
+      modal.style.display = 'none';
+    } else {
+      modal.style.display = 'block';
+      document.getElementById('mobileSearchInput').focus();
+    }
+  }
+
+  // Close mobile search modal when clicking outside
+  document.addEventListener('click', function(e) {
+    const modal = document.getElementById('mobileSearchModal');
+    const searchBtn = document.querySelector('.mobile-search-btn');
+    const searchResults = document.getElementById('search-results');
+    
+    // Проверяем, что клик не по модальному окну, кнопке поиска или результатам поиска
+    if (modal && modal.style.display === 'block' && 
+        !modal.contains(e.target) && 
+        !searchBtn.contains(e.target) && 
+        !searchResults.contains(e.target)) {
+      modal.style.display = 'none';
+      searchResults.style.display = 'none';
+    }
+  });
+
+  // Search functionality
+  document.addEventListener('DOMContentLoaded', function() {
+    const searchBox = document.querySelector('.search-box');
+    const searchResults = document.getElementById('search-results');
+    
+    // Данные клиентов из сервера
+    const clientsData = [
+        {% for c in contacts %}
+        {
+            id: {{ c.id }},
+            firstName: "{{ c.first_name or '' }}",
+            lastName: "{{ c.last_name or '' }}",
+            phone: "{{ c.phone or '' }}",
+            lastBookingDate: "{{ client_stats[c.id].last_visit_str or '' }}",
+            lastBookingTime: "",
+            lastBookingStatus: "{{ client_stats[c.id].last_booking_status or '' }}",
+            visitsCount: {{ client_stats[c.id].visits_confirmed or 0 }},
+            averageSpend: {{ client_stats[c.id].avg_spend or 0 }}
+        }{% if not loop.last %},{% endif %}
+        {% endfor %}
+    ];
+
+    function searchClients(query) {
+      if (!query || query.trim().length < 2) {
+        searchResults.style.display = 'none';
+        return;
+      }
+
+      const searchTerm = query.toLowerCase().trim();
+      const results = clientsData.filter(client => {
+        const fullName = `${client.firstName} ${client.lastName}`.toLowerCase();
+        const phone = client.phone.toLowerCase();
+        
+        return fullName.includes(searchTerm) || 
+               phone.includes(searchTerm) ||
+               client.firstName.toLowerCase().includes(searchTerm) ||
+               client.lastName.toLowerCase().includes(searchTerm);
+      });
+
+      displaySearchResults(results);
+    }
+
+    function displaySearchResults(results) {
+      const resultsContent = document.querySelector('.search-results-content');
+      resultsContent.innerHTML = '';
+
+      if (results.length === 0) {
+        resultsContent.innerHTML = '<div style="padding: 20px; text-align: center; color: #6b7280; font-family: \'Manrope\', sans-serif; font-size: 14px;">Nema rezultata pretrage</div>';
+      } else {
+        results.forEach(client => {
+          const resultItem = createSearchResultItem(client);
+          resultsContent.appendChild(resultItem);
+        });
+      }
+
+      searchResults.style.display = 'block';
+    }
+
+    // Функция создания элемента результата
+    function createSearchResultItem(client) {
+      const item = document.createElement('div');
+      item.className = 'search-result-item';
+      item.onclick = () => window.location.href = `/clients/${client.id}`;
+
+      const statusText = getStatusText(client.lastBookingStatus);
+      const statusClass = getStatusClass(client.lastBookingStatus);
+
+      const lastBookingInfo = client.lastBookingDate ? 
+        `<div class="search-result-date">${client.lastBookingDate}</div>
+         ${client.lastBookingStatus ? `<div class="search-result-status ${statusClass}">${statusText}</div>` : ''}` :
+        '<div class="search-result-date" style="color: #9ca3af; font-style: italic;">Nema rezervacije</div>';
+
+      const phoneInfo = client.phone ? 
+        `<div class="search-result-phone">${client.phone}</div>` :
+        '<div class="search-result-phone" style="color: #9ca3af; font-style: italic;">Nema telefona</div>';
+
+      item.innerHTML = `
+        <div class="search-result-main">
+          <div class="search-result-name">${client.firstName} ${client.lastName}</div>
+          ${phoneInfo}
+          <div class="search-result-last-booking">
+            ${lastBookingInfo}
+          </div>
+        </div>
+      `;
+
+      return item;
+    }
+
+    // Функция получения текста статуса
+    function getStatusText(status) {
+      const statusMap = {
+        'dogovoreno': 'Dogovoreno',
+        'na_cekaju': 'Na čekanju',
+        'nacekanju': 'Na čekanju',
+        'potvrdjeno': 'Potvrđeno',
+        'otkazano': 'Otkazano',
+        'nisu': 'Nisu došli',
+        'dosli': 'Došli'
+      };
+      return statusMap[status] || status;
+    }
+
+    // Функция получения CSS класса статуса
+    function getStatusClass(status) {
+      const classMap = {
+        'dogovoreno': 'dogovoreno',
+        'na_cekaju': 'na-cekaju',
+        'nacekanju': 'na-cekaju',
+        'potvrdjeno': 'potvrdjeno',
+        'otkazano': 'otkazano',
+        'nisu': 'nisu-dosli',
+        'dosli': 'dosli'
+      };
+      return classMap[status] || '';
+    }
+
+    // Desktop search
+    if (searchBox) {
+      searchBox.addEventListener('input', function() {
+        searchClients(this.value);
+      });
+
+      searchBox.addEventListener('blur', function() {
+        if (!this.value.trim()) {
+          setTimeout(() => {
+            if (!this.value.trim()) {
+              searchResults.style.display = 'none';
+            }
+          }, 200);
+        }
+      });
+    }
+
+    // Mobile search
+    const mobileSearchInput = document.getElementById('mobileSearchInput');
+    if (mobileSearchInput) {
+      mobileSearchInput.addEventListener('input', function() {
+        searchClients(this.value);
+      });
+    }
+  });
+</script>
+
+<div class="client-card-container">
+    <!-- Left Panel - Settings Info -->
+    <div class="client-info-panel">
+        <!-- Profile Section -->
+        <div class="profile-section">
+            <img src="/static/images/profil.png" alt="Profile" class="profile-icon">
+            <h1 class="profile-title">Profil</h1>
+        </div>
+        
+        <!-- Divider Line -->
+        <div class="divider-line-small"></div>
+        
+        <!-- Profile Details -->
+        <div class="profile-details">
+            <!-- Naziv -->
+            <div class="detail-row">
+                <span class="detail-label">Naziv:</span>
+                <span class="detail-value" contenteditable="true" id="business_name" onfocus="handleFieldFocus(this)" onblur="handleFieldBlur(this, 'business_name')">...</span>
+            </div>
+            
+            <!-- Adresa -->
+            <div class="detail-row">
+                <span class="detail-label">Adresa:</span>
+                <span class="detail-value" contenteditable="true" id="address" onfocus="handleFieldFocus(this)" onblur="handleFieldBlur(this, 'address')">...</span>
+            </div>
+            
+            <!-- Raspored rada -->
+            <div class="work-schedule">
+                <div class="schedule-header-row">
+                    <span class="detail-label">Raspored rada:</span>
+                    <div class="schedule-table">
+                        <!-- Monday -->
+                        <div class="day-row">
+                            <div class="day-checkbox">
+                                <input type="checkbox" id="monday" checked>
+                                <label for="monday">Ponedeljak</label>
+                            </div>
+                            <div class="time-inputs">
+                                <input type="time" value="09:00" class="time-start">
+                                <span class="time-separator">-</span>
+                                <input type="time" value="17:00" class="time-end">
+                            </div>
+                        </div>
+                        
+                        <!-- Tuesday -->
+                        <div class="day-row">
+                            <div class="day-checkbox">
+                                <input type="checkbox" id="tuesday" checked>
+                                <label for="tuesday">Utorak</label>
+                            </div>
+                            <div class="time-inputs">
+                                <input type="time" value="09:00" class="time-start">
+                                <span class="time-separator">-</span>
+                                <input type="time" value="17:00" class="time-end">
+                            </div>
+                        </div>
+                        
+                        <!-- Wednesday -->
+                        <div class="day-row">
+                            <div class="day-checkbox">
+                                <input type="checkbox" id="wednesday" checked>
+                                <label for="wednesday">Sreda</label>
+                            </div>
+                            <div class="time-inputs">
+                                <input type="time" value="09:00" class="time-start">
+                                <span class="time-separator">-</span>
+                                <input type="time" value="17:00" class="time-end">
+                            </div>
+                        </div>
+                        
+                        <!-- Thursday -->
+                        <div class="day-row">
+                            <div class="day-checkbox">
+                                <input type="checkbox" id="thursday" checked>
+                                <label for="thursday">Četvrtak</label>
+                            </div>
+                            <div class="time-inputs">
+                                <input type="time" value="09:00" class="time-start">
+                                <span class="time-separator">-</span>
+                                <input type="time" value="17:00" class="time-end">
+                            </div>
+                        </div>
+                        
+                        <!-- Friday -->
+                        <div class="day-row">
+                            <div class="day-checkbox">
+                                <input type="checkbox" id="friday" checked>
+                                <label for="friday">Petak</label>
+                            </div>
+                            <div class="time-inputs">
+                                <input type="time" value="09:00" class="time-start">
+                                <span class="time-separator">-</span>
+                                <input type="time" value="17:00" class="time-end">
+                            </div>
+                        </div>
+                        
+                        <!-- Saturday -->
+                        <div class="day-row">
+                            <div class="day-checkbox">
+                                <input type="checkbox" id="saturday">
+                                <label for="saturday">Subota</label>
+                            </div>
+                            <div class="time-inputs">
+                                <input type="time" value="09:00" class="time-start">
+                                <span class="time-separator">-</span>
+                                <input type="time" value="17:00" class="time-end">
+                            </div>
+                        </div>
+                        
+                        <!-- Sunday -->
+                        <div class="day-row">
+                            <div class="day-checkbox">
+                                <input type="checkbox" id="sunday">
+                                <label for="sunday">Nedelja</label>
+                            </div>
+                            <div class="time-inputs">
+                                <input type="time" value="09:00" class="time-start">
+                                <span class="time-separator">-</span>
+                                <input type="time" value="17:00" class="time-end">
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Jezik -->
+            <div class="detail-row">
+                <span class="detail-label">Jezik:</span>
+                <div class="dropdown-container">
+                    <span class="dropdown-value">Sr</span>
+                    <div class="dropdown-arrow">▼</div>
+                </div>
+            </div>
+            
+            <!-- Valuta -->
+            <div class="detail-row">
+                <span class="detail-label">Valuta:</span>
+                <div class="dropdown-container">
+                    <span class="dropdown-value">RSD</span>
+                    <div class="dropdown-arrow">▼</div>
+                </div>
+            </div>
+            
+        <!-- Вместимость заведения -->
+        <div class="detail-row">
+            <span class="detail-label">Kapacitet:</span>
+            <span class="detail-value" id="capacity" contenteditable="true" data-field="capacity">...</span>
+        </div>
+        
+            <!-- Продолжительность резервации -->
+            <div class="detail-row">
+                <span class="detail-label">Trajanje rezervacije (sati):</span>
+                <div class="dropdown-container" onclick="toggleBookingDurationDropdown()">
+                    <span class="dropdown-value" id="bookingDurationValue">2</span>
+                    <div class="dropdown-arrow">▼</div>
+                    <div class="dropdown-menu" id="bookingDurationMenu">
+                        <div class="dropdown-item" onclick="selectBookingDuration(0)">0</div>
+                        <div class="dropdown-item" onclick="selectBookingDuration(1)">1</div>
+                        <div class="dropdown-item" onclick="selectBookingDuration(2)">2</div>
+                        <div class="dropdown-item" onclick="selectBookingDuration(3)">3</div>
+                        <div class="dropdown-item" onclick="selectBookingDuration(4)">4</div>
+                        <div class="dropdown-item" onclick="selectBookingDuration(5)">5</div>
+                        <div class="dropdown-item" onclick="selectBookingDuration(6)">6</div>
+                        <div class="dropdown-item" onclick="selectBookingDuration(7)">7</div>
+                        <div class="dropdown-item" onclick="selectBookingDuration(8)">8</div>
+                        <div class="dropdown-item" onclick="selectBookingDuration(9)">9</div>
+                        <div class="dropdown-item" onclick="selectBookingDuration(10)">10</div>
+                        <div class="dropdown-item" onclick="selectBookingDuration(11)">11</div>
+                        <div class="dropdown-item" onclick="selectBookingDuration(12)">12</div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Divider Line -->
+            <div class="divider-line-small"></div>
+            
+            <!-- Email -->
+            <div class="detail-row">
+                <span class="detail-label">Email:</span>
+                <span class="detail-value readonly-field" id="email" title="Email адрес нельзя изменить">...</span>
+            </div>
+            
+            <!-- Password -->
+            <div class="detail-row password-row">
+                <span class="detail-label">Password:</span>
+                <span class="detail-value password-field" contenteditable="true" id="current_password" onfocus="handlePasswordFocus(this)" onblur="handlePasswordBlur(this, 'current_password')">...</span>
+            </div>
+            
+            <!-- New Password -->
+            <div class="detail-row password-row">
+                <span class="detail-label">Novi password:</span>
+                <span class="detail-value password-field" contenteditable="true" id="new_password" onfocus="handlePasswordFocus(this)" onblur="handlePasswordBlur(this, 'new_password')">...</span>
+            </div>
+            
+            <!-- Buttons -->
+            <div class="buttons-container">
+                <button class="cancel-btn">Otkaži</button>
+                <button class="save-btn">Sačuvaj</button>
+            </div>
+            
+            <!-- Logout Button -->
+            <div class="logout-container">
+                <button class="logout-btn" onclick="logout()">
+                    <svg width="18" height="18" viewBox="0 0 18 18" fill="none" xmlns="http://www.w3.org/2000/svg" style="margin-right: 8px;">
+                        <path d="M7 16H3C2.46957 16 1.96086 15.7893 1.58579 15.4142C1.21071 15.0391 1 14.5304 1 14V4C1 3.46957 1.21071 2.96086 1.58579 2.58579C1.96086 2.21071 2.46957 2 3 2H7M12 13L17 9M17 9L12 5M17 9H7" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                    </svg>
+                    Izloguj se
+                </button>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Right Panel - Settings Content -->
+    <div class="right-panel">
+        <!-- Header Section -->
+        <div class="right-panel-header">
+            <div class="sotrudniki-photos">
+                <img src="/static/images/sotrudniki.png" alt="Sotrudniki" class="sotrudniki-image">
+            </div>
+            <div class="header-content">
+                <h1 class="main-title">Korisnici i uloge</h1>
+            </div>
+            <!-- Add User Button Section -->
+            <div class="add-user-section">
+                <button class="add-user-btn">
+                    <svg width="190" height="40" viewBox="0 0 190 40" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <rect width="190" height="40" rx="20" fill="#FFF0BF"/>
+                        <rect width="190" height="40" rx="20" fill="url(#paint0_linear_90_6112)"/>
+                        <path d="M41.1699 24.633V21.087H37.6239V19.953H41.1699V16.407H42.3039V19.953H45.8409V21.087H42.3039V24.633H41.1699ZM51.7786 27V14.04H53.1106L60.2476 24.66V14.04H61.5796V27H60.2476L53.1106 16.371V27H51.7786ZM68.1598 27.27C67.1938 27.27 66.3688 27.051 65.6848 26.613C65.0008 26.175 64.4758 25.569 64.1098 24.795C63.7438 24.021 63.5608 23.133 63.5608 22.131C63.5608 21.111 63.7468 20.217 64.1188 19.449C64.4908 18.681 65.0188 18.084 65.7028 17.658C66.3928 17.226 67.2118 17.01 68.1598 17.01C69.1318 17.01 69.9598 17.229 70.6438 17.667C71.3338 18.099 71.8588 18.702 72.2188 19.476C72.5848 20.244 72.7678 21.129 72.7678 22.131C72.7678 23.151 72.5848 24.048 72.2188 24.822C71.8528 25.59 71.3248 26.19 70.6348 26.622C69.9448 27.054 69.1198 27.27 68.1598 27.27ZM68.1598 26.001C69.2398 26.001 70.0438 25.644 70.5718 24.93C71.0998 24.21 71.3638 23.277 71.3638 22.131C71.3638 20.955 71.0968 20.019 70.5628 19.323C70.0348 18.627 69.2338 18.279 68.1598 18.279C67.4338 18.279 66.8338 18.444 66.3598 18.774C65.8918 19.098 65.5408 19.551 65.3068 20.133C65.0788 20.709 64.9648 21.375 64.9648 22.131C64.9648 23.301 65.2348 24.24 65.7748 24.948C66.3148 25.65 67.1098 26.001 68.1598 26.001ZM77.0296 27L73.5016 17.28H74.8426L77.7136 25.272L80.5666 17.28H81.9256L78.3976 27H77.0296ZM83.7222 15.435V13.95H85.0452V15.435H83.7222ZM83.7222 27V17.28H85.0452V27H83.7222ZM91.3379 27L91.3469 14.04H92.6789V21.96L97.0169 17.28H98.7809L94.2269 22.14L99.3749 27H97.4489L92.6789 22.32V27H91.3379ZM104.16 27.27C103.194 27.27 102.369 27.051 101.685 26.613C101.001 26.175 100.476 25.569 100.11 24.795C99.7438 24.021 99.5608 23.133 99.5608 22.131C99.5608 21.111 99.7468 20.217 100.119 19.449C100.491 18.681 101.019 18.084 101.703 17.658C102.393 17.226 103.212 17.01 104.16 17.01C105.132 17.01 105.96 17.229 106.644 17.667C107.334 18.099 107.859 18.702 108.219 19.476C108.585 20.244 108.768 21.129 108.768 22.131C108.768 23.151 108.585 24.048 108.219 24.822C107.853 25.59 107.325 26.19 106.635 26.622C105.945 27.054 105.12 27.27 104.16 27.27ZM104.16 26.001C105.24 26.001 106.044 25.644 106.572 24.93C107.1 24.21 107.364 23.277 107.364 22.131C107.364 20.955 107.097 20.019 106.563 19.323C106.035 18.627 105.234 18.279 104.16 18.279C103.434 18.279 102.834 18.444 102.36 18.774C101.892 19.098 101.541 19.551 101.307 20.133C101.079 20.709 100.965 21.375 100.965 22.131C100.965 23.301 101.235 24.24 101.775 24.948C102.315 25.65 103.11 26.001 104.16 26.001ZM110.753 27V17.28H111.941V19.62L111.707 19.314C111.815 19.026 111.956 18.762 112.13 18.522C112.304 18.276 112.493 18.075 112.697 17.919C112.949 17.697 113.243 17.529 113.579 17.415C113.915 17.295 114.254 17.226 114.596 17.208C114.938 17.184 115.25 17.208 115.532 17.28V18.522C115.178 18.432 114.791 18.411 114.371 18.459C113.951 18.507 113.564 18.675 113.21 18.963C112.886 19.215 112.643 19.518 112.481 19.872C112.319 20.22 112.211 20.592 112.157 20.988C112.103 21.378 112.076 21.765 112.076 22.149V27H110.753ZM117.419 15.435V13.95H118.742V15.435H117.419ZM117.419 27V17.28H118.742V27H117.419ZM125.068 27.261C123.928 27.261 122.989 27.015 122.251 26.523C121.519 26.031 121.069 25.347 120.901 24.471L122.251 24.246C122.395 24.798 122.722 25.239 123.232 25.569C123.748 25.893 124.384 26.055 125.14 26.055C125.878 26.055 126.46 25.902 126.886 25.596C127.312 25.284 127.525 24.861 127.525 24.327C127.525 24.027 127.456 23.784 127.318 23.598C127.186 23.406 126.913 23.229 126.499 23.067C126.085 22.905 125.467 22.713 124.645 22.491C123.763 22.251 123.073 22.011 122.575 21.771C122.077 21.531 121.723 21.255 121.513 20.943C121.303 20.625 121.198 20.238 121.198 19.782C121.198 19.23 121.354 18.747 121.666 18.333C121.978 17.913 122.41 17.589 122.962 17.361C123.514 17.127 124.156 17.01 124.888 17.01C125.62 17.01 126.274 17.13 126.85 17.37C127.432 17.604 127.9 17.934 128.254 18.36C128.608 18.786 128.818 19.281 128.884 19.845L127.534 20.088C127.444 19.518 127.159 19.068 126.679 18.738C126.205 18.402 125.602 18.228 124.87 18.216C124.18 18.198 123.619 18.33 123.187 18.612C122.755 18.888 122.539 19.257 122.539 19.719C122.539 19.977 122.617 20.199 122.773 20.385C122.929 20.565 123.211 20.736 123.619 20.898C124.033 21.06 124.621 21.237 125.383 21.429C126.277 21.657 126.979 21.897 127.489 22.149C127.999 22.401 128.362 22.698 128.578 23.04C128.794 23.382 128.902 23.805 128.902 24.309C128.902 25.227 128.56 25.95 127.876 26.478C127.198 27 126.262 27.261 125.068 27.261ZM137.918 27V22.041C137.918 21.501 137.867 21.006 137.765 20.556C137.663 20.1 137.498 19.704 137.27 19.368C137.048 19.026 136.757 18.762 136.397 18.576C136.043 18.39 135.611 18.297 135.101 18.297C134.633 18.297 134.219 18.378 133.859 18.54C133.505 18.702 133.205 18.936 132.959 19.242C132.719 19.542 132.536 19.908 132.41 20.34C132.284 20.772 132.221 21.264 132.221 21.816L131.285 21.609C131.285 20.613 131.459 19.776 131.807 19.098C132.155 18.42 132.635 17.907 133.247 17.559C133.859 17.211 134.561 17.037 135.353 17.037C135.935 17.037 136.442 17.127 136.874 17.307C137.312 17.487 137.681 17.73 137.981 18.036C138.287 18.342 138.533 18.693 138.719 19.089C138.905 19.479 139.04 19.896 139.124 20.34C139.208 20.778 139.25 21.216 139.25 21.654V27H137.918ZM130.889 27V17.28H132.086V19.674H132.221V27H130.889ZM141.765 15.435V13.95H143.088V15.435H141.765ZM141.765 27V17.28H143.088V27H141.765ZM145.777 27L145.786 14.04H147.118V21.96L151.456 17.28H153.22L148.666 22.14L153.814 27H151.888L147.118 22.32V27H145.777Z" fill="white"/>
+                        <defs>
+                            <linearGradient id="paint0_linear_90_6112" x1="190" y1="20" x2="0" y2="20" gradientUnits="userSpaceOnUse">
+                                <stop stop-color="#11998E"/>
+                                <stop offset="1" stop-color="#2CAB5C"/>
+                            </linearGradient>
+                        </defs>
+                    </svg>
+                </button>
+            </div>
+        </div>
+        
+        <!-- Divider Line -->
+        <div class="divider-line-main"></div>
+        
+        <!-- Users Table -->
+        <div class="users-table-container">
+            <table class="users-table">
+                <thead>
+                    <tr>
+                        <th>Ime</th>
+                        <th>Telefon</th>
+                        <th>Email</th>
+                        <th>Uloga</th>
+                        <th>Akcije</th>
+                    </tr>
+                </thead>
+                <tbody>
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<!-- Add User Modal -->
+<div id="addUserModal" class="add-user-modal">
+    <div class="add-user-modal-content">
+        <div class="add-user-modal-header">
+            <h3>Novi korisnik</h3>
+            <img src="/static/images/krest.png" alt="Close" class="add-user-modal-close">
+        </div>
+        <div class="add-user-form">
+            <div class="form-group">
+                <label for="userName">Ime i prezime:</label>
+                <input type="text" id="userName" placeholder="Unesite ime">
+            </div>
+            <div class="form-group">
+                <label for="userPhone">Telefon:</label>
+                <input type="text" id="userPhone" placeholder="Unesite telefon">
+            </div>
+            <div class="form-group">
+                <label for="userEmail">Email:</label>
+                <input type="email" id="userEmail" placeholder="Unesite email">
+            </div>
+            <div class="form-group">
+                <label for="userRole">Uloga:</label>
+                <select id="userRole">
+                    <option value="Owner">Owner</option>
+                    <option value="Booker">Booker</option>
+                    <option value="Manager">Manager</option>
+                </select>
+            </div>
+            <div class="form-buttons">
+                <button class="save-form-btn">Sačuvaj</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Role Tags Modal -->
+<div class="role-modal" id="roleModal">
+  <div class="role-modal-content">
+    <div class="role-search-container">
+      <input type="text" class="role-search" placeholder="..." id="roleSearch" />
+    </div>
+    <div class="role-divider"></div>
+    <div class="role-options" id="roleOptions">
+      <div class="role-placeholder">...</div>
+    </div>
+    <div class="role-add-section" id="roleAddSection" style="display: none;">
+      <img src="/static/images/enter logo.png" alt="enter" class="enter-icon" />
+      <span class="add-role-text">Dodati role</span>
+      <div class="preview-role" id="previewRole" style="display: none;">
+        <div class="role-tag">
+          <div class="role-text" id="previewRoleText"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<style>
+/* Глобальный шрифт Manrope для всего текста */
+* {
+    font-family: 'Manrope', sans-serif !important;
+}
+
+/* Основной контейнер */
+.client-card-container {
+    position: relative;
+    width: 1360px;
+    height: 800px;
+    background: #FFFFFF;
+    display: flex;
+  }
+  
+  /* Mobile layout for settings */
+  @media (max-width: 768px) {
+    .client-card-container {
+      flex-direction: column !important;
+      width: 100% !important;
+      height: auto !important;
+      padding: 20px !important;
+      box-sizing: border-box !important;
+    }
+    
+    .client-info-panel {
+      position: relative !important;
+      width: 100% !important;
+      height: auto !important; /* Автоматическая высота по содержимому */
+      left: auto !important;
+      top: auto !important;
+      margin-bottom: 20px !important;
+      padding-bottom: 20px !important; /* Отступ снизу */
+    }
+    
+    .right-panel {
+      position: relative !important;
+      width: 100% !important;
+      height: auto !important; /* Автоматическая высота по содержимому */
+      left: auto !important;
+      right: auto !important;
+      top: auto !important;
+      padding-bottom: 20px !important; /* Отступ снизу */
+    }
+  }
+  
+/* Левая панель с информацией о настройках */
+.client-info-panel {
+    position: fixed;
+    width: 480px;
+    height: calc(100vh - 120px);
+    left: 120px;
+    top: 95px;
+    overflow-y: auto;
+    background: #FFFFFF;
+    border: 1px solid #D9D9D9;
+    border-radius: 20px;
+    padding: 30px;
+    box-sizing: border-box;
+}
+
+/* Показывать скроллбар только при необходимости */
+.client-info-panel {
+    overflow-y: auto;
+    scrollbar-width: thin;
+    scrollbar-color: #11998E #f1f1f1;
+}
+
+/* Стилизация скроллбара */
+.client-info-panel::-webkit-scrollbar {
+    width: 8px;
+    background: transparent;
+}
+
+.client-info-panel::-webkit-scrollbar-track {
+    background: #f1f1f1;
+    border-radius: 4px;
+    margin: 10px 0;
+}
+
+.client-info-panel::-webkit-scrollbar-thumb {
+    background: #11998E;
+    border-radius: 4px;
+    border: 1px solid #f1f1f1;
+}
+
+.client-info-panel::-webkit-scrollbar-thumb:hover {
+    background: #0d7a6f;
+}
+
+/* Для маленьких экранов - всегда показывать скроллбар */
+@media (max-width: 768px) {
+    .client-info-panel {
+        scrollbar-width: thin;
+        -ms-overflow-style: auto;
+    }
+    
+    .client-info-panel::-webkit-scrollbar {
+        display: block;
+        width: 6px;
+    }
+}
+
+
+/* Profile Section */
+.profile-section {
+    display: flex;
+    align-items: center;
+    margin-top: 10px;
+    margin-bottom: 20px;
+}
+
+.profile-icon {
+    width: 30px;
+    height: 30px;
+    margin-right: 20px;
+}
+
+.profile-title {
+    font-family: 'Manrope', sans-serif;
+    font-weight: 700;
+    font-size: 30px;
+    line-height: 100%;
+    color: #111111;
+    margin: 0;
+}
+
+/* Divider Line */
+.divider-line {
+    width: 480px;
+    height: 1px;
+    background: #D9D9D9;
+    border-radius: 20px;
+    margin-bottom: 20px;
+    margin-left: -30px;
+}
+
+/* Profile Details */
+.profile-details {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.detail-row {
+    display: flex;
+    align-items: center;
+    height: 24px;
+}
+
+.detail-label {
+    font-family: 'Manrope', sans-serif;
+    font-weight: 400;
+    font-size: 16px;
+    line-height: 100%;
+    color: #111111;
+    width: 120px;
+    flex-shrink: 0;
+}
+
+.detail-value {
+    font-family: 'Manrope', sans-serif;
+    font-weight: 700;
+    font-size: 16px;
+    line-height: 100%;
+    color: #000000;
+    cursor: pointer;
+    padding: 0;
+    border: none;
+    outline: none;
+    text-align: left;
+    flex: 1;
+}
+
+.detail-value:focus {
+    outline: none;
+    border: none;
+}
+
+.detail-value:hover {
+    background-color: transparent;
+}
+
+.detail-value.editing {
+    background-color: #FFFFFF;
+    border: 1px solid #D1D5DB;
+    padding: 4px 8px;
+}
+
+.readonly-field {
+    background-color: transparent !important;
+    color: #000000 !important;
+    cursor: not-allowed !important;
+    user-select: none !important;
+}
+
+.readonly-field:hover {
+    background-color: transparent !important;
+}
+
+/* Work Schedule */
+.work-schedule {
+    margin-bottom: 20px;
+}
+
+.schedule-header-row {
+    display: flex;
+    align-items: flex-start;
+}
+
+.schedule-header-row .detail-label {
+    width: 120px;
+    flex-shrink: 0;
+}
+
+.schedule-table {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    flex: 1;
+}
+
+
+.day-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    height: 24px;
+}
+
+.day-checkbox {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.day-checkbox input[type="checkbox"] {
+    width: 14px;
+    height: 14px;
+    accent-color: #11998E;
+}
+
+.day-checkbox label {
+    font-family: 'Manrope', sans-serif;
+    font-weight: 700;
+    font-size: 16px;
+    color: #111111;
+    cursor: pointer;
+    white-space: nowrap;
+}
+
+.time-inputs {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+}
+
+.time-start,
+.time-end {
+    width: 60px;
+    height: 22px;
+    padding: 4px 4px 4px 4px;
+    border: 1px solid #D1D5DB;
+    border-radius: 5px;
+    font-family: 'Manrope', sans-serif;
+    font-weight: 700;
+    font-size: 16px;
+    color: #111111;
+    background: #FFFFFF;
+    text-align: center;
+    /* Убираем иконку часов */
+    -webkit-appearance: none;
+    -moz-appearance: none;
+    appearance: none;
+}
+
+/* Скрываем иконку часов в WebKit браузерах */
+.time-start::-webkit-calendar-picker-indicator,
+.time-end::-webkit-calendar-picker-indicator {
+    display: none;
+}
+
+/* Скрываем иконку часов в Firefox */
+.time-start::-moz-calendar-picker-indicator,
+.time-end::-moz-calendar-picker-indicator {
+    display: none;
+}
+
+.time-separator {
+    font-family: 'Manrope', sans-serif;
+    font-size: 12px;
+    color: #6B7280;
+}
+
+/* Dropdown */
+.dropdown-container {
+    position: relative;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    cursor: pointer;
+    padding: 5px;
+    border-radius: 4px;
+    transition: background-color 0.2s;
+}
+
+.dropdown-container:hover {
+    background-color: #F3F4F6;
+}
+
+.dropdown-value {
+    font-family: 'Manrope', sans-serif;
+    font-weight: 700;
+    font-size: 16px;
+    line-height: 100%;
+    color: #111111;
+}
+
+.dropdown-arrow {
+    font-size: 12px;
+    color: #6B7280;
+    user-select: none;
+}
+
+/* Dropdown menu styles */
+.dropdown-menu {
+    position: absolute;
+    top: 100%;
+    left: 0;
+    right: 0;
+    background: white;
+    border: 1px solid #D9D9D9;
+    border-radius: 8px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+    z-index: 1000;
+    max-height: 200px;
+    overflow-y: auto;
+    display: none;
+    margin-top: 4px;
+    min-width: 100px;
+}
+
+.dropdown-menu.show {
+    display: block;
+}
+
+.dropdown-item {
+    padding: 8px 12px;
+    cursor: pointer;
+    font-family: 'Manrope', sans-serif;
+    font-size: 16px;
+    color: #585858;
+    border-bottom: 1px solid #F0F0F0;
+    transition: background-color 0.2s;
+}
+
+.dropdown-item:last-child {
+    border-bottom: none;
+}
+
+.dropdown-item:hover {
+    background-color: #F8F9FA;
+    color: #007BFF;
+}
+
+/* Small Divider Line */
+.divider-line-small {
+    width: 100%;
+    height: 1px;
+    background: #D9D9D9;
+    margin: 20px 0 20px 0;
+}
+
+/* Password Field */
+.password-row {
+    position: relative;
+}
+
+.password-field {
+    font-family: 'Manrope', sans-serif;
+    font-weight: 700;
+    font-size: 16px;
+    line-height: 100%;
+    color: #000000;
+    cursor: pointer;
+    padding: 0;
+    border: none;
+    outline: none;
+    text-align: left;
+    flex: 1;
+    position: relative;
+}
+
+.password-field:focus {
+    outline: none;
+    border: none;
+}
+
+.password-field:hover {
+    background-color: transparent;
+}
+
+/* Password Input Field */
+.password-input-field {
+    width: 200px;
+    padding: 8px 12px;
+    border: 1px solid #D1D5DB;
+    border-radius: 5px;
+    font-family: 'Manrope', sans-serif;
+    font-weight: 400;
+    font-size: 14px;
+    color: #111111;
+    background: #FFFFFF;
+    outline: none;
+    flex: 1;
+}
+
+.password-input-field:focus {
+    border-color: #11998E;
+}
+
+.password-input-field::placeholder {
+    color: #9CA3AF;
+}
+
+/* Buttons Container */
+.buttons-container {
+    display: flex;
+    gap: 20px;
+    margin-top: 10px;
+    justify-content: space-between;
+}
+
+.cancel-btn {
+    width: 140px;
+    height: 30px;
+    background: #D9D9D9;
+    border: none;
+    border-radius: 15px;
+    font-family: 'Manrope', sans-serif;
+    font-weight: 400;
+    font-size: 14px;
+    color: #858585;
+    cursor: pointer;
+    transition: background-color 0.2s;
+}
+
+.cancel-btn:hover {
+    background: #C9C9C9;
+}
+
+/* Logout Container */
+.logout-container {
+    width: 100%;
+    margin-top: 10px;
+    padding-top: 20px;
+    border-top: 1px solid #E5E7EB;
+}
+
+.logout-btn {
+    width: 100%;
+    height: 45px;
+    background: linear-gradient(135deg, #EF4444 0%, #DC2626 100%);
+    border: none;
+    border-radius: 30px;
+    font-family: 'Manrope', sans-serif;
+    font-weight: 600;
+    font-size: 15px;
+    color: #FFFFFF;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    box-shadow: 0 2px 8px rgba(239, 68, 68, 0.25);
+}
+
+.logout-btn:hover {
+    background: linear-gradient(135deg, #DC2626 0%, #B91C1C 100%);
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(239, 68, 68, 0.35);
+}
+
+.logout-btn:active {
+    transform: translateY(0);
+    box-shadow: 0 2px 8px rgba(239, 68, 68, 0.25);
+}
+
+.save-btn {
+    width: 160px;
+    height: 30px;
+    background: linear-gradient(270deg, #11998E 0%, #2CAB5C 100%);
+    border: none;
+    border-radius: 15px;
+    font-family: 'Manrope', sans-serif;
+    font-weight: 400;
+    font-size: 14px;
+    color: white;
+    cursor: pointer;
+    transition: opacity 0.2s;
+}
+
+.save-btn:hover {
+    opacity: 0.9;
+}
+
+
+/* Notifications */
+.notification {
+    position: fixed;
+    top: 20px;
+    right: 20px;
+    padding: 15px 20px;
+    border-radius: 8px;
+    font-family: 'Manrope', sans-serif;
+    font-weight: 500;
+    font-size: 14px;
+    z-index: 10000;
+    max-width: 400px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+    animation: slideIn 0.3s ease-out;
+}
+
+.notification.success {
+    background: #d1fae5;
+    color: #065f46;
+    border: 1px solid #10b981;
+}
+
+.notification.error {
+    background: #fee2e2;
+    color: #991b1b;
+    border: 1px solid #ef4444;
+}
+
+.notification.warning {
+    background: #fef3c7;
+    color: #92400e;
+    border: 1px solid #f59e0b;
+}
+
+@keyframes slideIn {
+    from {
+        transform: translateX(100%);
+        opacity: 0;
+    }
+    to {
+        transform: translateX(0);
+        opacity: 1;
+    }
+}
+
+@keyframes slideOut {
+    from {
+        transform: translateX(0);
+        opacity: 1;
+    }
+    to {
+        transform: translateX(100%);
+        opacity: 0;
+    }
+}
+  
+  .right-panel {
+    position: fixed;
+    height: calc(100vh - 120px);
+    top: 95px;
+    left: 610px;
+    right: 30px;
+    border-radius: 20px;
+    border-width: 1px;
+    opacity: 1;
+    background: #FFFFFF;
+    border: 1px solid #D9D9D9;
+    padding: 30px;
+    overflow-y: auto;
+    max-height: calc(100vh - 120px);
+  }
+
+/* Стилизация скроллбара для right-panel */
+.right-panel {
+    scrollbar-width: thin;
+    scrollbar-color: #11998E #f1f1f1;
+}
+
+.right-panel::-webkit-scrollbar {
+    width: 8px;
+    background: transparent;
+}
+
+.right-panel::-webkit-scrollbar-track {
+    background: #f1f1f1;
+    border-radius: 4px;
+    margin: 10px 0;
+}
+
+.right-panel::-webkit-scrollbar-thumb {
+    background: #11998E;
+    border-radius: 4px;
+    border: 1px solid #f1f1f1;
+}
+
+.right-panel::-webkit-scrollbar-thumb:hover {
+    background: #0d7a6f;
+}
+
+/* Для маленьких экранов - всегда показывать скроллбар */
+@media (max-width: 768px) {
+    .right-panel {
+        scrollbar-width: thin;
+        -ms-overflow-style: auto;
+    }
+    
+    .right-panel::-webkit-scrollbar {
+        display: block;
+        width: 6px;
+    }
+}
+  
+  /* Right Panel Header */
+  .right-panel-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 20px;
+    margin-bottom: 20px;
+  }
+  
+  .sotrudniki-photos {
+    flex-shrink: 0;
+  }
+  
+  .sotrudniki-image {
+    width: auto;
+    height: 40px;
+  }
+  
+  .header-content {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex: 1;
+  }
+  
+  .main-title {
+    font-family: 'Manrope', sans-serif;
+    font-weight: 700;
+    font-size: 30px;
+    line-height: 100%;
+    color: #111111;
+    margin: 0;
+  }
+  
+  .add-user-btn {
+    background: none;
+    border: none;
+    cursor: pointer;
+    padding: 0;
+    width: 100%;
+    max-width: 300px;
+    margin: 0 auto;
+    display: block;
+  }
+  
+  .add-user-btn:hover {
+    opacity: 0.9;
+  }
+
+  .add-user-section {
+    display: flex;
+    justify-content: flex-end;
+    align-items: center;
+    margin-bottom: 0;
+    width: auto;
+  }
+  
+  /* Divider Line */
+  .divider-line-main {
+    width: 100%;
+    height: 1px;
+    background: #D9D9D9;
+    border-radius: 20px;
+    margin-bottom: 20px;
+  }
+  
+  /* Users Table */
+  .users-table-container {
+    overflow-x: auto;
+  }
+  
+  .users-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-family: 'Manrope', sans-serif;
+  }
+  
+  /* Mobile users table - make it wider */
+  @media (max-width: 768px) {
+    .users-table-container {
+      overflow-x: auto;
+      width: 100%;
+      margin: 0 -20px; /* Extend beyond container padding */
+      padding: 0 20px;
+    }
+    
+    .users-table {
+      min-width: 600px; /* Force wider table */
+      width: 100%;
+    }
+    
+    .users-table th,
+    .users-table td {
+      padding: 12px 8px; /* Add horizontal padding */
+      white-space: nowrap; /* Prevent text wrapping */
+    }
+    
+    .users-table th:first-child,
+    .users-table td:first-child {
+      width: 28%; /* Name column wider */
+    }
+    
+    .users-table th:nth-child(2),
+    .users-table td:nth-child(2) {
+      width: 22%; /* Phone column */
+    }
+    
+    .users-table th:nth-child(3),
+    .users-table td:nth-child(3) {
+      width: 28%; /* Email column wider */
+    }
+    
+    .users-table th:nth-child(4),
+    .users-table td:nth-child(4) {
+      width: 12%; /* Role column narrower */
+    }
+    
+    .users-table th:last-child,
+    .users-table td:last-child {
+      width: 10%; /* Delete button column */
+      min-width: 30px;
+    }
+  }
+  
+  .users-table th {
+    font-weight: 700;
+    font-size: 16px;
+    color: #111111;
+    text-align: left;
+    padding: 12px 0;
+    border-bottom: 1px solid #D9D9D9;
+  }
+  
+  .users-table td {
+    font-weight: 400;
+    font-size: 16px;
+    color: #111111;
+    padding: 12px 0;
+    border-bottom: 1px solid #F3F4F6;
+  }
+  
+  .users-table tr:last-child td {
+    border-bottom: none;
+  }
+  
+  .users-table th:first-child,
+  .users-table td:first-child {
+    width: 22%;
+  }
+  
+  .users-table th:nth-child(2),
+  .users-table td:nth-child(2) {
+    width: 22%;
+  }
+  
+  .users-table th:nth-child(3),
+  .users-table td:nth-child(3) {
+    width: 28%;
+  }
+  
+  .users-table th:nth-child(4),
+  .users-table td:nth-child(4) {
+    width: 18%;
+  }
+  
+  .users-table th:last-child,
+  .users-table td:last-child {
+    width: 10%;
+    text-align: center;
+    min-width: 40px;
+  }
+  
+  /* Delete User Button */
+  .delete-user-btn {
+    width: 20px;
+    height: 20px;
+    cursor: pointer;
+    opacity: 0.7;
+    transition: opacity 0.2s ease;
+    display: block;
+    margin: 0 auto;
+  }
+  
+  .delete-user-btn:hover {
+    opacity: 1;
+  }
+  
+  /* Delete User Text (fallback) */
+  .delete-user-text {
+    display: none;
+    cursor: pointer;
+    font-size: 18px;
+    color: #ff4444;
+    text-align: center;
+    line-height: 1;
+  }
+  
+  .delete-user-text:hover {
+    color: #ff0000;
+  }
+  
+  /* Role Tags - аналогично status-badge-table */
+  .role-tag {
+    width: 70px;
+    height: 24px;
+    border-radius: 20px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    font-family: 'Manrope' !important;
+    font-style: normal;
+    font-weight: 400;
+    font-size: 12px;
+    line-height: 100%;
+    color: #FFFFFF;
+    cursor: pointer;
+    position: relative;
+    border: none;
+    padding: 0;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    transition: all 0.2s ease;
+    background: linear-gradient(270deg, #11998E 0%, #2CAB5C 100%);
+  }
+  
+  .role-tag:hover {
+    opacity: 0.8;
+    transform: scale(1.05);
+  }
+  
+  /* Все роли теперь имеют одинаковый градиент */
+  
+  /* Role Tags Modal - аналогично tag-modal в clients.html */
+  .role-modal { 
+    position: fixed; 
+    z-index: 1000; 
+    display: none; 
+  }
+  .role-modal.show { display: block; }
+  
+  .role-modal-content {
+    box-sizing: border-box;
+    width: 240px;
+    min-height: 82px;
+    background: #FFFFFF;
+    border: 1px solid #D9D9D9;
+    box-shadow: 0px 7px 30px rgba(0, 0, 0, 0.15);
+    border-radius: 16px;
+    padding: 0;
+    position: relative;
+    display: flex;
+    flex-direction: column;
+  }
+  
+  .role-search-container {
+    height: 41px;
+    display: flex;
+    align-items: center;
+    padding: 0 15px;
+    flex-shrink: 0;
+  }
+  
+  .role-search { 
+    width: 100%;
+    padding: 0; 
+    border: none; 
+    outline: none; 
+    font-size: 14px; 
+    background: transparent; 
+  }
+  
+  .role-divider {
+    width: 210px;
+    height: 1px;
+    background: #D9D9D9;
+    border-radius: 40px;
+    margin: 0 auto;
+    flex-shrink: 0;
+  }
+  
+  .role-options { 
+    height: 40px;
+    overflow-y: auto;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 4px;
+    padding: 0 0 0 10px;
+    align-items: center;
+    margin: 0;
+    position: relative;
+  }
+  
+  .role-add-section {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 0;
+    padding-top: 0px;
+    flex-shrink: 0;
+    height: 40px;
+    justify-content: flex-start;
+    box-sizing: border-box;
+    margin-top: 0;
+  }
+  
+  .enter-icon {
+    width: 16px;
+    height: 5px;
+  }
+  
+  .add-role-text {
+    font-family: 'Manrope';
+    font-style: normal;
+    font-weight: 400;
+    font-size: 12px;
+    line-height: 16px;
+    color: #CBCBCB;
+  }
+  
+  .preview-role {
+    margin-left: 8px;
+  }
+  
+  /* Стили для ролей в модальном окне */
+  .role-modal .role-tag {
+    width: 60px;
+    height: 18px;
+    font-size: 12px;
+    font-weight: 400;
+    line-height: 100%;
+    background: linear-gradient(270deg, #11998E 0%, #2CAB5C 100%);
+    color: #FFFFFF;
+    border: none;
+    margin: 2px;
+  }
+  
+  .preview-role .role-tag {
+    margin: 0 !important;
+    background: linear-gradient(270deg, #11998E 0%, #2CAB5C 100%) !important;
+    color: #FFFFFF !important;
+    border: none !important;
+  }
+  
+  
+  .role-modal-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 20px 24px;
+    border-bottom: 1px solid #E5E7EB;
+  }
+  
+  .role-modal-header h3 {
+    font-family: 'Manrope', sans-serif;
+    font-weight: 600;
+    font-size: 18px;
+    color: #111111;
+    margin: 0;
+  }
+  
+  .role-modal-close {
+    font-size: 24px;
+    font-weight: bold;
+    color: #6B7280;
+    cursor: pointer;
+    line-height: 1;
+  }
+  
+  .role-modal-close:hover {
+    color: #374151;
+  }
+  
+  
+  .role-option {
+    padding: 12px 24px;
+    cursor: pointer;
+    transition: background-color 0.2s;
+  }
+  
+  .role-option:hover {
+    background-color: #F9FAFB;
+  }
+  
+  .role-option-text {
+    font-family: 'Manrope', sans-serif;
+    font-weight: 500;
+    font-size: 16px;
+    color: #111111;
+  }
+  
+  /* Add User Modal */
+  .add-user-modal {
+    display: none;
+    position: fixed;
+    z-index: 9999;
+    left: 0;
+    top: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0, 0, 0, 0.5);
+  }
+  
+  .add-user-modal-content {
+    background-color: #FFFFFF;
+    margin: 10% auto;
+    padding: 0;
+    border-radius: 20px;
+    width: 420px;
+    height: 403px;
+    border: 1px solid #D9D9D9;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
+  }
+  
+  .add-user-modal-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 30px 30px 20px 30px;
+  }
+  
+  .add-user-modal-header h3 {
+    font-family: 'Manrope', sans-serif;
+    font-weight: 700;
+    font-style: normal;
+    font-size: 30px;
+    line-height: 100%;
+    letter-spacing: 0%;
+    color: #111111;
+    margin: 0;
+  }
+  
+  .add-user-modal-close {
+    width: 20px;
+    height: 20px;
+    cursor: pointer;
+  }
+  
+  .add-user-modal-close:hover {
+    opacity: 0.7;
+  }
+  
+  .add-user-form {
+    padding: 0 30px 30px 30px;
+  }
+  
+  .form-group {
+    margin-bottom: 10px;
+    display: flex;
+    align-items: center;
+    gap: 20px;
+  }
+  
+  .form-group label {
+    display: block;
+    font-family: 'Manrope', sans-serif;
+    font-weight: 500;
+    font-size: 16px;
+    color: #111111;
+    margin-bottom: 0;
+    min-width: 120px;
+    flex-shrink: 0;
+  }
+  
+  .form-group input,
+  .form-group select {
+    width: 100%;
+    padding: 12px 16px;
+    border: 1px solid #D9D9D9;
+    border-radius: 40px;
+    font-family: 'Manrope', sans-serif;
+    font-size: 16px;
+    color: #111111;
+    background: #FFFFFF;
+    box-sizing: border-box;
+  }
+  
+  .form-group input:focus,
+  .form-group select:focus {
+    outline: none;
+    border-color: #11998E;
+  }
+  
+  .form-group input::placeholder {
+    color: #9CA3AF;
+  }
+  
+  .form-buttons {
+    display: flex;
+    gap: 20px;
+    margin-top: 30px;
+    justify-content: center;
+  }
+  
+  .save-form-btn {
+    width: 360px;
+    height: 40px;
+    background: linear-gradient(270deg, #11998E 0%, #2CAB5C 100%);
+    border: none;
+    border-radius: 30px;
+    font-family: 'Manrope', sans-serif;
+    font-weight: 500;
+    font-size: 16px;
+    color: white;
+    cursor: pointer;
+    opacity: 1;
+  }
+  
+  .save-form-btn:hover {
+    opacity: 0.9;
+  }
+
+  /* Role Tags Popup - аналогично status-tags-popup */
+  .role-tags-popup {
+    position: fixed;
+    width: 136px;
+    height: 215px;
+    background: #FFFFFF;
+    border: 1px solid #D9D9D9;
+    box-shadow: 0px 7px 30px rgba(0, 0, 0, 0.15);
+    border-radius: 16px;
+    padding: 8px;
+    z-index: 10000;
+    display: none;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 4px;
+  }
+  
+  .role-tags-popup.show {
+    display: flex;
+  }
+  
+  .role-tag-option {
+    height: 30px;
+    border-radius: 20px;
+    display: flex;
+    align-items: center;
+    justify-content: flex-start;
+    padding-left: 12px;
+    font-family: 'Manrope', sans-serif;
+    font-weight: 700;
+    font-size: 14px;
+    color: #000000;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    border: 1px solid;
+    padding: 0 12px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    box-sizing: border-box;
+    position: relative;
+    z-index: 10001;
+    pointer-events: auto;
+    user-select: none;
+    -webkit-user-select: none;
+    -moz-user-select: none;
+    -ms-user-select: none;
+    -webkit-tap-highlight-color: transparent;
+    -webkit-touch-callout: none;
+    -webkit-appearance: none;
+    -moz-appearance: none;
+    -ms-appearance: none;
+  }
+  
+  /* Специфичные стили для каждой роли */
+  .role-tag-option:nth-child(1) {
+    width: 50px;
+    background: #FFF0BF;
+    border: 1px solid #DBC787;
+  }
+
+  .role-tag-option:nth-child(2) {
+    width: 60px;
+    background: #E8D8F8;
+    border: 1px solid #9C27B0;
+  }
+
+  .role-tag-option:nth-child(3) {
+    width: 70px;
+    background: #D8F8E4;
+    border: 1px solid #4CAF50;
+  }
+
+  .role-tag-option:nth-child(4) {
+    width: 57px;
+    background: #C7F4FF;
+    border: 1px solid #2196F3;
+  }
+
+  .role-tag-option:nth-child(5) {
+    width: 57px;
+    background: #CBCBCB;
+    border: 1px solid #9E9E9E;
+  }
+
+  .role-tag-option:hover {
+    opacity: 0.8;
+    transform: scale(1.05);
+  }
+</style>
+
+<script>
+
+// Role Tags Modal functionality - точно как tag-modal в clients.html
+(function() {
+    const modal = document.getElementById('roleModal');
+    const searchInput = document.getElementById('roleSearch');
+    const optionsContainer = document.getElementById('roleOptions');
+    
+    if (!modal || !searchInput || !optionsContainer) {
+        console.error('Modal elements not found!');
+        return;
+    }
+    
+    let currentUserId = null;
+    
+    // Стандартные роли
+    const standardRoles = ['Owner', 'Booker', 'Manager'];
+    
+    // Все существующие роли (собираем из всех пользователей)
+    let allRoles = new Set();
+    
+    function updateAllRoles() {
+        allRoles.clear();
+        document.querySelectorAll('.role-tag').forEach(div => {
+            const role = div.textContent.trim();
+            if (role.length > 0) {
+                allRoles.add(role);
+            }
+        });
+    }
+    
+    // Делаем функцию глобально доступной
+    window.updateAllRoles = updateAllRoles;
+    
+    updateAllRoles();
+    
+    // Обработчик клика на роль
+    document.addEventListener('click', function(e) {
+        if (e.target.classList.contains('role-tag')) {
+            e.preventDefault();
+            currentUserId = e.target.id.replace('role-tag-', '');
+            showRoleModal(e.target);
+        }
+    });
+    
+    // Показать модальное окно
+    function showRoleModal(roleTag) {
+        const rect = roleTag.getBoundingClientRect();
+        
+        // Позиционируем модальное окно как в clients.html
+        modal.style.left = (rect.left - 120) + 'px';
+        modal.style.top = (rect.top + 30) + 'px';
+        
+        modal.classList.add('show');
+        searchInput.focus();
+        showStandardRoles();
+    }
+    
+    // Показать стандартные роли
+    function showStandardRoles() {
+        // Удаляем результаты предыдущего поиска
+        const existingResults = document.querySelector('.role-search-results');
+        if (existingResults) {
+            existingResults.remove();
+        }
+        
+        // Очищаем только роли из optionsContainer
+        optionsContainer.innerHTML = '';
+        
+        const addSection = document.getElementById('roleAddSection');
+        
+        standardRoles.forEach(role => {
+            const roleItem = document.createElement('div');
+            roleItem.className = 'role-tag';
+            roleItem.style.cursor = 'pointer';
+            roleItem.style.margin = '2px';
+            
+            const roleText = document.createElement('div');
+            roleText.className = 'role-text';
+            roleText.textContent = role;
+            roleItem.appendChild(roleText);
+            
+            roleItem.addEventListener('click', () => addRole(role));
+            optionsContainer.appendChild(roleItem);
+        });
+        
+        // Скрываем секцию добавления при показе стандартных ролей
+        addSection.style.display = 'none';
+        addSection.style.paddingLeft = '16px';
+    }
+    
+    // Поиск ролей - точно как в clients.html
+    searchInput.addEventListener('input', function() {
+        const query = this.value.trim();
+        const queryLower = query.toLowerCase();
+        const addSection = document.getElementById('roleAddSection');
+        const previewRole = document.getElementById('previewRole');
+        const previewRoleText = document.getElementById('previewRoleText');
+        
+        // Обновляем список ролей перед поиском
+        updateAllRoles();
+        
+        // Скрываем roleOptions при поиске
+        optionsContainer.style.display = 'none';
+        
+        if (query.length === 0) {
+            // Показываем roleOptions и стандартные роли
+            optionsContainer.style.display = 'flex';
+            showStandardRoles();
+            previewRole.style.display = 'none';
+            addSection.style.display = 'none';
+            addSection.style.paddingLeft = '16px';
+            return;
+        }
+        
+        // Фильтруем существующие роли
+        const filteredRoles = Array.from(allRoles).filter(role => 
+            role.toLowerCase().includes(queryLower)
+        );
+        
+        if (filteredRoles.length > 0) {
+            // Создаем контейнер для результатов поиска
+            const searchResults = document.createElement('div');
+            searchResults.className = 'role-search-results';
+            searchResults.style.display = 'flex';
+            searchResults.style.flexWrap = 'wrap';
+            searchResults.style.gap = '4px';
+            searchResults.style.padding = '8px 15px';
+            
+            filteredRoles.forEach(role => {
+                const roleItem = document.createElement('div');
+                roleItem.className = 'role-tag';
+                roleItem.style.margin = '2px';
+                roleItem.style.cursor = 'pointer';
+                
+                const roleText = document.createElement('div');
+                roleText.className = 'role-text';
+                roleText.textContent = role;
+                roleItem.appendChild(roleText);
+                
+                roleItem.addEventListener('click', () => addRole(role));
+                searchResults.appendChild(roleItem);
+            });
+            
+            // Удаляем предыдущие результаты поиска
+            const existingResults = document.querySelector('.role-search-results');
+            if (existingResults) {
+                existingResults.remove();
+            }
+            
+            // Добавляем результаты поиска в модальное окно
+            const modalContent = document.querySelector('.role-modal-content');
+            modalContent.appendChild(searchResults);
+            
+            addSection.style.display = 'none';
+            addSection.style.paddingLeft = '16px';
+            previewRole.style.display = 'none';
+        } else {
+            // Удаляем результаты предыдущего поиска
+            const existingResults = document.querySelector('.role-search-results');
+            if (existingResults) {
+                existingResults.remove();
+            }
+            
+            // Показываем секцию "Dodati role" для нового тега
+            addSection.style.display = 'flex';
+            addSection.style.paddingLeft = '16px';
+            previewRole.style.display = 'block';
+            previewRoleText.textContent = query;
+        }
+    });
+    
+    // Добавить роль
+    async function addRole(role) {
+        if (!currentUserId) return;
+        
+        // Находим тег роли по ID
+        const roleTag = document.getElementById(`role-tag-${currentUserId}`);
+        if (roleTag) {
+            // Получаем ID пользователя из строки таблицы
+            const row = roleTag.closest('tr');
+            const userId = row ? row.getAttribute('data-user-id') : null;
+            
+            if (userId) {
+                // Обновляем роль через API
+                await updateUserRole(userId, role);
+            }
+            
+            // Обновляем тег роли (все роли теперь имеют одинаковый стиль)
+            roleTag.textContent = role;
+            roleTag.className = 'role-tag';
+            
+            // Обновляем список всех ролей
+            updateAllRoles();
+            
+            hideModal();
+        }
+    }
+    
+    // Скрыть модальное окно
+    function hideModal() {
+        modal.classList.remove('show');
+        searchInput.value = '';
+        currentUserId = null;
+    }
+    
+    // Закрытие модального окна при клике вне его
+    document.addEventListener('click', function(e) {
+        if (!e.target.closest('.role-modal') && !e.target.closest('.role-tag')) {
+            hideModal();
+        }
+    });
+    
+    // Обработчик Enter для добавления новой роли
+    searchInput.addEventListener('keydown', function(e) {
+        if (e.key === 'Enter') {
+            const query = this.value.trim();
+            if (query.length > 0) {
+                addRole(query);
+            }
+        }
+    });
+})();
+
+// Global functions for password validation and settings
+async function saveBusinessSettings() {
+    try {
+        const settings = {
+            business_name: document.getElementById('business_name')?.textContent || '',
+            address: document.getElementById('address')?.textContent || '',
+            capacity: document.getElementById('capacity')?.textContent === '...' ? null : parseInt(document.getElementById('capacity')?.textContent) || null,
+            booking_duration: parseInt(document.getElementById('bookingDurationValue')?.textContent) || 2,
+            // email: не сохраняем - поле только для чтения
+            working_schedule: {}
+        };
+        
+        // Save work schedule
+        const dayRows = document.querySelectorAll('.day-row');
+        dayRows.forEach(row => {
+            const checkbox = row.querySelector('input[type="checkbox"]');
+            const dayName = checkbox.id;
+            const startInput = row.querySelector('.time-start');
+            const endInput = row.querySelector('.time-end');
+            
+            if (checkbox && startInput && endInput) {
+                settings.working_schedule[dayName] = {
+                    enabled: checkbox.checked,
+                    start: startInput.value,
+                    end: endInput.value
+                };
+            }
+        });
+        
+        const response = await fetch('/api/business/settings', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify(settings)
+        });
+        
+        const data = await response.json();
+        
+        if (data.success) {
+            return true;
+        } else {
+            console.error('Failed to save business settings:', data.error);
+            return false;
+        }
+    } catch (error) {
+        console.error('Error saving business settings:', error);
+        return false;
+    }
+}
+
+// Password validation function
+function validatePassword(password) {
+    if (password.length < 8) {
+        return {
+            isValid: false,
+            message: 'Password mora imati najmanje 8 karaktera!'
+        };
+    }
+    
+    if (password.length > 128) {
+        return {
+            isValid: false,
+            message: 'Password ne sme imati više od 128 karaktera!'
+        };
+    }
+    
+    if (!/[A-Z]/.test(password)) {
+        return {
+            isValid: false,
+            message: 'Password mora sadržavati najmanje jedno veliko slovo!'
+        };
+    }
+    
+    if (!/[a-z]/.test(password)) {
+        return {
+            isValid: false,
+            message: 'Password mora sadržavati najmanje jedno malo slovo!'
+        };
+    }
+    
+    if (!/[0-9]/.test(password)) {
+        return {
+            isValid: false,
+            message: 'Password mora sadržavati najmanje jednu cifru!'
+        };
+    }
+    
+    if (!/[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?]/.test(password)) {
+        return {
+            isValid: false,
+            message: 'Password mora sadržavati najmanje jedan specijalni karakter!'
+        };
+    }
+    
+    return {
+        isValid: true,
+        message: 'Password je validan!'
+    };
+}
+
+// Show notification function
+// Logout function
+function logout() {
+    if (confirm('Da li ste sigurni da želite da se izlogujete?')) {
+        window.location.href = '/logout';
+    }
+}
+
+function showNotification(message, type = 'info') {
+    // Remove existing notifications
+    const existingNotifications = document.querySelectorAll('.notification');
+    existingNotifications.forEach(notification => notification.remove());
+    
+    // Create new notification
+    const notification = document.createElement('div');
+    notification.className = `notification ${type}`;
+    notification.textContent = message;
+    
+    // Add to page
+    document.body.appendChild(notification);
+    
+    // Auto remove after 5 seconds
+    setTimeout(() => {
+        notification.style.animation = 'slideOut 0.3s ease-in';
+        setTimeout(() => {
+            if (notification.parentNode) {
+                notification.parentNode.removeChild(notification);
+            }
+        }, 300);
+    }, 5000);
+    
+    // Click to close
+    notification.addEventListener('click', () => {
+        notification.style.animation = 'slideOut 0.3s ease-in';
+        setTimeout(() => {
+            if (notification.parentNode) {
+                notification.parentNode.removeChild(notification);
+            }
+        }, 300);
+    });
+}
+
+// Change business password with validation
+async function changeBusinessPassword() {
+    
+    const currentPassword = getPasswordValue('current_password');
+    const newPassword = getPasswordValue('new_password');
+    
+    
+    // Validation
+    if (!currentPassword) {
+        showNotification('Molimo unesite trenutni password!', 'error');
+        return false;
+    }
+    
+    if (!newPassword) {
+        showNotification('Molimo unesite novi password!', 'error');
+        return false;
+    }
+    
+    // Password strength validation
+    const passwordValidation = validatePassword(newPassword);
+    if (!passwordValidation.isValid) {
+        showNotification(passwordValidation.message, 'warning');
+        return false;
+    }
+    
+    
+    try {
+        const requestData = {
+            current_password: currentPassword,
+            new_password: newPassword
+        };
+        
+        
+        const response = await fetch('/api/business/change-password', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify(requestData)
+        });
+        
+        
+        const data = await response.json();
+        
+        if (data.success) {
+            // Clear password fields
+            document.getElementById('current_password').textContent = '...';
+            document.getElementById('new_password').textContent = '...';
+            showNotification('✅ Password je uspešno promenjen! Email je poslat na vašu adresu.', 'success');
+            return true;
+        } else {
+            console.error('Failed to change password:', data.error);
+            
+            // Если ошибка связана с хешированием, попробуем сброс пароля
+            if (data.error && data.error.includes('hash could not be identified')) {
+                return await resetBusinessPassword();
+            }
+            
+            showNotification('Greška pri menjanju passworda: ' + data.error, 'error');
+            return false;
+        }
+    } catch (error) {
+        console.error('Error changing password:', error);
+        showNotification('Greška pri menjanju passworda: ' + error.message, 'error');
+        return false;
+    }
+}
+
+// Reset business password (without current password verification)
+async function resetBusinessPassword() {
+    
+    const newPassword = getPasswordValue('new_password');
+    
+    
+    // Validation
+    if (!newPassword) {
+        showNotification('Molimo unesite novi password!', 'error');
+        return false;
+    }
+    
+    // Password strength validation
+    const passwordValidation = validatePassword(newPassword);
+    if (!passwordValidation.isValid) {
+        showNotification(passwordValidation.message, 'warning');
+        return false;
+    }
+    
+    // console.log('Password validation passed, sending reset request...');
+    
+    try {
+        const requestData = {
+            new_password: newPassword
+        };
+        
+        
+        const response = await fetch('/api/business/reset-password', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify(requestData)
+        });
+        
+        
+        const data = await response.json();
+        
+        if (data.success) {
+            // Clear password fields
+            document.getElementById('current_password').textContent = '...';
+            document.getElementById('new_password').textContent = '...';
+            showNotification('✅ Password je uspešno promenjen! Email je poslat na vašu adresu.', 'success');
+            return true;
+        } else {
+            console.error('Failed to reset password:', data.error);
+            showNotification('Greška pri menjanju passworda: ' + data.error, 'error');
+            return false;
+        }
+    } catch (error) {
+        console.error('Error resetting password:', error);
+        showNotification('Greška pri menjanju passworda: ' + error.message, 'error');
+        return false;
+    }
+}
+
+document.addEventListener('DOMContentLoaded', function() {
+    
+    // Function to load users data from API
+    async function loadUsersData() {
+        try {
+            const response = await fetch('/api/users');
+            
+            if (!response.ok) {
+                const errorText = await response.text();
+                console.error('Failed to load users:', response.status, errorText);
+                // Если 404, возможно сервер не перезапущен
+                if (response.status === 404) {
+                    console.error('Endpoint /api/users not found. Please restart the server.');
+                }
+                return;
+            }
+            
+            const data = await response.json();
+            
+            if (data.success && data.users) {
+                const tbody = document.querySelector('.users-table tbody');
+                
+                if (tbody) {
+                    // Clear existing rows
+                    tbody.innerHTML = '';
+                    
+                    // Add each user to table
+                    data.users.forEach((user, index) => {
+                        const newRow = document.createElement('tr');
+                        newRow.setAttribute('data-user-id', user.id);
+                        
+                        newRow.innerHTML = `
+                            <td>${user.name || ''}</td>
+                            <td>${user.phone || ''}</td>
+                            <td>${user.email || ''}</td>
+                            <td><div class="role-tag" id="role-tag-${Date.now()}-${index}">${user.role || 'Employee'}</div></td>
+                            <td><img src="/static/images/krest.png" alt="Delete" class="delete-user-btn" onclick="deleteUser(this)" onerror="this.style.display='none'; this.nextElementSibling.style.display='block';"><span class="delete-user-text" onclick="deleteUser(this)" style="display:none; cursor:pointer; font-size:18px; color:#ff4444;">✕</span></td>
+                        `;
+                        
+                        tbody.appendChild(newRow);
+                        
+                        // Add click listener to the role tag
+                        const roleTag = newRow.querySelector('.role-tag');
+                        // Обработчик уже добавлен глобально, ничего не делаем
+                    });
+                    
+                    // Обновляем список всех ролей после загрузки
+                    if (typeof updateAllRoles === 'function') {
+                        updateAllRoles();
+                    }
+                } else {
+                    console.error('tbody not found!');
+                }
+            } else {
+                console.error('Failed to load users:', data.error);
+            }
+        } catch (error) {
+            console.error('Error loading users data:', error);
+        }
+    }
+    
+    // Load users data from API
+    loadUsersData();
+    
+    // Load business settings from API
+    async function loadBusinessSettings() {
+        try {
+            const response = await fetch('/api/business/settings');
+            const data = await response.json();
+            
+            if (data.success) {
+                const settings = data.settings;
+                
+                // Load business name
+                const businessNameField = document.getElementById('business_name');
+                if (businessNameField) {
+                    businessNameField.textContent = settings.business_name || '...';
+                }
+                
+                // Load address
+                const addressField = document.getElementById('address');
+                if (addressField) {
+                    addressField.textContent = settings.address || '...';
+                }
+                
+                // Load email
+                const emailField = document.getElementById('email');
+                if (emailField) {
+                    emailField.textContent = settings.email || '...';
+                }
+                
+        // Load capacity
+        const capacityField = document.getElementById('capacity');
+        if (capacityField) {
+            capacityField.textContent = settings.capacity || '...';
+        }
+        
+        // Load booking duration
+        const bookingDurationValue = document.getElementById('bookingDurationValue');
+        if (bookingDurationValue) {
+            bookingDurationValue.textContent = settings.booking_duration || '2';
+        }
+        
+                // Load working schedule
+                if (settings.working_schedule) {
+                    Object.keys(settings.working_schedule).forEach(dayName => {
+                        const dayData = settings.working_schedule[dayName];
+                        const checkbox = document.querySelector(`input[id="${dayName}"]`);
+                        const dayRow = checkbox?.closest('.day-row');
+                        
+                        if (dayRow && checkbox) {
+                            checkbox.checked = dayData.enabled || false;
+                            
+                            const startInput = dayRow.querySelector('.time-start');
+                            const endInput = dayRow.querySelector('.time-end');
+                            if (startInput) startInput.value = dayData.start || '09:00';
+                            if (endInput) endInput.value = dayData.end || '17:00';
+                            
+                            const timeInputs = dayRow.querySelectorAll('.time-start, .time-end');
+                            timeInputs.forEach(input => {
+                                input.disabled = !checkbox.checked;
+                                input.style.opacity = checkbox.checked ? '1' : '0.5';
+                            });
+                        }
+                    });
+                }
+                
+            } else {
+                console.error('Failed to load business settings:', data.error);
+            }
+        } catch (error) {
+            console.error('Error loading business settings:', error);
+        }
+    }
+    
+    // Load business settings on page load
+    loadBusinessSettings();
+    
+    // Проверяем, нужно ли подсветить поле вместимости
+    if (sessionStorage.getItem('highlightCapacity') === 'true') {
+      sessionStorage.removeItem('highlightCapacity');
+      setTimeout(() => {
+        const capacityField = document.getElementById('capacity');
+        if (capacityField) {
+          capacityField.style.backgroundColor = '#d4edda';
+          capacityField.style.border = '2px solid #28a745';
+          capacityField.focus();
+          
+          // Убираем подсветку через 3 секунды
+          setTimeout(() => {
+            capacityField.style.backgroundColor = '';
+            capacityField.style.border = '';
+          }, 3000);
+        }
+      }, 500);
+    }
+    
+    // Debug: Check if localStorage is working
+    
+    // Test localStorage immediately
+    try {
+        localStorage.setItem('test', 'working');
+        localStorage.removeItem('test');
+    } catch (e) {
+        console.error('localStorage error:', e);
+    }
+    
+    // Fields now use contenteditable, no additional event handlers needed
+    
+    // Work schedule functionality
+    const dayCheckboxes = document.querySelectorAll('.day-checkbox input[type="checkbox"]');
+    
+    dayCheckboxes.forEach((checkbox, index) => {
+        
+        checkbox.addEventListener('change', function() {
+            const dayRow = this.closest('.day-row');
+            const timeInputs = dayRow.querySelectorAll('.time-start, .time-end');
+            
+            timeInputs.forEach(input => {
+                input.disabled = !this.checked;
+                input.style.opacity = this.checked ? '1' : '0.5';
+            });
+            
+            // Save checkbox state
+            saveBusinessSettings();
+        });
+    });
+    
+    // Initialize disabled state for unchecked days
+    dayCheckboxes.forEach(checkbox => {
+        if (!checkbox.checked) {
+            const dayRow = checkbox.closest('.day-row');
+            const timeInputs = dayRow.querySelectorAll('.time-start, .time-end');
+            
+            timeInputs.forEach(input => {
+                input.disabled = true;
+                input.style.opacity = '0.5';
+            });
+        }
+    });
+    
+    // Save time changes
+    const timeInputs = document.querySelectorAll('.time-start, .time-end');
+    
+    timeInputs.forEach((input, index) => {
+        
+        input.addEventListener('input', function() {
+            const dayRow = this.closest('.day-row');
+            const dayName = dayRow.querySelector('label').textContent;
+            const timeType = this.classList.contains('time-start') ? 'start' : 'end';
+            
+            // Save to localStorage
+            saveBusinessSettings();
+        });
+        
+        input.addEventListener('change', function() {
+            const dayRow = this.closest('.day-row');
+            const dayName = dayRow.querySelector('label').textContent;
+            const timeType = this.classList.contains('time-start') ? 'start' : 'end';
+            
+            // Save to localStorage
+            saveBusinessSettings();
+        });
+        
+        input.addEventListener('blur', function() {
+            const dayRow = this.closest('.day-row');
+            const dayName = dayRow.querySelector('label').textContent;
+            const timeType = this.classList.contains('time-start') ? 'start' : 'end';
+            
+            // Save to localStorage
+            saveBusinessSettings();
+        });
+    });
+    
+        // Add event listener for capacity field (contenteditable)
+        const capacityField = document.getElementById('capacity');
+        if (capacityField) {
+            capacityField.addEventListener('input', function() {
+                // Получаем текущую позицию курсора
+                const selection = window.getSelection();
+                const range = selection.getRangeAt(0);
+                const cursorPosition = range.startOffset;
+                
+                // Ограничиваем ввод только цифрами
+                const originalText = this.textContent;
+                const filteredText = originalText.replace(/[^0-9]/g, '');
+                
+                // Если текст изменился, обновляем его
+                if (originalText !== filteredText) {
+                    this.textContent = filteredText;
+                    
+                    // Восстанавливаем позицию курсора
+                    const newRange = document.createRange();
+                    const textNode = this.firstChild;
+                    if (textNode) {
+                        const newPosition = Math.min(cursorPosition, filteredText.length);
+                        newRange.setStart(textNode, newPosition);
+                        newRange.setEnd(textNode, newPosition);
+                        selection.removeAllRanges();
+                        selection.addRange(newRange);
+                    }
+                }
+                
+                saveBusinessSettings();
+            });
+
+            capacityField.addEventListener('blur', function() {
+                // Если поле пустое, ставим "..."
+                if (!this.textContent.trim()) {
+                    this.textContent = '...';
+                }
+                saveBusinessSettings();
+            });
+
+            capacityField.addEventListener('keypress', function(e) {
+                // Разрешаем только цифры и клавиши управления
+                if (!/[0-9]/.test(e.key) && !['Backspace', 'Delete', 'ArrowLeft', 'ArrowRight', 'Tab'].includes(e.key)) {
+                    e.preventDefault();
+                }
+            });
+        }
+        
+});
+
+// Field focus handler (for non-password fields)
+function handleFieldFocus(element) {
+    if (element.textContent === '...') {
+        element.textContent = '';
+        element.style.color = '#000000';
+    }
+}
+
+// Field blur handler (for non-password fields)
+function handleFieldBlur(element, fieldName) {
+    if (element.textContent.trim() === '') {
+        element.textContent = '...';
+        element.style.color = '#000000';
+        element.style.fontWeight = '700';
+    } else {
+        element.style.color = '#000000';
+        element.style.fontWeight = '700';
+        
+        // Save to API
+        saveBusinessSettings();
+    }
+}
+
+        // Booking duration dropdown functions
+        function toggleBookingDurationDropdown() {
+            console.log('toggleBookingDurationDropdown called');
+            const menu = document.getElementById('bookingDurationMenu');
+            console.log('Menu element:', menu);
+            
+            if (menu.classList.contains('show')) {
+                menu.classList.remove('show');
+                console.log('Menu closed');
+            } else {
+                // Close other dropdowns first
+                document.querySelectorAll('.dropdown-menu.show').forEach(menu => {
+                    menu.classList.remove('show');
+                });
+                menu.classList.add('show');
+                console.log('Menu opened');
+            }
+        }
+
+        function selectBookingDuration(hours) {
+            const valueElement = document.getElementById('bookingDurationValue');
+            const menu = document.getElementById('bookingDurationMenu');
+            
+            valueElement.textContent = hours.toString();
+            menu.classList.remove('show');
+            
+            // Save settings
+            saveBusinessSettings();
+        }
+
+        // Close dropdowns when clicking outside
+        document.addEventListener('click', function(e) {
+            if (!e.target.closest('.dropdown-container')) {
+                document.querySelectorAll('.dropdown-menu.show').forEach(menu => {
+                    menu.classList.remove('show');
+                });
+            }
+        });
+
+// Password field focus handler
+function handlePasswordFocus(element) {
+    if (element.textContent === '...') {
+        element.textContent = '';
+        element.style.color = '#000000';
+    }
+}
+
+// Password field blur handler
+function handlePasswordBlur(element, fieldName) {
+    if (element.textContent.trim() === '') {
+        element.textContent = '...';
+        element.style.color = '#000000';
+        element.style.fontWeight = '700';
+    } else {
+        element.style.color = '#000000';
+        element.style.fontWeight = '700';
+        
+        // Save to API
+        saveBusinessSettings();
+    }
+}
+
+// Get password value (for API calls)
+function getPasswordValue(fieldId) {
+    const field = document.getElementById(fieldId);
+    if (field.textContent === '...') {
+        return '';
+    }
+    return field.textContent;
+}
+
+// Add event listeners for password fields
+document.addEventListener('DOMContentLoaded', function() {
+    // Password fields don't need real-time validation
+    // Validation will happen only when clicking "Sačuvaj" button
+});
+
+// Button functionality
+document.addEventListener('DOMContentLoaded', function() {
+    // Cancel button
+    const cancelBtn = document.querySelector('.cancel-btn');
+    if (cancelBtn) {
+        cancelBtn.addEventListener('click', function() {
+            // Reset all fields to default values
+            loadBusinessSettings();
+        });
+    }
+    
+    // Save button
+    const saveBtn = document.querySelector('.save-btn');
+    if (saveBtn) {
+        saveBtn.addEventListener('click', async function() {
+            
+            // Check if password fields are filled
+            const currentPassword = getPasswordValue('current_password');
+            const newPassword = getPasswordValue('new_password');
+            
+            
+            // If password fields are filled, change password
+            if (currentPassword || newPassword) {
+                
+                // Check if both fields are filled
+                if (!currentPassword) {
+                    showNotification('Molimo unesite trenutni password!', 'error');
+                    return;
+                }
+                
+                if (!newPassword) {
+                    showNotification('Molimo unesite novi password!', 'error');
+                    return;
+                }
+                
+                // Validate only new password (current password is already in system)
+                const newValidation = validatePassword(newPassword);
+                
+                if (!newValidation.isValid) {
+                    showNotification('Novi password: ' + newValidation.message, 'error');
+                    return;
+                }
+                
+                const passwordChanged = await changeBusinessPassword();
+                
+                if (!passwordChanged) {
+                    return; // Don't save other settings if password change failed
+                }
+            }
+            
+            // Save all current data
+            const success = await saveBusinessSettings();
+            
+            if (success) {
+                // Show success message
+                showNotification('Podaci su sačuvani!', 'success');
+            } else {
+                showNotification('Greška pri čuvanju podataka!', 'error');
+            }
+        });
+    }
+    
+    // Add User Modal functionality
+    const addUserModal = document.getElementById('addUserModal');
+    const addUserModalClose = document.querySelector('.add-user-modal-close');
+    const addUserBtn = document.querySelector('.add-user-btn');
+    
+    // Open add user modal when clicking the add user button
+    if (addUserBtn) {
+        addUserBtn.addEventListener('click', function() {
+            addUserModal.style.display = 'block';
+        });
+    }
+    
+    // Close add user modal when clicking X
+    if (addUserModalClose) {
+        addUserModalClose.addEventListener('click', function() {
+            addUserModal.style.display = 'none';
+            clearAddUserForm();
+        });
+    }
+    
+    // Close add user modal when clicking outside
+    window.addEventListener('click', function(event) {
+        if (event.target === addUserModal) {
+            addUserModal.style.display = 'none';
+            clearAddUserForm();
+        }
+    });
+    
+    
+    // Save button in add user form
+    const saveFormBtn = document.querySelector('.save-form-btn');
+    if (saveFormBtn) {
+        saveFormBtn.addEventListener('click', async function() {
+            const userName = document.getElementById('userName').value;
+            const userPhone = document.getElementById('userPhone').value;
+            const userEmail = document.getElementById('userEmail').value;
+            const userRole = document.getElementById('userRole').value;
+            
+            if (userName && userPhone && userEmail && userRole) {
+                // Отключаем кнопку во время запроса
+                saveFormBtn.disabled = true;
+                saveFormBtn.textContent = 'Čuvanje...';
+                
+                try {
+                    await addUserToTable(userName, userPhone, userEmail, userRole);
+                    // Модальное окно закрывается и форма очищается внутри addUserToTable при успехе
+                } catch (error) {
+                    console.error('Error:', error);
+                } finally {
+                    // Восстанавливаем кнопку
+                    saveFormBtn.disabled = false;
+                    saveFormBtn.textContent = 'Sačuvaj';
+                }
+            } else {
+                alert('Molimo popunite sva polja!');
+            }
+        });
+    }
+    
+    // Function to clear add user form
+    function clearAddUserForm() {
+        document.getElementById('userName').value = '';
+        document.getElementById('userPhone').value = '';
+        document.getElementById('userEmail').value = '';
+        document.getElementById('userRole').value = 'Owner';
+    }
+    
+    // Function to add user to table (via API)
+    async function addUserToTable(name, phone, email, role) {
+        try {
+            const response = await fetch('/api/users', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    name: name,
+                    phone: phone,
+                    email: email,
+                    role: role
+                })
+            });
+            
+            // Пытаемся получить текст ответа для отладки
+            const responseText = await response.text();
+            console.log('Response status:', response.status);
+            console.log('Response text:', responseText);
+            
+            if (!response.ok) {
+                console.error('Server error:', response.status, responseText);
+                // Пытаемся распарсить как JSON, если не получается - используем текст
+                let errorMsg = responseText;
+                try {
+                    const errorData = JSON.parse(responseText);
+                    errorMsg = errorData.error || errorData.detail || responseText;
+                } catch (e) {
+                    errorMsg = responseText || `Server error: ${response.status}`;
+                }
+                throw new Error(errorMsg);
+            }
+            
+            // Парсим JSON ответ
+            let data;
+            try {
+                data = JSON.parse(responseText);
+            } catch (e) {
+                console.error('Failed to parse JSON:', responseText);
+                throw new Error('Invalid server response');
+            }
+            
+            if (data.success && data.user) {
+                const tbody = document.querySelector('.users-table tbody');
+                const newRow = document.createElement('tr');
+                newRow.setAttribute('data-user-id', data.user.id);
+                
+                newRow.innerHTML = `
+                    <td>${data.user.name || ''}</td>
+                    <td>${data.user.phone || ''}</td>
+                    <td>${data.user.email || ''}</td>
+                    <td><div class="role-tag" id="role-tag-${Date.now()}">${data.user.role || 'Employee'}</div></td>
+                    <td><img src="/static/images/krest.png" alt="Delete" class="delete-user-btn" onclick="deleteUser(this)" onerror="this.style.display='none'; this.nextElementSibling.style.display='block';"><span class="delete-user-text" onclick="deleteUser(this)" style="display:none; cursor:pointer; font-size:18px; color:#ff4444;">✕</span></td>
+                `;
+                
+                tbody.appendChild(newRow);
+                
+                // Add click listener to the new role tag
+                const newRoleTag = newRow.querySelector('.role-tag');
+                // Обработчик уже добавлен глобально, ничего не делаем
+                
+                // Обновляем список всех ролей после добавления пользователя
+                if (typeof updateAllRoles === 'function') {
+                    updateAllRoles();
+                }
+                
+                // Закрываем модальное окно и очищаем форму только после успешного добавления
+                const addUserModal = document.getElementById('addUserModal');
+                if (addUserModal) {
+                    addUserModal.style.display = 'none';
+                }
+                clearAddUserForm();
+                
+                // Показываем сообщение об успехе
+                alert('Korisnik je uspešno dodat!');
+            } else {
+                const errorMsg = data.error || 'Nepoznata greška';
+                console.error('API error:', errorMsg);
+                alert('Greška pri dodavanju korisnika: ' + errorMsg);
+                throw new Error(errorMsg);
+            }
+        } catch (error) {
+            console.error('Error adding user:', error);
+            alert('Greška pri dodavanju korisnika: ' + error.message);
+            throw error; // Пробрасываем ошибку дальше
+        }
+    }
+    
+    // Function to update user role (via API)
+    async function updateUserRole(userId, newRole) {
+        try {
+            const response = await fetch(`/api/users/${userId}`, {
+                method: 'PUT',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    role: newRole
+                })
+            });
+            
+            const data = await response.json();
+            
+            if (!data.success) {
+                console.error('Failed to update user role:', data.error);
+                // Перезагружаем данные, чтобы восстановить правильное значение
+                loadUsersData();
+            }
+        } catch (error) {
+            console.error('Error updating user role:', error);
+            // Перезагружаем данные, чтобы восстановить правильное значение
+            loadUsersData();
+        }
+    }
+    
+    // Function to delete user with confirmation (via API)
+    async function deleteUser(button) {
+        const row = button.closest('tr');
+        const userId = row.getAttribute('data-user-id');
+        const name = row.querySelector('td:first-child').textContent;
+        
+        if (!userId) {
+            alert('Greška: ID korisnika nije pronađen');
+            return;
+        }
+        
+        if (confirm(`Da li ste sigurni da želite da obrišete korisnika "${name}"?`)) {
+            try {
+                const response = await fetch(`/api/users/${userId}`, {
+                    method: 'DELETE'
+                });
+                
+                const data = await response.json();
+                
+                if (data.success) {
+                    row.remove();
+                    // Обновляем список всех ролей после удаления
+                    if (typeof updateAllRoles === 'function') {
+                        updateAllRoles();
+                    }
+                } else {
+                    alert('Greška pri brisanju korisnika: ' + (data.error || 'Nepoznata greška'));
+                }
+            } catch (error) {
+                console.error('Error deleting user:', error);
+                alert('Greška pri brisanju korisnika: ' + error.message);
+            }
+        }
+    }
+    
+    // Make functions globally accessible
+    window.addUserToTable = addUserToTable;
+    window.deleteUser = deleteUser;
+    window.loadUsersData = loadUsersData;
+    window.updateUserRole = updateUserRole;
+    
+    // Таблица сотрудников пустая по умолчанию - данные загружаются из API
+    
+});
+</script>
+
+<script>
+// Add click handlers to role tag options
+document.addEventListener('click', function(e) {
+    if (e.target.classList.contains('role-tag-option')) {
+        e.preventDefault();
+        e.stopPropagation();
+        
+        const newRole = e.target.getAttribute('data-role');
+        
+        if (newRole === 'Add') {
+            showAddRoleModal();
+        } else {
+            updateRoleFromPopup(newRole);
+        }
+    }
+});
+
+</script>
+
+{% endblock %}
+

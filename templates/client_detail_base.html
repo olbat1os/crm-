@@ -1,0 +1,235 @@
+<!DOCTYPE html>
+<html lang="sr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}{{ title or 'Client Detail' }}{% endblock %}</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@200;300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <style>
+        body { font-family: 'Manrope', system-ui, sans-serif; }
+        
+        /* Sidebar styles */
+        .sidebar {
+            position: fixed;
+            left: 0;
+            top: 0;
+            width: 90px;
+            height: 100vh;
+            background: linear-gradient(179.27deg, #2CAB5C 0%, #11998E 100%), #160D27;
+            box-shadow: 10px 0px 25px rgba(0, 0, 0, 0.25);
+            transition: width 0.3s ease;
+            z-index: 1000;
+        }
+        
+        .sidebar:hover {
+            width: 235px;
+        }
+        
+        .main {
+            margin-left: 90px;
+            min-height: 100vh;
+            background: #ffffff;
+            transition: margin-left 0.3s ease;
+        }
+        
+        .menu-item {
+            display: flex;
+            align-items: center;
+            padding: 15px 30px;
+            color: white;
+            text-decoration: none;
+            position: relative;
+            transition: all 0.3s ease;
+        }
+        
+        .menu-item:hover {
+            background: rgba(255, 255, 255, 0.1);
+        }
+        
+        .menu-icon {
+            width: 30px;
+            height: 30px;
+            flex-shrink: 0;
+        }
+        
+        .menu-label {
+            margin-left: 15px;
+            font-size: 16px;
+            font-weight: 400;
+            white-space: nowrap;
+            opacity: 0;
+            transition: opacity 0.3s ease;
+        }
+        
+        .menu-chevron {
+            margin-left: auto;
+            width: 7px;
+            height: 14px;
+            opacity: 0;
+            transition: opacity 0.3s ease;
+        }
+        
+        .sidebar:hover .menu-label,
+        .sidebar:hover .menu-chevron {
+            opacity: 1;
+        }
+        
+        .settings-item {
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            right: 0;
+        }
+        
+        .label-sett {
+            position: absolute;
+            left: 75px;
+            bottom: 30px;
+            font-size: 16px;
+            font-weight: 400;
+            color: white;
+            opacity: 0;
+            transition: opacity 0.3s ease;
+        }
+        
+        .chev-sett {
+            position: absolute;
+            right: 15px;
+            bottom: 30px;
+            width: 7px;
+            height: 14px;
+            opacity: 0;
+            transition: opacity 0.3s ease;
+        }
+        
+        .sidebar:hover .label-sett,
+        .sidebar:hover .chev-sett {
+            opacity: 1;
+        }
+        
+        .active-band {
+            position: absolute;
+            left: 0;
+            top: var(--active-top, 0px);
+            width: 4px;
+            height: 90px;
+            background: rgba(255, 255, 255, 0.3);
+            transition: top 0.3s ease;
+        }
+        
+        .top-right {
+            position: absolute;
+            top: 25px;
+            right: 25px;
+            display: flex;
+            align-items: center;
+            gap: 20px;
+        }
+        
+        .logo-home {
+            position: absolute;
+            left: 25px;
+            top: 25px;
+            width: 181px;
+            height: 40px;
+        }
+        
+        .bell-icon {
+            width: 24px;
+            height: 24px;
+        }
+        
+        .search-container {
+            position: relative;
+        }
+        
+        .search-input {
+            width: 290px;
+            height: 40px;
+            border: 1px solid #D9D9D9;
+            border-radius: 40px;
+            padding: 0 40px 0 20px;
+            font-size: 16px;
+            outline: none;
+        }
+        
+        .search-icon {
+            position: absolute;
+            right: 15px;
+            top: 50%;
+            transform: translateY(-50%);
+            width: 20px;
+            height: 20px;
+        }
+    </style>
+</head>
+<body>
+    <!-- Sidebar -->
+    <div class="sidebar">
+        <div class="active-band" style="--active-top: 0px;"></div>
+        
+        <a href="/dashboard" class="menu-item">
+            <img src="/static/images/logo dashbord.png" alt="Dashboard" class="menu-icon">
+            <span class="menu-label">Dashboard</span>
+            <img src="/static/images/strelka logo.png" alt=">" class="menu-chevron">
+        </a>
+        
+        <a href="/booking" class="menu-item">
+            <img src="/static/images/booking logo.png" alt="Booking" class="menu-icon">
+            <span class="menu-label">Booking</span>
+            <img src="/static/images/strelka logo.png" alt=">" class="menu-chevron">
+        </a>
+        
+        <a href="/clients" class="menu-item">
+            <img src="/static/images/klijenti logo.png" alt="Klijenti" class="menu-icon">
+            <span class="menu-label">Klijenti</span>
+            <img src="/static/images/strelka logo.png" alt=">" class="menu-chevron">
+        </a>
+        
+        <a href="/map" class="menu-item">
+            <img src="/static/images/mapa logo.png" alt="Mapa" class="menu-icon">
+            <span class="menu-label">Mapa</span>
+            <img src="/static/images/strelka logo.png" alt=">" class="menu-chevron">
+        </a>
+        
+        <a href="/marketing" class="menu-item">
+            <img src="/static/images/marketing logo.png" alt="Marketing" class="menu-icon">
+            <span class="menu-label">Marketing</span>
+            <img src="/static/images/strelka logo.png" alt=">" class="menu-chevron">
+        </a>
+        
+        <a href="/settings" class="menu-item settings-item">
+            <img src="/static/images/setting logo.png" alt="Settings" class="menu-icon">
+            <span class="label-sett">Podešavanja</span>
+            <img src="/static/images/strelka logo.png" alt=">" class="chev-sett">
+        </a>
+    </div>
+    
+    <!-- Main Content -->
+    <div class="main">
+        <!-- Logo -->
+        <img src="/static/images/logo home.png" alt="LOVACRM" class="logo-home">
+        
+        <!-- Top Right Elements -->
+        <div class="top-right">
+            <img src="/static/images/kolokolchik logo.png" alt="Notifications" class="bell-icon">
+            <div class="search-container">
+                <input type="text" placeholder="Search" class="search-input">
+                <img src="/static/images/loopa logo.png" alt="Search" class="search-icon">
+            </div>
+        </div>
+        
+        <!-- Page Content -->
+        <div style="padding: 100px 30px 30px 30px;">
+            {% block content %}{% endblock %}
+        </div>
+    </div>
+</body>
+</html>
+
+
+
+
+
+
