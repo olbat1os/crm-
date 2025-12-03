@@ -5037,19 +5037,128 @@ function updateLeadSourceDisplay() {
 
 // Функция для обработки изменения Lead source
 function handleLeadSourceChange() {
+    console.log('handleLeadSourceChange called');
     const leadSourceSelect = document.getElementById('leadSource');
+    const leadSourceInputField = document.getElementById('leadSourceInputField');
+    const leadSourceInputLabel = document.getElementById('leadSourceInputLabel');
     const leadSourceInput = document.getElementById('leadSourceInput');
+    const timeFieldContainer = document.getElementById('timeFieldContainer');
+    const timeRowBelow = document.getElementById('timeRowBelow');
+    const timeFrom = document.getElementById('timeFrom');
+    const timeTo = document.getElementById('timeTo');
+    const timeFromBelow = document.getElementById('timeFromBelow');
+    const timeToBelow = document.getElementById('timeToBelow');
     
-    if (!leadSourceSelect || !leadSourceInput) return;
+    console.log('Elements found:', {
+        leadSourceSelect: !!leadSourceSelect,
+        leadSourceInputField: !!leadSourceInputField,
+        timeFieldContainer: !!timeFieldContainer,
+        timeRowBelow: !!timeRowBelow
+    });
+    
+    if (!leadSourceSelect || !leadSourceInputField) {
+        console.error('Required elements not found');
+        return;
+    }
     
     const selectedOption = leadSourceSelect.options[leadSourceSelect.selectedIndex];
     const requiresInput = selectedOption && selectedOption.dataset.requiresInput === 'true';
+    const selectedValue = leadSourceSelect.value;
     
-    if (requiresInput) {
-        leadSourceInput.style.display = 'block';
-    } else {
-        leadSourceInput.style.display = 'none';
+    console.log('Selected:', {
+        value: selectedValue,
+        text: selectedOption ? selectedOption.textContent : '',
+        requiresInput: requiresInput
+    });
+    
+    if (requiresInput && selectedValue) {
+        // Показываем поле ввода имени lead source справа на месте времени
+        const displayName = selectedOption.textContent;
+        leadSourceInputLabel.textContent = displayName + ':';
+        leadSourceInputField.style.display = 'flex';
         leadSourceInput.value = '';
+        leadSourceInput.focus();
+        console.log('Showing lead source input field');
+        
+        // Скрываем время в строке с комментарием
+        if (timeFieldContainer) {
+            timeFieldContainer.style.display = 'none';
+            console.log('Hiding time field container');
+        }
+        
+        // Показываем время в отдельной строке ниже
+        if (timeRowBelow) {
+            timeRowBelow.style.display = 'flex';
+            console.log('Showing time row below');
+            
+            // Синхронизируем значения времени
+            if (timeFrom && timeFromBelow) {
+                timeFromBelow.value = timeFrom.value;
+            }
+            if (timeTo && timeToBelow) {
+                timeToBelow.value = timeTo.value;
+            }
+            
+            // Добавляем обработчики для синхронизации времени
+            if (timeFrom && timeFromBelow) {
+                const syncHandler = () => {
+                    if (timeFromBelow) timeFromBelow.value = timeFrom.value;
+                };
+                timeFrom.removeEventListener('input', window.syncTimeFromHandler);
+                timeFrom.removeEventListener('change', window.syncTimeFromHandler);
+                timeFrom.addEventListener('input', syncHandler);
+                timeFrom.addEventListener('change', syncHandler);
+                window.syncTimeFromHandler = syncHandler;
+            }
+            
+            if (timeTo && timeToBelow) {
+                const syncHandler = () => {
+                    if (timeToBelow) timeToBelow.value = timeTo.value;
+                };
+                timeTo.removeEventListener('input', window.syncTimeToHandler);
+                timeTo.removeEventListener('change', window.syncTimeToHandler);
+                timeTo.addEventListener('input', syncHandler);
+                timeTo.addEventListener('change', syncHandler);
+                window.syncTimeToHandler = syncHandler;
+            }
+        }
+    } else {
+        // Скрываем поле ввода lead source
+        leadSourceInputField.style.display = 'none';
+        leadSourceInput.value = '';
+        console.log('Hiding lead source input field');
+        
+        // Показываем время в строке с комментарием
+        if (timeFieldContainer) {
+            timeFieldContainer.style.display = 'flex';
+            console.log('Showing time field container');
+        }
+        
+        // Скрываем время в отдельной строке и синхронизируем значения обратно
+        if (timeRowBelow) {
+            timeRowBelow.style.display = 'none';
+            console.log('Hiding time row below');
+            
+            // Синхронизируем значения обратно в основное поле времени
+            if (timeFromBelow && timeFrom) {
+                timeFrom.value = timeFromBelow.value;
+            }
+            if (timeToBelow && timeTo) {
+                timeTo.value = timeToBelow.value;
+            }
+            
+            // Удаляем обработчики синхронизации
+            if (timeFrom && window.syncTimeFromHandler) {
+                timeFrom.removeEventListener('input', window.syncTimeFromHandler);
+                timeFrom.removeEventListener('change', window.syncTimeFromHandler);
+                window.syncTimeFromHandler = null;
+            }
+            if (timeTo && window.syncTimeToHandler) {
+                timeTo.removeEventListener('input', window.syncTimeToHandler);
+                timeTo.removeEventListener('change', window.syncTimeToHandler);
+                window.syncTimeToHandler = null;
+            }
+        }
     }
 }
 
@@ -5274,8 +5383,24 @@ function openNewBookingModal() {
         return;
     }
     newBookingModal.style.display = 'flex';
+    console.log('modal display set to flex');
     
+    // Инициализируем видимость полей при открытии модального окна
+    const leadSourceInputField = document.getElementById('leadSourceInputField');
+    const timeFieldContainer = document.getElementById('timeFieldContainer');
+    const timeRowBelow = document.getElementById('timeRowBelow');
+    if (leadSourceInputField) leadSourceInputField.style.display = 'none';
+    if (timeFieldContainer) timeFieldContainer.style.display = 'flex';
+    if (timeRowBelow) timeRowBelow.style.display = 'none';
+    
+    // Закрываем все открытые dropdown
     closeAllDropdowns();
+    
+    // Set title to "Nova rezervacija"
+    const title = newBookingModal.querySelector('.new-booking-title');
+    if (title) {
+        title.textContent = 'Nova rezervacija';
+    }
     
     // Load business settings and set default time
     loadBusinessSettings().then(() => {
@@ -5309,6 +5434,30 @@ function openNewBookingModal() {
             timeToInput.value = '';
         }
     });
+    
+    // Force update end time after modal is fully loaded (only if timeFrom is set)
+    setTimeout(() => {
+        console.log('Forcing updateEndTime after modal load');
+        if (typeof updateEndTime === 'function') {
+            updateEndTime();
+        }
+    }, 1000);
+    
+    // Set default date to selected date
+    const dateInput = document.getElementById('bookingDate');
+    if (dateInput) {
+        // Get current selected date from URL or use today's date
+        const urlParams = new URLSearchParams(window.location.search);
+        const dateParam = urlParams.get('date');
+        if (dateParam) {
+            dateInput.value = dateParam;
+        } else {
+            // Use today's date as default
+            const today = new Date();
+            const formattedDate = today.toISOString().split('T')[0];
+            dateInput.value = formattedDate;
+        }
+    }
     
     // Устанавливаем сегодняшнюю дату по умолчанию
     const today = new Date().toISOString().split('T')[0];
@@ -5346,37 +5495,47 @@ function closeNewBookingModal() {
     }
     document.getElementById('bookingDate').value = '';
     document.getElementById('specialOccasion').value = '';
-    document.getElementById('timeFrom').value = '';
-    document.getElementById('timeTo').value = '';
-    document.getElementById('comment').value = '';
-    document.getElementById('malesCount').value = '0';
-    document.getElementById('femalesCount').value = '0';
-    document.getElementById('initialCheckRsd').value = '';
-    document.getElementById('deposit').value = '';
+    const timeFrom = document.getElementById('timeFrom');
+    if (timeFrom) timeFrom.value = '';
+    const timeTo = document.getElementById('timeTo');
+    if (timeTo) timeTo.value = '';
+    const timeFromBelow = document.getElementById('timeFromBelow');
+    if (timeFromBelow) timeFromBelow.value = '';
+    const timeToBelow = document.getElementById('timeToBelow');
+    if (timeToBelow) timeToBelow.value = '';
+    const comment = document.getElementById('comment');
+    if (comment) comment.value = '';
+    const malesCount = document.getElementById('malesCount');
+    if (malesCount) malesCount.value = '0';
+    
+    // Сбрасываем видимость полей
+    const leadSourceInputField = document.getElementById('leadSourceInputField');
+    const timeFieldContainer = document.getElementById('timeFieldContainer');
+    const timeRowBelow = document.getElementById('timeRowBelow');
+    if (leadSourceInputField) leadSourceInputField.style.display = 'none';
+    if (timeFieldContainer) timeFieldContainer.style.display = 'flex';
+    if (timeRowBelow) timeRowBelow.style.display = 'none';
+    
+    // Сбрасываем lead source
     const leadSourceSelect = document.getElementById('leadSource');
     if (leadSourceSelect) {
         leadSourceSelect.value = '';
         if (typeof updateLeadSourceDisplay === 'function') {
             updateLeadSourceDisplay();
         }
-        if (typeof handleLeadSourceChange === 'function') {
-            handleLeadSourceChange();
-        }
     }
+    const femalesCount = document.getElementById('femalesCount');
+    if (femalesCount) femalesCount.value = '0';
+    const deposit = document.getElementById('deposit');
+    if (deposit) deposit.value = '';
     const leadSourceInput = document.getElementById('leadSourceInput');
     if (leadSourceInput) {
         leadSourceInput.value = '';
-        leadSourceInput.style.display = 'none';
-    }
-    const finalCheckInput = document.getElementById('finalCheckRsd');
-    if (finalCheckInput) {
-        finalCheckInput.value = '';
     }
     
-    // Скрываем поле "Konačni račun" при закрытии
-    const finalCheckField = document.getElementById('finalCheckField');
-    if (finalCheckField) {
-        finalCheckField.style.display = 'none';
+    // Обновляем отображение dropdown'ов
+    if (typeof updateTableTypeDisplay === 'function') {
+        updateTableTypeDisplay();
     }
     
     // Clear booking ID for editing
@@ -5917,24 +6076,52 @@ function saveNewBooking() {
     
     const contactId = {{ contact.id }};
     const status = selectedStatus || currentStatus;
-    const partySize = document.getElementById('partySize').value;
-    const tableType = document.getElementById('tableType').value;
-    const bookingDate = document.getElementById('bookingDate').value;
-    const specialOccasion = document.getElementById('specialOccasion').value;
-    const timeFrom = document.getElementById('timeFrom').value;
-    const timeTo = document.getElementById('timeTo').value;
-    const comment = document.getElementById('comment').value;
-    const malesCount = document.getElementById('malesCount').value;
-    const femalesCount = document.getElementById('femalesCount').value;
-    const initialCheckRsd = document.getElementById('initialCheckRsd').value;
-    const finalCheckRsd = document.getElementById('finalCheckRsd') ? document.getElementById('finalCheckRsd').value : '';
-    const deposit = document.getElementById('deposit').value;
-    let leadSource = document.getElementById('leadSource').value;
-    const leadSourceInput = document.getElementById('leadSourceInput');
+    const partySizeEl = document.getElementById('partySize');
+    const tableTypeEl = document.getElementById('tableType');
+    const bookingDateEl = document.getElementById('bookingDate');
+    const specialOccasionEl = document.getElementById('specialOccasion');
+    const timeFromEl = document.getElementById('timeFrom');
+    const timeToEl = document.getElementById('timeTo');
+    const timeFromBelowEl = document.getElementById('timeFromBelow');
+    const timeToBelowEl = document.getElementById('timeToBelow');
+    const commentEl = document.getElementById('comment');
+    const malesCountEl = document.getElementById('malesCount');
+    const femalesCountEl = document.getElementById('femalesCount');
+    const initialCheckRsdEl = document.getElementById('initialCheckRsd');
+    const finalCheckRsdEl = document.getElementById('finalCheckRsd');
+    const depositEl = document.getElementById('deposit');
+    const leadSourceEl = document.getElementById('leadSource');
+    const leadSourceInputEl = document.getElementById('leadSourceInput');
     
-    // Если есть дополнительный ввод для lead source, добавляем его к значению
-    if (leadSource && leadSourceInput && leadSourceInput.style.display !== 'none' && leadSourceInput.value.trim()) {
-        leadSource = leadSource + ' ' + leadSourceInput.value.trim();
+    const partySize = partySizeEl ? partySizeEl.value : '';
+    const tableType = tableTypeEl ? tableTypeEl.value : '';
+    const bookingDate = bookingDateEl ? bookingDateEl.value : '';
+    const specialOccasion = specialOccasionEl ? specialOccasionEl.value : '';
+    // Используем timeFromBelow, если timeFieldContainer скрыт, иначе timeFrom
+    const timeFieldContainer = document.getElementById('timeFieldContainer');
+    let timeFrom = timeFromEl ? timeFromEl.value : '';
+    let timeTo = timeToEl ? timeToEl.value : '';
+    // Если timeFieldContainer скрыт, используем значения из timeFromBelow/timeToBelow
+    if (timeFieldContainer && timeFieldContainer.style.display === 'none') {
+        if (timeFromBelowEl && timeFromBelowEl.value) {
+            timeFrom = timeFromBelowEl.value;
+        }
+        if (timeToBelowEl && timeToBelowEl.value) {
+            timeTo = timeToBelowEl.value;
+        }
+    }
+    const comment = commentEl ? commentEl.value : '';
+    const malesCount = malesCountEl ? malesCountEl.value : '';
+    const femalesCount = femalesCountEl ? femalesCountEl.value : '';
+    const initialCheckRsd = initialCheckRsdEl ? initialCheckRsdEl.value : '';
+    const finalCheckRsd = finalCheckRsdEl ? finalCheckRsdEl.value : '';
+    const deposit = depositEl ? depositEl.value : '';
+    let leadSource = leadSourceEl ? leadSourceEl.value : '';
+    const leadSourceInput = leadSourceInputEl ? leadSourceInputEl.value.trim() : '';
+    
+    // Если выбрана опция с дополнительным полем и введен текст, объединяем
+    if (leadSource && leadSourceInput) {
+        leadSource = leadSource + ' ' + leadSourceInput;
     }
     
     // Validate required fields
@@ -6224,15 +6411,15 @@ document.addEventListener('click', function(e) {
                     <input type="text" class="form-input" id="specialOccasion" placeholder="...">
                 </div>
                 <div class="form-field">
-                    <label class="form-label">Početni račun:</label>
-                    <input type="number" class="form-input" id="initialCheckRsd" min="0" step="0.01" value="" placeholder="0.00">
+                    <label class="form-label">Uslov:</label>
+                    <input type="number" class="form-input" id="deposit" min="0" step="0.01" value="" placeholder="0.00">
                 </div>
             </div>
             
             <div class="form-row">
                 <div class="form-field">
-                    <label class="form-label">Uslov:</label>
-                    <input type="number" class="form-input" id="deposit" min="0" step="0.01" value="" placeholder="0.00">
+                    <label class="form-label">Datum:</label>
+                    <input type="date" class="form-input" id="bookingDate">
                 </div>
                 <div class="form-field">
                     <label class="form-label">Lead source:</label>
@@ -6249,35 +6436,43 @@ document.addEventListener('click', function(e) {
                     <select class="form-input" id="leadSource" style="display: none;" onchange="handleLeadSourceChange()">
                         <option value="">...</option>
                     </select>
-                    <!-- Поле для дополнительного ввода (если требуется) -->
-                    <input type="text" class="form-input" id="leadSourceInput" placeholder="Unesite dodatni tekst..." style="display: none; margin-top: 10px; width: 220px; height: 40px;">
                 </div>
             </div>
             
             <div class="form-row">
-                <div class="form-field date-time-field">
-                    <div class="date-time-container">
-                        <div class="date-field-row">
-                            <label class="form-label">Datum:</label>
-                            <input type="date" class="form-input" id="bookingDate">
-                        </div>
-                        <div class="time-field-row">
-                            <label class="form-label">Vreme:</label>
-                            <div class="time-inputs">
-                                <input type="time" class="form-input" id="timeFrom" placeholder="--:--">
-                                <span>-</span>
-                                <input type="time" class="form-input" id="timeTo" placeholder="--:--">
-                            </div>
-                        </div>
-                        <div class="time-field-row" id="finalCheckField" style="display: none;">
-                            <label class="form-label">Konačni račun:</label>
-                            <input type="number" class="form-input" id="finalCheckRsd" min="0" step="0.01" value="" placeholder="0.00" style="flex: 1;">
-                        </div>
-                    </div>
-                </div>
                 <div class="form-field comment-field">
                     <label class="form-label">Komentar:</label>
                     <textarea class="form-textarea" id="comment" placeholder="..." rows="2"></textarea>
+                </div>
+                <div class="form-field" style="display: flex; flex-direction: column; gap: 20px; align-items: stretch;">
+                    <div class="form-field date-time-field" id="timeFieldContainer" style="width: 100%;">
+                        <div class="date-time-container" style="width: 100%;">
+                            <div class="time-field-row" style="display: flex; align-items: center; gap: 10px; width: 100%;">
+                                <label class="form-label" style="min-width: 120px; width: 120px; flex-shrink: 0;">Vreme:</label>
+                                <div class="time-inputs">
+                                    <input type="time" class="form-input" id="timeFrom" placeholder="--:--">
+                                    <span>-</span>
+                                    <input type="time" class="form-input" id="timeTo" placeholder="--:--">
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="form-field" id="leadSourceInputField" style="display: none; width: 100%;">
+                        <label class="form-label" id="leadSourceInputLabel" style="min-width: 120px; width: 120px; flex-shrink: 0;"></label>
+                        <input type="text" class="form-input" id="leadSourceInput" placeholder="...">
+                    </div>
+                    <div class="form-field date-time-field" id="timeRowBelow" style="display: none; width: 100%;">
+                        <div class="date-time-container" style="width: 100%;">
+                            <div class="time-field-row" style="display: flex; align-items: center; gap: 10px; width: 100%;">
+                                <label class="form-label" style="min-width: 120px; width: 120px; flex-shrink: 0;">Vreme:</label>
+                                <div class="time-inputs">
+                                    <input type="time" class="form-input" id="timeFromBelow" placeholder="--:--">
+                                    <span>-</span>
+                                    <input type="time" class="form-input" id="timeToBelow" placeholder="--:--">
+                                </div>
+                            </div>
+                        </div>
+                    </div>
                 </div>
             </div>
             
