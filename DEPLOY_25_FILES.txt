@@ -1,0 +1,51 @@
+# Команды для загрузки всех 25 обновленных файлов на сервер
+# Сервер: root@72.60.182.59
+# Директория: /root/crm-
+
+# ⚠️ ВАЖНО: Сначала проверьте правильный путь на сервере!
+# Выполните эту команду для проверки:
+# ssh root@72.60.182.59 "find /root -name 'docker-compose.yml' -type f | head -1 | xargs dirname"
+# 
+# Или используйте скрипт: .\VERIFY_AND_DEPLOY.ps1
+
+# Скопируйте и выполните эти команды в PowerShell:
+
+# 1. Templates с favicon (21 файл)
+scp templates/booking_base.html root@72.60.182.59:/root/crm-/templates/booking_base.html
+scp templates/clients_base.html root@72.60.182.59:/root/crm-/templates/clients_base.html
+scp templates/client_detail_base.html root@72.60.182.59:/root/crm-/templates/client_detail_base.html
+scp templates/dashboard_base.html root@72.60.182.59:/root/crm-/templates/dashboard_base.html
+scp templates/admin_base.html root@72.60.182.59:/root/crm-/templates/admin_base.html
+scp templates/settings_base.html root@72.60.182.59:/root/crm-/templates/settings_base.html
+scp templates/marketing_base.html root@72.60.182.59:/root/crm-/templates/marketing_base.html
+scp templates/login_base.html root@72.60.182.59:/root/crm-/templates/login_base.html
+scp templates/login_page_base.html root@72.60.182.59:/root/crm-/templates/login_page_base.html
+scp templates/map_base.html root@72.60.182.59:/root/crm-/templates/map_base.html
+scp templates/landing.html root@72.60.182.59:/root/crm-/templates/landing.html
+scp templates/error.html root@72.60.182.59:/root/crm-/templates/error.html
+scp templates/admin_login.html root@72.60.182.59:/root/crm-/templates/admin_login.html
+scp templates/admin_login_new.html root@72.60.182.59:/root/crm-/templates/admin_login_new.html
+scp templates/admin_verify_code.html root@72.60.182.59:/root/crm-/templates/admin_verify_code.html
+scp templates/admin_dashboard.html root@72.60.182.59:/root/crm-/templates/admin_dashboard.html
+scp templates/admin_businesses.html root@72.60.182.59:/root/crm-/templates/admin_businesses.html
+scp templates/admin_business_detail.html root@72.60.182.59:/root/crm-/templates/admin_business_detail.html
+scp templates/admin_business_edit.html root@72.60.182.59:/root/crm-/templates/admin_business_edit.html
+scp templates/admin_settings.html root@72.60.182.59:/root/crm-/templates/admin_settings.html
+scp templates/admin_pending.html root@72.60.182.59:/root/crm-/templates/admin_pending.html
+
+# 2. Основные файлы с изменениями (4 файла)
+scp templates/booking.html root@72.60.182.59:/root/crm-/templates/booking.html
+scp templates/clients.html root@72.60.182.59:/root/crm-/templates/clients.html
+scp templates/client_detail.html root@72.60.182.59:/root/crm-/templates/client_detail.html
+scp app/main.py root@72.60.182.59:/root/crm-/app/main.py
+
+# 3. Перезапуск Docker контейнера
+ssh root@72.60.182.59 "cd crm- && docker-compose restart crm-app"
+
+# 4. Проверка что файлы загружены (ВАЖНО!)
+ssh root@72.60.182.59 "ls -la /root/crm-/templates/booking.html"
+ssh root@72.60.182.59 "ls -la /root/crm-/app/main.py"
+
+# 5. Проверка логов (опционально)
+ssh root@72.60.182.59 "cd crm- && docker-compose logs --tail=50 crm-app"
+

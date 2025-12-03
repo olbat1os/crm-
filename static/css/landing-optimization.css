@@ -1,0 +1,121 @@
+/* Оптимизация лендинга LovaCRM */
+
+/* Оптимизация изображений */
+img {
+    max-width: 100%;
+    height: auto;
+    loading: lazy;
+    transition: opacity 0.2s ease-in-out;
+}
+
+/* Предзагрузка фоновых изображений */
+.bg-image {
+    background-size: cover;
+    background-position: center;
+    background-repeat: no-repeat;
+}
+
+/* Быстрые переходы для кнопок */
+.nav-button, .button-nav {
+    transition: all 0.1s ease-in-out;
+}
+
+/* Стили для полей ввода - белый текст с прозрачностью (мобильные и PC) */
+.ime-field-mobile,
+.telefon-field-mobile,
+.naziv-field-mobile,
+.link-field-mobile,
+.email-field-mobile,
+.grad-field-mobile,
+.ime-field,
+.telefon-field,
+.naziv-field,
+.link-field,
+.email-field,
+.grad-field {
+    color: rgba(255, 255, 255, 0.6) !important;
+    transition: color 0.2s ease-in-out;
+}
+
+.ime-field-mobile::placeholder,
+.telefon-field-mobile::placeholder,
+.naziv-field-mobile::placeholder,
+.link-field-mobile::placeholder,
+.email-field-mobile::placeholder,
+.grad-field-mobile::placeholder,
+.ime-field::placeholder,
+.telefon-field::placeholder,
+.naziv-field::placeholder,
+.link-field::placeholder,
+.email-field::placeholder,
+.grad-field::placeholder {
+    color: rgba(255, 255, 255, 0.4) !important;
+}
+
+/* Стили для фокуса - полная непрозрачность белого текста (мобильные и PC) */
+.ime-field-mobile:focus,
+.telefon-field-mobile:focus,
+.naziv-field-mobile:focus,
+.link-field-mobile:focus,
+.email-field-mobile:focus,
+.grad-field-mobile:focus,
+.ime-field:focus,
+.telefon-field:focus,
+.naziv-field:focus,
+.link-field:focus,
+.email-field:focus,
+.grad-field:focus {
+    color: rgba(255, 255, 255, 1) !important;
+}
+
+/* Стили для заполненных полей - полная непрозрачность белого текста (мобильные и PC) */
+.ime-field-mobile:not(:placeholder-shown),
+.telefon-field-mobile:not(:placeholder-shown),
+.naziv-field-mobile:not(:placeholder-shown),
+.link-field-mobile:not(:placeholder-shown),
+.email-field-mobile:not(:placeholder-shown),
+.grad-field-mobile:not(:placeholder-shown),
+.ime-field:not(:placeholder-shown),
+.telefon-field:not(:placeholder-shown),
+.naziv-field:not(:placeholder-shown),
+.link-field:not(:placeholder-shown),
+.email-field:not(:placeholder-shown),
+.grad-field:not(:placeholder-shown) {
+    color: rgba(255, 255, 255, 1) !important;
+}
+
+/* Оптимизация для мобильных устройств */
+@media (max-width: 768px) {
+    .ime-field-mobile,
+    .telefon-field-mobile,
+    .naziv-field-mobile,
+    .link-field-mobile,
+    .email-field-mobile,
+    .grad-field-mobile {
+        font-size: 16px; /* Предотвращает зум на iOS */
+    }
+}
+
+/* Скрываем контент до загрузки */
+.loading {
+    opacity: 0;
+    transition: opacity 0.3s ease-in-out;
+}
+
+.loaded {
+    opacity: 1;
+}
+
+/* Оптимизация анимаций */
+* {
+    will-change: auto;
+}
+
+/* Отключаем анимации для пользователей с предпочтением уменьшенной анимации */
+@media (prefers-reduced-motion: reduce) {
+    * {
+        animation-duration: 0.01ms !important;
+        animation-iteration-count: 1 !important;
+        transition-duration: 0.01ms !important;
+    }
+}

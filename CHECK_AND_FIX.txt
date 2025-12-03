@@ -1,0 +1,28 @@
+# Команды для проверки и исправления ошибки на сервере
+
+# 1. Проверьте текущий код в контейнере:
+CONTAINER="crm--crm-app-1"
+docker exec ${CONTAINER} sed -n '938,950p' /app/app/main.py
+
+# 2. Если там все еще старая версия (строка 940 с "if business and business.table_columns:"),
+# то загрузите исправленный файл:
+
+# С вашего компьютера:
+scp app/main.py root@72.60.182.59:/root/crm-/app/main.py
+
+# Затем на сервере:
+CONTAINER="crm--crm-app-1"
+docker cp /root/crm-/app/main.py ${CONTAINER}:/app/app/main.py
+
+# 3. Перезапустите контейнер:
+docker-compose restart crm-app
+
+# 4. Проверьте что исправление применено:
+docker exec ${CONTAINER} sed -n '938,950p' /app/app/main.py
+
+# Должно быть:
+#     table_columns = {}
+#     if business:
+#         # Безопасная проверка наличия атрибута
+#         table_columns_data = getattr(business, 'table_columns', None)
+

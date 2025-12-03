@@ -1,0 +1,2945 @@
+{% extends 'dashboard_base.html' %}
+{% block content %}
+<style>
+  /* Dashboard Container */
+  .dashboard-container {
+    position: fixed;
+    top: 70px;
+    left: 80px;
+    right: 0;
+    bottom: 0;
+    width: calc(100vw - 80px);
+    height: calc(100vh - 70px);
+    background: #FFFFFF;
+    padding: 20px;
+    font-family: 'Manrope', sans-serif;
+    overflow: auto;
+    box-sizing: border-box;
+  }
+
+  /* Month Filter */
+  .month-filter {
+    position: absolute;
+    width: 260px;
+    height: 40px;
+    left: 40px;
+    top: 40px;
+    border: 1px solid #D9D9D9;
+    border-radius: 40px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0 20px;
+    background: #FFFFFF;
+    cursor: pointer;
+    z-index: 100;
+  }
+
+  .month-filter-text {
+    font-family: 'Manrope';
+    font-weight: 400;
+    font-size: 14px;
+    line-height: 20px;
+    color: #585858;
+  }
+
+  .month-filter-arrow {
+    width: 20px;
+    height: 20px;
+    background: #D9D9D9;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: transform 0.2s ease;
+  }
+
+  .month-filter.active .month-filter-arrow {
+    transform: rotate(180deg);
+  }
+
+  /* Dropdown menu for month filter */
+  .month-filter-dropdown {
+    position: absolute;
+    top: calc(100% + 10px);
+    left: 0;
+    background: #FFFFFF;
+    border: 1px solid #D9D9D9;
+    border-radius: 19.5px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+    min-width: 260px;
+    z-index: 1000;
+    display: none;
+    overflow: hidden;
+  }
+
+  .month-filter.active .month-filter-dropdown {
+    display: block;
+  }
+
+  .month-filter-option {
+    padding: 15px 20px;
+    cursor: pointer;
+    font-family: 'Manrope';
+    font-weight: 400;
+    font-size: 16px;
+    line-height: 22px;
+    color: #585858;
+    transition: background-color 0.2s ease;
+  }
+
+  .month-filter-option:hover {
+    background-color: #F0F9FF;
+  }
+
+  .month-filter-option.active {
+    background-color: #E8F5E9;
+    color: #1EA276;
+    font-weight: 600;
+  }
+
+  /* Add Button */
+  .add-button {
+    position: absolute;
+    width: 140px;
+    height: 40px;
+    right: 20px;
+    top: 40px;
+    background: linear-gradient(270deg, #11998E 0%, #2CAB5C 100%);
+    border-radius: 30px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-family: 'Manrope';
+    font-weight: 400;
+    font-size: 18px;
+    line-height: 25px;
+    color: #FFFFFF;
+    cursor: pointer;
+    opacity: 1;
+    transition: opacity 0.2s ease;
+  }
+
+  .add-button:hover {
+    opacity: 0.9;
+  }
+
+  /* Add Card Modal */
+  .add-card-modal {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.5);
+    display: none;
+    align-items: center;
+    justify-content: center;
+    z-index: 2000;
+  }
+
+  .add-card-modal.show {
+    display: flex;
+  }
+
+  .add-card-modal-content {
+    background: #FFFFFF;
+    border-radius: 19.5px;
+    padding: 30px;
+    max-width: 600px;
+    width: 90%;
+    max-height: 80vh;
+    overflow-y: auto;
+    box-shadow: 0 10px 40px rgba(0, 0, 0, 0.2);
+  }
+
+  .add-card-modal-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 25px;
+  }
+
+  .add-card-modal-title {
+    font-family: 'Manrope';
+    font-weight: 700;
+    font-size: 24px;
+    line-height: 33px;
+    color: #000000;
+    margin: 0;
+  }
+
+  .add-card-modal-close {
+    width: 24px;
+    height: 24px;
+    cursor: pointer;
+    opacity: 0.7;
+    transition: opacity 0.2s ease;
+  }
+
+  .add-card-modal-close:hover {
+    opacity: 1;
+  }
+
+  .card-type-options {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 15px;
+  }
+
+  .card-type-option {
+    background: #FFFFFF;
+    border: 1px solid #D9D9D9;
+    border-radius: 19.5px;
+    padding: 20px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    text-align: center;
+  }
+
+  .card-type-option:hover {
+    border-color: #11998E;
+    background: #F0F9FF;
+  }
+
+  .card-type-option.added {
+    position: relative;
+  }
+
+  .card-type-option-remove {
+    position: absolute;
+    top: 10px;
+    right: 10px;
+    width: 20px;
+    height: 20px;
+    cursor: pointer;
+    opacity: 0.7;
+    transition: opacity 0.2s ease;
+    z-index: 10;
+  }
+
+  .card-type-option-remove:hover {
+    opacity: 1;
+  }
+
+  .card-type-option-title {
+    font-family: 'Manrope';
+    font-weight: 600;
+    font-size: 16px;
+    line-height: 22px;
+    color: #000000;
+    margin-bottom: 8px;
+  }
+
+  .card-type-option-description {
+    font-family: 'Manrope';
+    font-weight: 400;
+    font-size: 12px;
+    line-height: 16px;
+    color: #585858;
+  }
+
+  .card-type-option-size {
+    font-family: 'Manrope';
+    font-weight: 400;
+    font-size: 11px;
+    line-height: 15px;
+    color: #9CA3AF;
+    margin-top: 5px;
+  }
+
+  /* Empty State */
+  .empty-dashboard {
+    grid-column: 1 / -1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    min-height: 400px;
+    text-align: center;
+    padding: 40px 20px;
+  }
+
+  .empty-dashboard-message {
+    font-family: 'Manrope';
+    font-weight: 400;
+    font-size: 18px;
+    line-height: 25px;
+    color: #585858;
+    margin-top: 20px;
+  }
+
+  /* Statistics Grid */
+  .stats-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, 220px);
+    grid-auto-rows: minmax(220px, auto);
+    grid-auto-flow: row dense;
+    gap: 0;
+    row-gap: 0;
+    column-gap: 0;
+    margin-top: 100px;
+    padding: 0 20px;
+    max-width: 100%;
+    justify-content: start;
+    align-content: start;
+    align-items: start;
+  }
+
+
+  /* Statistics Cards */
+  .stats-card {
+    background: #FFFFFF;
+    border: 1px solid #D9D9D9;
+    border-radius: 19.5px;
+    padding: 20px;
+    box-sizing: border-box;
+    height: 200px;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    position: relative;
+    margin: 10px;
+  }
+
+  /* Gray cards when no data */
+  .stats-card.no-data-card {
+    background: #F5F5F5;
+    border: 1px solid #E0E0E0;
+  }
+
+  .stats-card-large {
+    grid-row: span 2;
+    height: 200px;
+    background: #FFFFFF;
+    border: 1px solid #D9D9D9;
+    border-radius: 19.5px;
+    padding: 20px;
+    box-sizing: border-box;
+    margin: 10px;
+  }
+
+  .stats-card-large.no-data-card {
+    background: #F5F5F5;
+    border: 1px solid #E0E0E0;
+  }
+
+  .stats-card-medium {
+    grid-column: span 1;
+    grid-row: span 1;
+    height: 200px;
+    background: #FFFFFF;
+    border: 1px solid #D9D9D9;
+    border-radius: 19.5px;
+    padding: 20px;
+    box-sizing: border-box;
+    margin: 10px;
+  }
+
+  .stats-card-medium.no-data-card {
+    background: #F5F5F5;
+    border: 1px solid #E0E0E0;
+  }
+
+  /* Fixed widths for specific card types - only position changes */
+  .stats-card-medium.card-width-295 {
+    width: 424px;
+    grid-column: span 2; /* 424px = 2*200px + 24px */
+    max-width: calc(2 * 200px + 24px);
+  }
+
+  .stats-card-medium.card-width-205 {
+    width: 200px;
+    grid-column: span 1;
+    max-width: 200px;
+  }
+
+  .stats-card-large.card-width-295 {
+    width: 424px;
+    grid-column: span 2;
+    max-width: calc(2 * 200px + 24px);
+  }
+
+  .stats-card-large.card-width-475 {
+    width: 424px;
+    grid-column: span 2; /* 424px = 2*200px + 24px */
+    max-width: calc(2 * 200px + 24px);
+  }
+
+  .stats-card-medium-large {
+    grid-column: span 1;
+    grid-row: span 2;
+    height: 200px;
+    background: #FFFFFF;
+    border: 1px solid #D9D9D9;
+    border-radius: 19.5px;
+    padding: 20px;
+    box-sizing: border-box;
+    margin: 10px;
+  }
+
+  .stats-card-medium-large.no-data-card {
+    background: #F5F5F5;
+    border: 1px solid #E0E0E0;
+  }
+
+  .stats-card-medium-large.card-width-205 {
+    width: 424px;
+    grid-column: span 2;
+    max-width: calc(2 * 200px + 24px);
+    height: 200px;
+    grid-row: span 1;
+  }
+
+  /* Special card classes for specific layouts */
+  .card-pie-chart {
+    grid-column: span 2; /* 424px width */
+    grid-row: span 2;
+    height: 424px;
+  }
+
+  .card-chart {
+    grid-column: span 2; /* 424px width */
+    grid-row: span 2;
+    height: 424px;
+  }
+
+  .card-double-height {
+    grid-row: span 1;
+    height: 200px;
+    width: 424px;
+    grid-column: span 2;
+  }
+
+  /* Statistics Content */
+  .stat-value {
+    font-family: 'Manrope';
+    font-weight: 400;
+    font-size: 60px;
+    line-height: 82px;
+    margin-bottom: 10px;
+    /* Убираем любые глобальные стили цвета */
+    color: unset !important;
+  }
+
+  /* Чёрный цвет для has-data (когда нет тренда) */
+  .dashboard-container .stats-grid .stats-card .stat-value.has-data:not(.trend-up):not(.trend-down),
+  .dashboard-container .stats-grid .stats-card-medium .stat-value.has-data:not(.trend-up):not(.trend-down),
+  .dashboard-container .stats-grid .stats-card-large .stat-value.has-data:not(.trend-up):not(.trend-down),
+  .dashboard-container .stats-grid .stats-card-medium-large .stat-value.has-data:not(.trend-up):not(.trend-down),
+  .stats-card .stat-value.has-data:not(.trend-up):not(.trend-down),
+  .stats-card-medium .stat-value.has-data:not(.trend-up):not(.trend-down),
+  .stats-card-large .stat-value.has-data:not(.trend-up):not(.trend-down),
+  .stats-card-medium-large .stat-value.has-data:not(.trend-up):not(.trend-down),
+  .stat-value.has-data:not(.trend-up):not(.trend-down) {
+    color: #000000 !important;
+  }
+  
+  /* Зеленый цвет для тренда вверх */
+  .dashboard-container .stats-grid .stats-card .stat-value.has-data.trend-up,
+  .dashboard-container .stats-grid .stats-card-medium .stat-value.has-data.trend-up,
+  .dashboard-container .stats-grid .stats-card-large .stat-value.has-data.trend-up,
+  .dashboard-container .stats-grid .stats-card-medium-large .stat-value.has-data.trend-up,
+  .stats-card .stat-value.has-data.trend-up,
+  .stats-card-medium .stat-value.has-data.trend-up,
+  .stats-card-large .stat-value.has-data.trend-up,
+  .stats-card-medium-large .stat-value.has-data.trend-up,
+  .stat-value.has-data.trend-up {
+    color: #1EA276 !important;
+  }
+  
+  /* Красный цвет для тренда вниз */
+  .dashboard-container .stats-grid .stats-card .stat-value.has-data.trend-down,
+  .dashboard-container .stats-grid .stats-card-medium .stat-value.has-data.trend-down,
+  .dashboard-container .stats-grid .stats-card-large .stat-value.has-data.trend-down,
+  .dashboard-container .stats-grid .stats-card-medium-large .stat-value.has-data.trend-down,
+  .stats-card .stat-value.has-data.trend-down,
+  .stats-card-medium .stat-value.has-data.trend-down,
+  .stats-card-large .stat-value.has-data.trend-down,
+  .stats-card-medium-large .stat-value.has-data.trend-down,
+  .stat-value.has-data.trend-down {
+    color: #FF5555 !important;
+  }
+  
+  /* Убеждаемся, что цвет применяется даже если есть inline стили */
+  .stat-value.has-data[style*="color"]:not(.trend-up):not(.trend-down),
+  .stats-card .stat-value.has-data[style*="color"]:not(.trend-up):not(.trend-down),
+  .stats-card-medium .stat-value.has-data[style*="color"]:not(.trend-up):not(.trend-down),
+  .stats-card-large .stat-value.has-data[style*="color"]:not(.trend-up):not(.trend-down),
+  .stats-card-medium-large .stat-value.has-data[style*="color"]:not(.trend-up):not(.trend-down) {
+    color: #000000 !important;
+  }
+  
+  /* Переопределяем все возможные inline стили */
+  div.stat-value.has-data:not(.trend-up):not(.trend-down),
+  .stats-card div.stat-value.has-data:not(.trend-up):not(.trend-down),
+  .stats-card-medium div.stat-value.has-data:not(.trend-up):not(.trend-down),
+  .stats-card-large div.stat-value.has-data:not(.trend-up):not(.trend-down) {
+    color: #000000 !important;
+  }
+  
+  /* Для карточек с красным цветом (rating, attendance) - только если нет тренда */
+  .stat-value.rating-red.has-data:not(.trend-up):not(.trend-down),
+  .stats-card .stat-value.rating-red.has-data:not(.trend-up):not(.trend-down),
+  .stats-card-medium .stat-value.rating-red.has-data:not(.trend-up):not(.trend-down) {
+    color: #FF5555 !important;
+  }
+  
+  /* Для rating-red с трендом вверх - зеленый */
+  .stat-value.rating-red.has-data.trend-up,
+  .stats-card .stat-value.rating-red.has-data.trend-up,
+  .stats-card-medium .stat-value.rating-red.has-data.trend-up {
+    color: #1EA276 !important;
+  }
+  
+  /* Для rating-red с трендом вниз - красный */
+  .stat-value.rating-red.has-data.trend-down,
+  .stats-card .stat-value.rating-red.has-data.trend-down,
+  .stats-card-medium .stat-value.rating-red.has-data.trend-down {
+    color: #FF5555 !important;
+  }
+
+  .stat-value.no-data,
+  .stats-card .stat-value.no-data,
+  .stats-card-medium .stat-value.no-data,
+  .stats-card-large .stat-value.no-data,
+  .stats-card-medium-large .stat-value.no-data {
+    color: #9CA3AF !important;
+  }
+
+  /* Override color for specific cards when no data */
+  .stat-value.no-data[style*="color: #FF5555"] {
+    color: #9CA3AF !important;
+  }
+
+  /* Gray labels and dividers when no data */
+  .no-data-card .stat-label {
+    color: #9CA3AF;
+  }
+
+  .no-data-card .stat-divider {
+    background: #D9D9D9;
+  }
+
+  /* Gray chart bars when no data */
+  .no-data-card .chart-bar-label {
+    color: #9CA3AF;
+  }
+
+  .stat-label {
+    font-family: 'Manrope';
+    font-weight: 700;
+    font-size: 20px;
+    line-height: 27px;
+    color: #000000;
+    margin-bottom: 10px;
+  }
+
+  .stat-divider {
+    width: 60px;
+    height: 1px;
+    background: #000000;
+    border-radius: 20px;
+    margin: 10px 0;
+  }
+
+  /* Chart Container */
+  .chart-container {
+    position: relative;
+    width: 100%;
+    height: 320px;
+    margin-top: 20px;
+  }
+
+  .chart-bars {
+    display: flex;
+    align-items: flex-end;
+    height: 250px;
+    gap: 8px;
+    margin-bottom: 20px;
+    justify-content: space-between;
+  }
+
+  .chart-bar {
+    flex: 1;
+    min-width: 20px;
+    max-width: 35px;
+    background: linear-gradient(360deg, #11998E 0%, #2CAB5C 100%);
+    border-radius: 10px 10px 0px 0px;
+    position: relative;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 5px;
+  }
+  
+  /* Для графика с 4 колонками (недели) делаем колонки шире */
+  .chart-bars[data-columns="4"] .chart-bar {
+    max-width: 80px;
+    min-width: 60px;
+  }
+  
+  /* Для графика с 12 колонками (месяцы в году) делаем колонки еще уже */
+  .chart-bars[data-columns="12"] .chart-bar {
+    max-width: 28px;
+    min-width: 18px;
+  }
+  
+  /* Для графика с 2 колонками (годы в all_time) делаем колонки широкими */
+  .chart-bars[data-columns="2"] .chart-bar {
+    max-width: 150px;
+    min-width: 120px;
+  }
+
+  .chart-bar.no-data {
+    background: #D9D9D9;
+  }
+
+  .chart-bar-label {
+    font-family: 'Manrope';
+    font-weight: 700;
+    font-size: 11px;
+    line-height: 15px;
+    text-align: center;
+    color: #000000;
+    flex: 1;
+    min-width: 20px;
+    max-width: 35px;
+    word-wrap: break-word;
+    overflow-wrap: break-word;
+  }
+  
+  /* Для графика с 4 колонками (недели) делаем метки шире */
+  .chart-bars[data-columns="4"] ~ .chart-labels-container .chart-bar-label {
+    max-width: 80px;
+    min-width: 60px;
+    font-size: 12px;
+    line-height: 16px;
+  }
+  
+  /* Для графика с 12 колонками (месяцы в году) делаем метки еще уже */
+  .chart-bars[data-columns="12"] ~ .chart-labels-container .chart-bar-label {
+    max-width: 28px;
+    min-width: 18px;
+    font-size: 10px;
+  }
+  
+  /* Для графика с 2 колонками (годы в all_time) делаем метки широкими */
+  .chart-bars[data-columns="2"] ~ .chart-labels-container .chart-bar-label {
+    max-width: 150px;
+    min-width: 120px;
+    font-size: 14px;
+  }
+
+  .chart-bar-value {
+    font-family: 'Manrope';
+    font-weight: 700;
+    font-size: 14px;
+    line-height: 19px;
+    text-align: center;
+    color: #FFFFFF;
+  }
+
+  /* Pie Chart */
+  .pie-chart-container {
+    position: relative;
+    width: 235px;
+    height: 235px;
+    margin: 20px auto 10px auto;
+  }
+
+  .pie-chart-bg {
+    position: absolute;
+    width: 235px;
+    height: 235px;
+    border-radius: 50%;
+    background: conic-gradient(
+      #E8D8F8 0deg 75.6deg,
+      #FFBFBF 75.6deg 165.6deg,
+      #FFD59E 165.6deg 252deg,
+      #FFF0BF 252deg 295.2deg,
+      #C7F4FF 295.2deg 360deg
+    );
+  }
+
+  .pie-chart.no-data {
+    background: #D9D9D9;
+  }
+
+  .pie-chart-center {
+    position: absolute;
+    width: 175px;
+    height: 175px;
+    background: rgba(255, 255, 255, 0.4);
+    border-radius: 50%;
+    top: 30px;
+    left: 30px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .pie-chart-labels {
+    position: absolute;
+    width: 100%;
+    height: 100%;
+  }
+
+  .pie-label {
+    position: absolute;
+    font-family: 'Manrope';
+    font-weight: 700;
+    font-size: 14px;
+    line-height: 19px;
+    color: #000000;
+  }
+
+  .pie-label.no-data {
+    color: #C9C9C9;
+  }
+
+  .pie-percentages {
+    position: absolute;
+    width: 150px;
+    height: 140px;
+    top: 45px;
+    left: 43px;
+  }
+
+  .pie-percentage {
+    position: absolute;
+    font-family: 'Manrope';
+    font-weight: 700;
+    font-size: 14px;
+    line-height: 19px;
+    text-align: center;
+  }
+
+  .pie-percentage.instagram { color: #CB7A7A; top: 15px; left: 85px; }
+  .pie-percentage.promoter { color: #DBC787; top: 135px; left: 55px; }
+  .pie-percentage.random { color: #D1AA77; top: 60px; left: 5px; }
+  .pie-percentage.whatsapp { color: #9A7CB8; top: 40px; left: 125px; }
+  .pie-percentage.calls { color: #93C4D0; top: 95px; left: 125px; }
+
+  .pie-chart-container.no-data .pie-chart-bg {
+    background: #D9D9D9 !important;
+  }
+
+  .pie-chart-container.no-data .pie-percentage {
+    color: #FFFFFF !important;
+  }
+
+  /* Pie Chart Legend */
+  .pie-chart-legend {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 8px 20px;
+    margin-top: 10px;
+    padding-top: 10px;
+    justify-items: start;
+    max-width: 100%;
+  }
+
+  .legend-item {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    font-family: 'Manrope';
+    font-weight: 700;
+    font-size: 14px;
+    line-height: 19px;
+    color: #000000;
+  }
+
+  .legend-color {
+    width: 12px;
+    height: 12px;
+    border-radius: 50%;
+  }
+
+  .legend-color.instagram { background: #CB7A7A; }
+  .legend-color.whatsapp { background: #9A7CB8; }
+  .legend-color.calls { background: #93C4D0; }
+  .legend-color.email { background: #FF9F40; }
+  .legend-color.promoter { background: #DBC787; }
+  .legend-color.random { background: #D1AA77; }
+
+  .legend-item.no-data .legend-color {
+    background: #D9D9D9;
+  }
+
+  .legend-item.no-data {
+    color: #C9C9C9;
+  }
+
+  /* Arrow Indicators */
+    .arrow-indicator {
+      position: absolute;
+      top: 20px;
+      right: 20px;
+      width: 30px;
+      height: 30px;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+    }
+    
+    @media (max-width: 768px) {
+      .arrow-indicator {
+        width: 24px;
+        height: 24px;
+        top: 10px;
+        right: 10px;
+      }
+      
+      .arrow-up::before,
+      .arrow-down::before {
+        font-size: 12px;
+      }
+    }
+
+  .arrow-up {
+    background: #1EA276;
+  }
+
+  .arrow-up::before {
+    content: '↑';
+    color: #FFFFFF;
+    font-size: 16px;
+    font-weight: bold;
+    line-height: 1;
+  }
+
+  .arrow-down {
+    background: #FF5555;
+  }
+
+  .arrow-down::before {
+    content: '↓';
+    color: #FFFFFF;
+    font-size: 16px;
+    font-weight: bold;
+    line-height: 1;
+  }
+
+  /* Responsive Design */
+  @media (max-width: 1400px) {
+    .stats-grid {
+      grid-template-columns: repeat(auto-fill, 220px);
+      grid-auto-rows: minmax(220px, auto);
+      justify-content: center;
+    }
+    
+    /* Карточки 424px на узких экранах */
+    .stats-card-medium.card-width-295,
+    .stats-card-large.card-width-295,
+    .stats-card-large.card-width-475,
+    .card-pie-chart,
+    .card-chart {
+      grid-column: span 2;
+      width: calc(2 * 200px + 24px);
+      margin: 10px;
+    }
+    
+    .stats-card-medium.card-width-205,
+    .stats-card-medium-large.card-width-205 {
+      margin: 10px;
+    }
+  }
+
+  @media (max-width: 1200px) {
+    .dashboard-container {
+      padding: 15px;
+    }
+    
+    .month-filter {
+      left: 15px;
+      width: 200px;
+    }
+    
+    .add-button {
+      right: 15px;
+    }
+    
+    .stats-grid {
+      grid-template-columns: repeat(auto-fill, 220px);
+      grid-auto-rows: minmax(220px, auto);
+      gap: 0;
+      margin-top: 90px;
+      justify-content: center;
+    }
+    
+    .stats-card-medium.card-width-295,
+    .stats-card-large.card-width-295,
+    .stats-card-large.card-width-475,
+    .card-pie-chart,
+    .card-chart {
+      grid-column: span 2;
+      width: calc(2 * 200px + 24px);
+      margin: 10px;
+    }
+    
+    .stats-card-medium.card-width-205,
+    .stats-card-medium-large.card-width-205 {
+      margin: 10px;
+    }
+  }
+
+  @media (max-width: 768px) {
+    .dashboard-container {
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      width: 100vw;
+      padding: 0;
+      padding-top: 20px;
+      padding-bottom: 20px;
+    }
+    
+    .month-filter {
+      left: 20px;
+      width: 160px;
+      height: 30px;
+      top: 70px;
+    }
+    
+    .month-filter-text {
+      font-size: 12px;
+      line-height: 16px;
+    }
+    
+    .add-button {
+      left: 243px;
+      width: 97px;
+      height: 30px;
+      top: 70px;
+      font-size: 16px;
+      opacity: 0.5;
+      border-radius: 30px;
+      right: auto;
+    }
+    
+    .stats-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      grid-auto-rows: minmax(120px, auto);
+      gap: 15px;
+      column-gap: 15px;
+      row-gap: 15px;
+      margin-top: 100px;
+      padding: 0 20px;
+      justify-content: start;
+      align-items: start;
+    }
+    
+    /* Сброс всех базовых стилей ширины для мобильной версии */
+    .stats-card,
+    .stats-card-medium,
+    .stats-card-large,
+    .stats-card-medium-large {
+      width: auto !important;
+      max-width: none !important;
+    }
+    
+    /* Переопределяем все классы ширины для мобильной версии */
+    .stats-card-medium.card-width-295,
+    .stats-card-medium.card-width-205,
+    .stats-card-large.card-width-295,
+    .stats-card-large.card-width-475,
+    .stats-card-medium-large.card-width-205,
+    .card-pie-chart,
+    .card-chart {
+      width: auto !important;
+      max-width: none !important;
+    }
+    
+    /* Маленькие карточки - растягиваются по ширине колонки */
+    [data-metric="prosecan_racun"],
+    [data-metric="potrosnja"],
+    [data-metric="broj_gostiju"],
+    [data-metric="dolaznost"],
+    [data-metric="retention"],
+    [data-metric="rejting_google"] {
+      width: 100% !important;
+      max-width: 100% !important;
+      min-width: 0 !important;
+      margin: 0 !important;
+      min-height: 120px !important;
+      height: auto !important;
+      grid-column: span 1 !important;
+      box-sizing: border-box;
+      padding: 15px !important;
+    }
+    
+    /* Уменьшаем размеры шрифтов для маленьких карточек в мобильной версии */
+    /* Для значений с RSD (Prosečan račun, Potrošnja) - меньший шрифт */
+    [data-metric="prosecan_racun"] .stat-value,
+    [data-metric="potrosnja"] .stat-value {
+      font-size: 28px !important;
+      line-height: 36px !important;
+      margin-bottom: 5px !important;
+      word-wrap: break-word !important;
+      overflow-wrap: break-word !important;
+      max-width: 100%;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    
+    /* Для остальных маленьких карточек */
+    [data-metric="broj_gostiju"] .stat-value,
+    [data-metric="dolaznost"] .stat-value,
+    [data-metric="retention"] .stat-value,
+    [data-metric="rejting_google"] .stat-value {
+      font-size: 32px !important;
+      line-height: 40px !important;
+      margin-bottom: 5px !important;
+      word-wrap: break-word !important;
+      overflow-wrap: break-word !important;
+      max-width: 100%;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    
+    [data-metric="prosecan_racun"] .stat-label,
+    [data-metric="potrosnja"] .stat-label,
+    [data-metric="broj_gostiju"] .stat-label,
+    [data-metric="dolaznost"] .stat-label,
+    [data-metric="retention"] .stat-label,
+    [data-metric="rejting_google"] .stat-label {
+      font-size: 12px !important;
+      line-height: 16px !important;
+      margin-bottom: 5px !important;
+      word-wrap: break-word !important;
+      overflow-wrap: break-word !important;
+      hyphens: auto !important;
+    }
+    
+    /* Если текст все равно не помещается, делаем еще меньше */
+    [data-metric="rejting_google"] .stat-label {
+      font-size: 10px !important;
+      line-height: 14px !important;
+    }
+    
+    [data-metric="prosecan_racun"] .stat-divider,
+    [data-metric="potrosnja"] .stat-divider,
+    [data-metric="broj_gostiju"] .stat-divider,
+    [data-metric="dolaznost"] .stat-divider,
+    [data-metric="retention"] .stat-divider,
+    [data-metric="rejting_google"] .stat-divider {
+      width: 40px !important;
+      margin: 5px 0 !important;
+    }
+    
+    /* Большие карточки - растягиваются на всю ширину (2 колонки) */
+    [data-metric="marketing_source"],
+    [data-metric="popunjenost"] {
+      grid-column: span 2 !important;
+      width: 100% !important;
+      max-width: 100% !important;
+      min-width: 0 !important;
+      height: auto;
+      min-height: 300px;
+      margin: 0 !important;
+      box-sizing: border-box;
+    }
+    
+    /* Карточка Novi / Stalni gosti - уменьшенная высота в два раза */
+    [data-metric="novi_stalni"] {
+      grid-column: span 2 !important;
+      width: 100% !important;
+      max-width: 100% !important;
+      min-width: 0 !important;
+      height: auto !important;
+      min-height: 150px !important;
+      max-height: 150px !important;
+      margin: 0 !important;
+      box-sizing: border-box;
+      padding: 10px !important;
+    }
+    
+    /* Уменьшаем размеры для карточки Novi / Stalni gosti */
+    [data-metric="novi_stalni"] .stat-value {
+      font-size: 40px !important;
+      line-height: 50px !important;
+      margin-bottom: 3px !important;
+    }
+    
+    [data-metric="novi_stalni"] .stat-label {
+      font-size: 14px !important;
+      line-height: 18px !important;
+      margin-bottom: 3px !important;
+    }
+    
+    [data-metric="novi_stalni"] .stat-divider {
+      width: 30px !important;
+      margin: 3px 0 !important;
+    }
+
+    .add-card-modal-content {
+      padding: 20px;
+      max-width: 90%;
+    }
+
+    .card-type-options {
+      grid-template-columns: 1fr;
+      gap: 10px;
+    }
+    
+    .stat-value {
+      font-size: 40px;
+      line-height: 50px;
+    }
+    
+    .stat-label {
+      font-size: 16px;
+      line-height: 22px;
+    }
+    
+    .chart-container {
+      height: auto;
+      margin-top: 10px;
+      display: flex;
+      flex-direction: column;
+      justify-content: flex-end;
+    }
+    
+    
+    .chart-bars {
+      gap: 6px;
+      height: 150px;
+      margin-bottom: 12px;
+    }
+    
+    .chart-bar {
+      min-width: 15px;
+      max-width: none;
+      flex: 1;
+    }
+    
+    /* Для 2 колонок на мобильных */
+    .chart-bars[data-columns="2"] .chart-bar {
+      max-width: none;
+      min-width: 60px;
+      flex: 1;
+    }
+    
+    /* Для 4 колонок на мобильных */
+    .chart-bars[data-columns="4"] .chart-bar {
+      max-width: none;
+      min-width: 35px;
+      flex: 1;
+    }
+    
+    /* Для 12 колонок на мобильных */
+    .chart-bars[data-columns="12"] .chart-bar {
+      max-width: none;
+      min-width: 12px;
+      flex: 1;
+    }
+    
+    .chart-bar-label {
+      font-size: 10px;
+      max-width: none;
+      min-width: 20px;
+      flex: 1;
+    }
+    
+    /* Для 2 колонок - метки */
+    .chart-bars[data-columns="2"] ~ .chart-labels-container .chart-bar-label {
+      max-width: none;
+      min-width: 60px;
+      font-size: 11px;
+      flex: 1;
+    }
+    
+    /* Для 4 колонок - метки */
+    .chart-bars[data-columns="4"] ~ .chart-labels-container .chart-bar-label {
+      max-width: none;
+      min-width: 35px;
+      font-size: 10px;
+      flex: 1;
+    }
+    
+    /* Для 12 колонок - метки */
+    .chart-bars[data-columns="12"] ~ .chart-labels-container .chart-bar-label {
+      max-width: none;
+      min-width: 12px;
+      font-size: 8px;
+      flex: 1;
+    }
+    
+    .chart-labels-container {
+      margin-top: 10px;
+      gap: 8px;
+    }
+    
+    .pie-chart-container {
+      width: 180px;
+      height: 180px;
+    }
+    
+    .pie-chart-bg {
+      width: 180px;
+      height: 180px;
+    }
+    
+    .pie-chart-center {
+      width: 130px;
+      height: 130px;
+      top: 25px;
+      left: 25px;
+    }
+    
+    .pie-percentages {
+      width: 120px;
+      height: 110px;
+      top: 35px;
+      left: 30px;
+    }
+    
+    .pie-chart-legend {
+      gap: 6px;
+      margin-top: 15px;
+    }
+    
+    .legend-item {
+      font-size: 12px;
+      line-height: 16px;
+      gap: 10px;
+    }
+    
+    .legend-color {
+      width: 10px;
+      height: 10px;
+    }
+  }
+
+  @media (max-width: 480px) {
+    .stats-grid {
+      padding: 0 5px;
+      gap: 10px;
+    }
+    
+    .stat-value {
+      font-size: 32px;
+      line-height: 40px;
+    }
+    
+    .stat-label {
+      font-size: 14px;
+      line-height: 18px;
+    }
+    
+    .chart-bars {
+      height: 150px;
+      gap: 4px;
+    }
+    
+    .chart-bar {
+      min-width: 12px;
+      flex: 1;
+    }
+    
+    /* Для 2 колонок на очень маленьких экранах */
+    .chart-bars[data-columns="2"] .chart-bar {
+      min-width: 50px;
+    }
+    
+    /* Для 4 колонок на очень маленьких экранах */
+    .chart-bars[data-columns="4"] .chart-bar {
+      min-width: 30px;
+    }
+    
+    /* Для 12 колонок на очень маленьких экранах */
+    .chart-bars[data-columns="12"] .chart-bar {
+      min-width: 10px;
+    }
+    
+    .pie-chart-container {
+      width: 150px;
+      height: 150px;
+    }
+    
+    .pie-chart-bg {
+      width: 150px;
+      height: 150px;
+    }
+    
+    .pie-chart-center {
+      width: 110px;
+      height: 110px;
+      top: 20px;
+      left: 20px;
+    }
+    
+    .pie-percentages {
+      width: 100px;
+      height: 90px;
+      top: 30px;
+      left: 25px;
+    }
+    
+    .pie-chart-legend {
+      gap: 5px;
+      margin-top: 10px;
+    }
+    
+    .legend-item {
+      font-size: 11px;
+      line-height: 14px;
+      gap: 8px;
+    }
+    
+    .legend-color {
+      width: 8px;
+      height: 8px;
+    }
+  }
+
+  /* Mobile Header */
+  .mobile-header {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 70px;
+    background: #FFFFFF;
+    display: none;
+    align-items: center;
+    z-index: 1000;
+  }
+
+  .logo-home {
+    position: absolute;
+    width: 181px;
+    height: 40px;
+    top: 25px;
+    left: 30px;
+    z-index: 0;
+    opacity: 1;
+  }
+
+  .mobile-logo {
+    position: absolute;
+    width: 109px;
+    height: 24px;
+    top: 23px;
+    left: 20px;
+  }
+
+  .mobile-search-btn {
+    position: absolute;
+    width: 22px;
+    height: 22px;
+    top: 20px;
+    right: 84px;
+    cursor: pointer;
+  }
+
+  .mobile-notification-btn {
+    position: absolute;
+    width: 22px;
+    height: 22px;
+    top: 20px;
+    right: 52px;
+    cursor: pointer;
+  }
+
+  .mobile-menu-btn {
+    position: absolute;
+    width: 22px;
+    height: 22px;
+    top: 20px;
+    right: 20px;
+    cursor: pointer;
+  }
+
+  .mobile-search-modal {
+    position: fixed;
+    top: 70px;
+    left: 0;
+    right: 0;
+    background: #FFFFFF;
+    border-top: 1px solid #D9D9D9;
+    padding: 20px;
+    z-index: 999;
+    display: none;
+  }
+
+  .mobile-search-input {
+    width: 100%;
+    height: 40px;
+    border: 1px solid #D9D9D9;
+    border-radius: 20px;
+    padding: 0 20px;
+    font-family: 'Manrope', sans-serif;
+    font-size: 16px;
+    outline: none;
+  }
+
+
+  /* Mobile Sidebar */
+  .mobile-sidebar {
+    position: fixed;
+    top: 0;
+    right: 0;
+    width: 235px;
+    height: 100vh;
+    background: linear-gradient(179.27deg, #2CAB5C 0%, #11998E 100%);
+    border-radius: 1px;
+    transition: transform 0.3s ease;
+    z-index: 2000;
+    overflow-y: auto;
+    transform: translateX(100%);
+  }
+
+  .mobile-sidebar-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.5);
+    z-index: 1500;
+    display: none;
+  }
+
+  .mobile-sidebar-overlay.show {
+    display: block;
+  }
+
+  .mobile-sidebar.open {
+    transform: translateX(0);
+  }
+
+  /* Mobile Sidebar Content */
+  .mobile-sidebar-content {
+    padding: 20px;
+    color: #FFFFFF;
+  }
+
+  .mobile-sidebar-item {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    height: 60px;
+    padding: 0 20px;
+    cursor: pointer;
+    color: #FFFFFF;
+    text-decoration: none;
+    font-family: 'Manrope', sans-serif;
+  }
+
+  .mobile-sidebar-item:hover {
+    background: rgba(255, 255, 255, 0.1);
+  }
+
+  .mobile-sidebar-arrow {
+    width: 7px;
+    height: 14px;
+  }
+
+  .mobile-sidebar-logo {
+    position: absolute;
+    bottom: 20px;
+    left: 20px;
+    width: 136px;
+    height: 30px;
+  }
+
+  /* Стили для поиска */
+  .search-results {
+    background: #ffffff;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+    border-radius: 12px;
+    border: 1px solid #e5e7eb;
+    overflow: hidden;
+    z-index: 1000;
+  }
+
+  .search-results-content {
+    padding: 8px;
+    height: 100%;
+    overflow-y: auto;
+  }
+
+  .search-result-item {
+    display: flex;
+    align-items: center;
+    padding: 12px;
+    border-bottom: 1px solid #f3f4f6;
+    cursor: pointer;
+    transition: background-color 0.2s ease;
+    border-radius: 8px;
+    margin-bottom: 4px;
+  }
+
+  .search-result-item:hover {
+    background-color: #f9fafb;
+  }
+
+  .search-result-item:last-child {
+    border-bottom: none;
+    margin-bottom: 0;
+  }
+
+  .search-result-main {
+    flex: 1;
+  }
+
+  .search-result-name {
+    font-family: 'Manrope', sans-serif;
+    font-weight: 600;
+    font-size: 14px;
+    color: #000000;
+    margin-bottom: 2px;
+  }
+
+  .search-result-phone {
+    font-family: 'Manrope', sans-serif;
+    font-weight: 400;
+    font-size: 12px;
+    color: #6b7280;
+    margin-bottom: 6px;
+  }
+
+  .search-result-last-booking {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .search-result-date {
+    font-family: 'Manrope', sans-serif;
+    font-weight: 400;
+    font-size: 11px;
+    color: #6b7280;
+  }
+
+  .search-result-status {
+    font-family: 'Manrope', sans-serif;
+    font-weight: 600;
+    font-size: 10px;
+    padding: 2px 6px;
+    border-radius: 8px;
+    color: #000000;
+  }
+
+  .search-result-status.dogovoreno { background: #FFF0BF; border: 1px solid #DBC787; }
+  .search-result-status.na-cekaju { background: #E8D8F8; border: 1px solid #9C27B0; }
+  .search-result-status.potvrdjeno { background: #D8F8E4; border: 1px solid #4CAF50; }
+  .search-result-status.otkazano { background: #FFBFBF; border: 1px solid #F44336; }
+  .search-result-status.nisu-dosli { background: #FFD59E; border: 1px solid #FF9800; }
+  .search-result-status.dosli { background: #C7F4FF; border: 1px solid #2196F3; }
+
+  .search-results::-webkit-scrollbar {
+    width: 4px;
+  }
+
+  .search-results::-webkit-scrollbar-track {
+    background: #f1f1f1;
+    border-radius: 2px;
+  }
+
+  .search-results::-webkit-scrollbar-thumb {
+    background: #11998E;
+    border-radius: 2px;
+  }
+
+  .search-results::-webkit-scrollbar-thumb:hover {
+    background: #0d7a6f;
+  }
+
+  /* Белый фон для ПК версии */
+  body {
+    background: #ffffff !important;
+  }
+  
+  .app-layout {
+    background: #ffffff !important;
+  }
+  
+  .main {
+    background: #ffffff !important;
+  }
+
+  /* Mobile Responsive Styles */
+  @media (max-width: 768px) {
+    .mobile-header {
+      display: flex;
+    }
+    
+    .sidebar {
+      display: none !important;
+    }
+    
+    .logo-home {
+      display: none !important;
+    }
+    
+    .search-icon {
+      display: none !important;
+    }
+    
+    .notification-icon {
+      display: none !important;
+    }
+    
+    .top-right {
+      display: none !important;
+    }
+
+    /* Mobile search results */
+    #search-results {
+      position: fixed !important;
+      top: 130px !important;
+      left: 20px !important;
+      right: 20px !important;
+      width: auto !important;
+      height: 250px !important;
+    }
+
+    /* Mobile main margin */
+    .main {
+      margin: 0 !important;
+    }
+  }
+</style>
+
+<!-- Mobile Header -->
+<div class="mobile-header">
+  <img src="/static/images/logo home.png" alt="LOVACRM" class="mobile-logo">
+  <img src="/static/images/poisk.png" alt="Search" class="mobile-search-btn" onclick="toggleMobileSearch()">
+  <img src="/static/images/kolokolchik logo.png" alt="Notifications" class="mobile-notification-btn">
+  <img src="/static/images/menu.png" alt="Menu" class="mobile-menu-btn" onclick="toggleMobileSidebar()">
+</div>
+
+<!-- Mobile Search Modal -->
+<div class="mobile-search-modal" id="mobileSearchModal">
+  <input type="text" class="mobile-search-input" placeholder="Search..." id="mobileSearchInput">
+</div>
+
+<!-- Mobile Sidebar Overlay -->
+<div class="mobile-sidebar-overlay" id="mobileSidebarOverlay" onclick="closeMobileSidebar()"></div>
+
+<!-- Mobile Sidebar -->
+<div class="mobile-sidebar" id="mobileSidebar">
+  <div class="mobile-sidebar-content">
+    <a href="/dashboard" class="mobile-sidebar-item">
+      <div style="display: flex; align-items: center;">
+        <img src="/static/images/logo dashbord.png" alt="Dashboard" style="width: 20px; height: 20px; margin-right: 15px;">
+        Dashboard
+      </div>
+      <img src="/static/images/strelka logo.png" alt="Arrow" class="mobile-sidebar-arrow">
+    </a>
+    <a href="/booking" class="mobile-sidebar-item">
+      <div style="display: flex; align-items: center;">
+        <img src="/static/images/booking logo.png" alt="Booking" style="width: 20px; height: 20px; margin-right: 15px;">
+        Booking
+      </div>
+      <img src="/static/images/strelka logo.png" alt="Arrow" class="mobile-sidebar-arrow">
+    </a>
+    <a href="/clients" class="mobile-sidebar-item">
+      <div style="display: flex; align-items: center;">
+        <img src="/static/images/klijenti logo.png" alt="Klijenti" style="width: 20px; height: 20px; margin-right: 15px;">
+        Klijenti
+      </div>
+      <img src="/static/images/strelka logo.png" alt="Arrow" class="mobile-sidebar-arrow">
+    </a>
+    <a href="/map" class="mobile-sidebar-item">
+      <div style="display: flex; align-items: center;">
+        <img src="/static/images/mapa logo.png" alt="Mapa" style="width: 20px; height: 20px; margin-right: 15px;">
+        Mapa
+      </div>
+      <img src="/static/images/strelka logo.png" alt="Arrow" class="mobile-sidebar-arrow">
+    </a>
+    <a href="/marketing" class="mobile-sidebar-item">
+      <div style="display: flex; align-items: center;">
+        <img src="/static/images/marketing logo.png" alt="Marketing" style="width: 20px; height: 20px; margin-right: 15px;">
+        Marketing
+      </div>
+      <img src="/static/images/strelka logo.png" alt="Arrow" class="mobile-sidebar-arrow">
+    </a>
+    <a href="/settings" class="mobile-sidebar-item">
+      <div style="display: flex; align-items: center;">
+        <img src="/static/images/setting logo.png" alt="Podešavanja" style="width: 20px; height: 20px; margin-right: 15px;">
+        Podešavanja
+      </div>
+      <img src="/static/images/strelka logo.png" alt="Arrow" class="mobile-sidebar-arrow">
+    </a>
+  </div>
+  <img src="/static/images/logo_login.svg.png" alt="Logo" class="mobile-sidebar-logo">
+</div>
+
+<!-- Dashboard Container -->
+<div class="dashboard-container">
+  <!-- Month Filter -->
+  <div class="month-filter" id="monthFilter">
+    <div class="month-filter-text" id="monthFilterText">
+      {% if current_period == 'current_month' %}Tekući mesec
+      {% elif current_period == 'previous_month' %}Prethodni mesec
+      {% elif current_period == 'year' %}Godina
+      {% elif current_period == 'all_time' %}Sve vreme
+      {% else %}Tekući mesec{% endif %}
+    </div>
+    <div class="month-filter-arrow">▼</div>
+    <div class="month-filter-dropdown">
+      <div class="month-filter-option {% if current_period == 'current_month' %}active{% endif %}" data-period="current_month" onclick="selectPeriod('current_month')">Tekući mesec</div>
+      <div class="month-filter-option {% if current_period == 'previous_month' %}active{% endif %}" data-period="previous_month" onclick="selectPeriod('previous_month')">Prethodni mesec</div>
+      <div class="month-filter-option {% if current_period == 'year' %}active{% endif %}" data-period="year" onclick="selectPeriod('year')">Godina</div>
+      <div class="month-filter-option {% if current_period == 'all_time' %}active{% endif %}" data-period="all_time" onclick="selectPeriod('all_time')">Sve vreme</div>
+    </div>
+  </div>
+
+  <!-- Add Button -->
+  <div class="add-button" onclick="window.openAddCardModal()">+ Add</div>
+
+  <!-- Statistics Grid -->
+  <div class="stats-grid" id="statsGrid">
+    <!-- Empty State -->
+    <div class="empty-dashboard" id="emptyDashboard">
+      <div class="empty-dashboard-message">
+        Dodajte potrebne vam metrike kroz dugme Add
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Add Card Modal -->
+<div class="add-card-modal" id="addCardModal">
+  <div class="add-card-modal-content">
+    <div class="add-card-modal-header">
+      <h2 class="add-card-modal-title">Dodaj metriku</h2>
+      <img src="/static/images/krest.png" alt="Close" class="add-card-modal-close" onclick="window.closeAddCardModal()">
+    </div>
+    <div class="card-type-options" id="cardTypeOptions">
+      <div class="card-type-option" onclick="window.addStatCard('prosecan_racun')" data-metric="prosecan_racun">
+        <div class="card-type-option-title">Prosečan račun</div>
+      </div>
+      <div class="card-type-option" onclick="window.addStatCard('broj_gostiju')" data-metric="broj_gostiju">
+        <div class="card-type-option-title">Broj gostiju</div>
+      </div>
+      <div class="card-type-option" onclick="window.addStatCard('marketing_source')" data-metric="marketing_source">
+        <div class="card-type-option-title">Marketing source</div>
+      </div>
+      <div class="card-type-option" onclick="window.addStatCard('potrosnja')" data-metric="potrosnja">
+        <div class="card-type-option-title">Potrošnja</div>
+      </div>
+      <div class="card-type-option" onclick="window.addStatCard('dolaznost')" data-metric="dolaznost">
+        <div class="card-type-option-title">Dolaznost</div>
+      </div>
+      <div class="card-type-option" onclick="window.addStatCard('novi_stalni')" data-metric="novi_stalni">
+        <div class="card-type-option-title">Novi / Stalni gosti</div>
+      </div>
+      <div class="card-type-option" onclick="window.addStatCard('popunjenost')" data-metric="popunjenost">
+        <div class="card-type-option-title">Popunjenost</div>
+      </div>
+      <div class="card-type-option" onclick="window.addStatCard('retention')" data-metric="retention">
+        <div class="card-type-option-title">Retention</div>
+      </div>
+      <div class="card-type-option" onclick="window.addStatCard('rejting_google')" data-metric="rejting_google">
+        <div class="card-type-option-title">Rejting Google Maps</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+  // Add Card Modal Functions - define them FIRST, before any other code
+  window.openAddCardModal = function() {
+    console.log('[Dashboard] openAddCardModal called');
+    const modal = document.getElementById('addCardModal');
+    console.log('[Dashboard] Modal element:', modal);
+    if (modal) {
+      console.log('[Dashboard] Updating modal options...');
+      // Update options state (show/hide remove buttons)
+      if (typeof updateModalOptions === 'function') {
+        updateModalOptions();
+      }
+      console.log('[Dashboard] Adding show class...');
+      modal.classList.add('show');
+      console.log('[Dashboard] Modal should be visible. ClassList:', modal.classList.toString());
+      console.log('[Dashboard] Computed display:', window.getComputedStyle(modal).display);
+    } else {
+      console.error('[Dashboard] ERROR: Modal element not found!');
+    }
+  }
+
+  window.closeAddCardModal = function() {
+    console.log('[Dashboard] closeAddCardModal called');
+    const modal = document.getElementById('addCardModal');
+    if (modal) {
+      modal.classList.remove('show');
+    }
+  }
+
+  // Track added metrics to prevent duplicates
+  const addedMetrics = new Set();
+
+  // Load saved dashboard config from server
+  const savedConfig = {% if dashboard_config %}{{ dashboard_config | tojson }}{% else %}null{% endif %};
+  console.log('[Dashboard] Initial savedConfig:', savedConfig);
+
+  // Dashboard data from server
+  const dashboardData = {
+    has_data: {{ 'true' if has_data else 'false' }},
+    has_novi_stalni_data: {{ 'true' if has_novi_stalni_data else 'false' }},
+    has_avg_spend_data: {{ 'true' if has_avg_spend_data else 'false' }},
+    has_total_spend_data: {{ 'true' if has_total_spend_data else 'false' }},
+    has_guests_data: {{ 'true' if has_guests_data else 'false' }},
+    has_google_rating_data: {{ 'true' if has_google_rating_data else 'false' }},
+    has_attendance_data: {{ 'true' if has_attendance_data else 'false' }},
+    has_retention_data: {{ 'true' if has_retention_data else 'false' }},
+    has_marketing_data: {{ 'true' if has_marketing_data else 'false' }},
+    has_occupancy_data: {{ 'true' if has_occupancy_data else 'false' }},
+    avg_spend_trend: {{ avg_spend_trend | tojson if avg_spend_trend else 'null' }},
+    attendance_trend: {{ attendance_trend | tojson if attendance_trend else 'null' }},
+    avg_spend: {{ avg_spend }},
+    guests_with_bookings: {{ guests_with_bookings }},
+    google_rating: {{ google_rating if google_rating is not none else 'null' }},
+    attendance_rate: {{ attendance_rate }},
+    new_clients_percent: {{ new_clients_percent }},
+    regular_clients_percent: {{ regular_clients_percent }},
+    retention: {{ retention }},
+    total_spend: {{ total_spend }},
+    marketing_data: {
+      instagram: {{ marketing_data.instagram if marketing_data.instagram is not none else 0 }},
+      whatsapp: {{ marketing_data.whatsapp if marketing_data.whatsapp is not none else 0 }},
+      calls: {{ marketing_data.calls if marketing_data.calls is not none else 0 }},
+      email: {{ marketing_data.email if marketing_data.email is not none else 0 }},
+      promoter: {{ marketing_data.promoter if marketing_data.promoter is not none else 0 }},
+      random: {{ marketing_data.random if marketing_data.random is not none else 0 }}
+    },
+    occupancy_data: {{ occupancy_data | tojson }},
+    occupancy_labels: {{ occupancy_labels | tojson }},
+    occupancy_type: "{{ occupancy_type }}"
+  };
+
+  // Modified addStatCard to accept skipSave parameter - define it right after dashboardData
+  window.addStatCard = function(metricType, saveConfig = true) {
+    console.log('[Dashboard] addStatCard called:', metricType, 'saveConfig:', saveConfig);
+    
+    // Check if already added (when loading from config)
+    if (addedMetrics.has(metricType)) {
+      console.log('[Dashboard] Metric already added:', metricType);
+      return;
+    }
+
+    const statsGrid = document.getElementById('statsGrid');
+    if (!statsGrid) return;
+
+    hideEmptyState();
+
+    let cardClass = 'stats-card';
+    let cardContent = '';
+
+    switch(metricType) {
+      case 'prosecan_racun':
+        cardClass = 'stats-card stats-card-medium card-width-295';
+        if (!dashboardData.has_avg_spend_data) {
+          cardClass += ' no-data-card';
+        }
+        const avgValue = dashboardData.has_avg_spend_data ? Math.round(dashboardData.avg_spend) + ' RSD' : '–';
+        const avgClass = dashboardData.has_avg_spend_data ? 'has-data' : 'no-data';
+        const avgTrend = dashboardData.avg_spend_trend;
+        const avgTrendClass = avgTrend ? ` trend-${avgTrend}` : '';
+        const avgIndicator = dashboardData.has_avg_spend_data && avgTrend ? 
+          `<div class="arrow-indicator arrow-${avgTrend}"></div>` : '';
+        cardContent = `
+          <div class="stat-value ${avgClass}${avgTrendClass}">${avgValue}</div>
+          <div class="stat-divider"></div>
+          <div class="stat-label">Prosečan račun</div>
+          ${avgIndicator}
+        `;
+        break;
+      
+      case 'broj_gostiju':
+        cardClass = 'stats-card stats-card-medium card-width-295';
+        if (!dashboardData.has_guests_data) {
+          cardClass += ' no-data-card';
+        }
+        const guestsValue = dashboardData.has_guests_data ? dashboardData.guests_with_bookings : '–';
+        const guestsClass = dashboardData.has_guests_data ? 'has-data' : 'no-data';
+        cardContent = `
+          <div class="stat-value ${guestsClass}">${guestsValue}</div>
+          <div class="stat-divider"></div>
+          <div class="stat-label">Broj gostiju</div>
+        `;
+        break;
+      
+      case 'rejting_google':
+        cardClass = 'stats-card stats-card-medium card-width-295';
+        // Always show as no-data since Google Maps rating is not yet implemented
+        cardClass += ' no-data-card';
+        cardContent = `
+          <div class="stat-value no-data">–</div>
+          <div class="stat-divider"></div>
+          <div class="stat-label">Rejting Google Maps</div>
+        `;
+        break;
+      
+      case 'marketing_source':
+        cardClass = 'stats-card-large card-pie-chart card-width-295';
+        if (!dashboardData.has_marketing_data) {
+          cardClass += ' no-data-card';
+        }
+        const md = dashboardData.marketing_data;
+        const hasData = dashboardData.has_marketing_data;
+        
+        // Отладочная информация
+        console.log('Marketing Source Data:', md);
+        console.log('Has Marketing Data:', hasData);
+        
+        if (hasData) {
+          // Цвета для источников
+          const colors = {
+            instagram: '#CB7A7A',
+            whatsapp: '#9A7CB8',
+            calls: '#93C4D0',
+            promoter: '#DBC787',
+            email: '#FF9F40',
+            random: '#D1AA77'
+          };
+          
+          // Порядок отображения источников в pie chart
+          const order = ['instagram', 'whatsapp', 'calls', 'email', 'promoter', 'random'];
+          
+          // Строим conic-gradient для pie chart
+          let currentAngle = 0;
+          const gradients = [];
+          for (const source of order) {
+            const percent = (md[source] || 0);
+            if (percent > 0) {
+              const angle = (percent / 100) * 360;
+              const nextAngle = currentAngle + angle;
+              gradients.push(colors[source] + ' ' + currentAngle + 'deg ' + nextAngle + 'deg');
+              currentAngle = nextAngle;
+            }
+          }
+          
+          console.log('Pie chart gradients:', gradients);
+          
+          const gradientString = gradients.length > 0 ? gradients.join(', ') : '#D9D9D9 0deg 360deg';
+          
+          cardContent = `
+            <div class="stat-label">Marketing source</div>
+            <div class="pie-chart-container">
+              <div class="pie-chart-bg" style="background: conic-gradient(${gradientString});"></div>
+              <div class="pie-chart-center"></div>
+            </div>
+            <div class="pie-chart-legend">
+              <div class="legend-item">
+                <div class="legend-color instagram"></div>
+                <span>Inst ${Math.round(md.instagram || 0)}%</span>
+              </div>
+              <div class="legend-item">
+                <div class="legend-color whatsapp"></div>
+                <span>WA ${Math.round(md.whatsapp || 0)}%</span>
+              </div>
+              <div class="legend-item">
+                <div class="legend-color calls"></div>
+                <span>Calls ${Math.round(md.calls || 0)}%</span>
+              </div>
+              <div class="legend-item">
+                <div class="legend-color email"></div>
+                <span>Email ${Math.round(md.email || 0)}%</span>
+              </div>
+              <div class="legend-item">
+                <div class="legend-color promoter"></div>
+                <span>Promoter ${Math.round(md.promoter || 0)}%</span>
+              </div>
+              <div class="legend-item">
+                <div class="legend-color random"></div>
+                <span>Random ${Math.round(md.random || 0)}%</span>
+              </div>
+            </div>
+          `;
+        } else {
+          cardContent = `
+            <div class="stat-label">Marketing source</div>
+            <div class="pie-chart-container no-data">
+              <div class="pie-chart-bg"></div>
+              <div class="pie-chart-center"></div>
+            </div>
+            <div class="pie-chart-legend">
+              <div class="legend-item no-data">
+                <div class="legend-color instagram"></div>
+                <span>Inst 0%</span>
+              </div>
+              <div class="legend-item no-data">
+                <div class="legend-color whatsapp"></div>
+                <span>WA 0%</span>
+              </div>
+              <div class="legend-item no-data">
+                <div class="legend-color calls"></div>
+                <span>Calls 0%</span>
+              </div>
+              <div class="legend-item no-data">
+                <div class="legend-color email"></div>
+                <span>Email 0%</span>
+              </div>
+              <div class="legend-item no-data">
+                <div class="legend-color promoter"></div>
+                <span>Promoter 0%</span>
+              </div>
+              <div class="legend-item no-data">
+                <div class="legend-color random"></div>
+                <span>Random 0%</span>
+              </div>
+            </div>
+          `;
+        }
+        break;
+      
+      case 'potrosnja':
+        cardClass = 'stats-card stats-card-medium card-width-295';
+        if (!dashboardData.has_total_spend_data) {
+          cardClass += ' no-data-card';
+        }
+        const spendValue = dashboardData.has_total_spend_data ? Math.round(dashboardData.total_spend) + ' RSD' : '–';
+        const spendClass = dashboardData.has_total_spend_data ? 'has-data' : 'no-data';
+        cardContent = `
+          <div class="stat-value ${spendClass}">${spendValue}</div>
+          <div class="stat-divider"></div>
+          <div class="stat-label">Potrošnja</div>
+        `;
+        break;
+      
+      case 'dolaznost':
+        cardClass = 'stats-card stats-card-medium card-width-205';
+        if (!dashboardData.has_attendance_data) {
+          cardClass += ' no-data-card';
+        }
+        const attendanceValue = dashboardData.has_attendance_data ? Math.round(dashboardData.attendance_rate) + '%' : '–';
+        const attendanceClass = dashboardData.has_attendance_data ? 'has-data rating-red' : 'no-data';
+        const attendanceTrend = dashboardData.attendance_trend;
+        const attendanceTrendClass = attendanceTrend ? ` trend-${attendanceTrend}` : '';
+        const attendanceIndicator = dashboardData.has_attendance_data && attendanceTrend ? 
+          `<div class="arrow-indicator arrow-${attendanceTrend}"></div>` : '';
+        cardContent = `
+          <div class="stat-value ${attendanceClass}${attendanceTrendClass}">${attendanceValue}</div>
+          <div class="stat-divider"></div>
+          <div class="stat-label">Dolaznost</div>
+          ${attendanceIndicator}
+        `;
+        break;
+      
+      case 'novi_stalni':
+        cardClass = 'stats-card-medium-large card-double-height card-width-205';
+        if (!dashboardData.has_novi_stalni_data) {
+          cardClass += ' no-data-card';
+        }
+        const newValue = dashboardData.has_novi_stalni_data ? Math.round(dashboardData.new_clients_percent) + '%' : '–';
+        const regularValue = dashboardData.has_novi_stalni_data ? Math.round(dashboardData.regular_clients_percent) + '%' : '–';
+        const valueClass = dashboardData.has_novi_stalni_data ? 'has-data' : 'no-data';
+        cardContent = `
+          <div style="display: flex; width: 100%; height: 100%; align-items: center;">
+            <div style="flex: 1; display: flex; flex-direction: column; justify-content: flex-start; padding-right: 10px;">
+              <div class="stat-value ${valueClass}">${newValue}</div>
+              <div class="stat-divider"></div>
+              <div class="stat-label">Novi</div>
+            </div>
+            <div style="display: flex; flex-direction: column; align-items: center; justify-content: flex-start; font-size: 60px; line-height: 82px; font-weight: 400; color: ${valueClass === 'has-data' ? '#000000' : '#9CA3AF'}; margin: 0 10px; padding-top: 0; padding-bottom: 60px;">/</div>
+            <div style="flex: 1; display: flex; flex-direction: column; justify-content: flex-start; padding-left: 10px;">
+              <div class="stat-value ${valueClass}">${regularValue}</div>
+              <div class="stat-divider"></div>
+              <div class="stat-label">Stalni gosti</div>
+            </div>
+          </div>
+        `;
+        break;
+      
+      case 'popunjenost':
+        cardClass = 'stats-card-large card-chart card-width-475';
+        if (!dashboardData.has_occupancy_data) {
+          cardClass += ' no-data-card';
+        }
+        const occData = dashboardData.occupancy_data || {};
+        const occLabels = dashboardData.occupancy_labels || [];
+        const occType = dashboardData.occupancy_type || 'months';
+        const occDataClass = dashboardData.has_occupancy_data ? '' : 'no-data';
+        const columnsCount = occLabels.length;
+        
+        // Получаем значения для отображения
+        const occValues = occLabels.map((label, index) => {
+          if (occType === 'weeks') {
+            return occData[`week_${index + 1}`] || 0;
+          } else if (occType === 'years') {
+            // Для лет используем ключи вида "2024"
+            const keys = Object.keys(occData).sort();
+            return occData[keys[index]] || 0;
+          } else {
+            // Для месяцев используем ключи вида "2024_01"
+            // Сортируем ключи по году и месяцу (сначала год, потом месяц)
+            const keys = Object.keys(occData).sort((a, b) => {
+              const [yearA, monthA] = a.split('_').map(Number);
+              const [yearB, monthB] = b.split('_').map(Number);
+              if (yearA !== yearB) return yearA - yearB;
+              return monthA - monthB;
+            });
+            return occData[keys[index]] || 0;
+          }
+        });
+        
+        // Находим максимальное значение для масштабирования
+        const maxValue = occValues.length > 0 ? Math.max(...occValues, 1) : 1;
+        // Определяем максимальную высоту в зависимости от размера экрана
+        const isMobile = window.innerWidth <= 768;
+        let maxHeight;
+        if (isMobile) {
+          // Для мобильной версии максимальная высота столбиков - 150px
+          maxHeight = 150;
+        } else {
+          // Для десктопной версии используем стандартные значения
+          maxHeight = columnsCount === 2 ? 250 : (columnsCount === 4 ? 220 : (columnsCount === 12 ? 135 : 220));
+        }
+        const minHeight = 5; // Минимальная высота для видимости колонки
+        
+        // Генерируем колонки
+        const bars = occLabels.map((label, index) => {
+          const value = occValues[index] || 0;
+          let height = 0;
+          if (value > 0) {
+            height = Math.max((value / maxValue) * maxHeight, minHeight);
+          } else {
+            // Для нулевых значений показываем минимальную высоту для видимости
+            height = minHeight;
+          }
+          // Для нулевых значений не показываем текст (чтобы не было видно "0" на маленькой колонке)
+          const valueText = value > 0 ? value : '';
+          return `
+            <div class="chart-bar ${occDataClass}" style="height: ${height}px; min-height: ${minHeight}px;">
+              ${valueText ? `<div class="chart-bar-value">${valueText}</div>` : ''}
+            </div>
+          `;
+        }).join('');
+        
+        // Генерируем метки
+        const labels = occLabels.map(label => 
+          `<div class="chart-bar-label">${label}</div>`
+        ).join('');
+        
+        // Добавляем атрибут для стилизации колонок в зависимости от количества
+        let barsContainerAttr = '';
+        if (columnsCount === 2) {
+          barsContainerAttr = 'data-columns="2"';
+        } else if (columnsCount === 4) {
+          barsContainerAttr = 'data-columns="4"';
+        } else if (columnsCount === 12) {
+          barsContainerAttr = 'data-columns="12"';
+        }
+        
+        cardContent = `
+          <div class="stat-label">Popunjenost</div>
+          <div style="font-family: 'Manrope'; font-size: 12px; color: #6B7280; margin-bottom: 10px;">Broj rezervacija (brojevi u kolonama)</div>
+          <div class="chart-container">
+            <div class="chart-bars" ${barsContainerAttr}>
+              ${bars}
+            </div>
+            <div class="chart-labels-container" style="display: flex; justify-content: space-between; margin-top: 20px;">
+              ${labels}
+            </div>
+          </div>
+        `;
+        break;
+      
+      case 'retention':
+        cardClass = 'stats-card stats-card-medium card-width-205';
+        if (!dashboardData.has_retention_data) {
+          cardClass += ' no-data-card';
+        }
+        const retentionValue = dashboardData.has_retention_data ? dashboardData.retention.toFixed(1) : '–';
+        const retentionClass = dashboardData.has_retention_data ? 'has-data' : 'no-data';
+        cardContent = `
+          <div class="stat-value ${retentionClass}">${retentionValue}</div>
+          <div class="stat-divider"></div>
+          <div class="stat-label">Retention</div>
+        `;
+        break;
+      
+      default:
+        console.warn('[Dashboard] Unknown metric type:', metricType);
+        return; // Skip unknown metrics
+    }
+    
+    // Check if cardContent was set (if not, skip creating card)
+    if (!cardContent) {
+      console.warn('[Dashboard] No card content for metric:', metricType);
+      return;
+    }
+    
+    console.log('[Dashboard] Creating card for:', metricType, 'class:', cardClass);
+
+    const newCard = document.createElement('div');
+    newCard.className = cardClass;
+    newCard.setAttribute('data-metric', metricType);
+    newCard.innerHTML = cardContent;
+    statsGrid.appendChild(newCard);
+    
+    console.log('[Dashboard] Card added to DOM:', metricType);
+
+    // Mark as added
+    addedMetrics.add(metricType);
+    console.log('[Dashboard] Added metrics set:', Array.from(addedMetrics));
+    
+    // Save configuration only if not loading from saved config
+    if (saveConfig) {
+      console.log('[Dashboard] Saving config...');
+      saveDashboardConfig();
+      window.closeAddCardModal();
+    }
+    
+    updateModalOptions();
+    console.log('[Dashboard] Card creation completed for:', metricType);
+  }
+
+  function updateModalOptions() {
+    const options = document.querySelectorAll('.card-type-option');
+    options.forEach(option => {
+      const metric = option.getAttribute('data-metric');
+      const removeBtn = option.querySelector('.card-type-option-remove');
+      
+      if (addedMetrics.has(metric)) {
+        // Метрика добавлена - показываем крестик
+        option.classList.add('added');
+        if (!removeBtn) {
+          const removeIcon = document.createElement('img');
+          removeIcon.src = '/static/images/krest.png';
+          removeIcon.className = 'card-type-option-remove';
+          removeIcon.onclick = (e) => {
+            e.stopPropagation();
+            removeStatCard(metric);
+          };
+          option.appendChild(removeIcon);
+        }
+      } else {
+        // Метрика не добавлена - убираем крестик
+        option.classList.remove('added');
+        if (removeBtn) {
+          removeBtn.remove();
+        }
+      }
+    });
+  }
+
+  // Close modal when clicking outside
+  document.addEventListener('click', function(e) {
+    const modal = document.getElementById('addCardModal');
+    if (modal && e.target === modal) {
+      window.closeAddCardModal();
+    }
+  });
+
+  // Hide empty state
+  function hideEmptyState() {
+    const emptyState = document.getElementById('emptyDashboard');
+    if (emptyState) {
+      emptyState.style.display = 'none';
+    }
+  }
+
+  function removeStatCard(metricType) {
+    // Remove card from DOM
+    const card = document.querySelector(`[data-metric="${metricType}"]`);
+    if (card) {
+      card.remove();
+    }
+
+    // Remove from added metrics
+    addedMetrics.delete(metricType);
+    
+    // Show empty state if no cards left
+    const statsGrid = document.getElementById('statsGrid');
+    const hasCards = statsGrid.querySelectorAll('[data-metric]').length > 0;
+    if (!hasCards) {
+      const emptyState = document.getElementById('emptyDashboard');
+      if (emptyState) {
+        emptyState.style.display = 'flex';
+      }
+    }
+    
+    // Save configuration
+    saveDashboardConfig();
+    updateModalOptions();
+  }
+
+  // Save Dashboard Config
+  async function saveDashboardConfig() {
+    try {
+      const metrics = Array.from(addedMetrics);
+      const response = await fetch('/api/dashboard/config', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ config: { metrics: metrics } })
+      });
+      
+      const data = await response.json();
+      if (!data.success) {
+        console.error('Ошибка сохранения конфигурации:', data.error);
+      }
+    } catch (error) {
+      console.error('Ошибка при сохранении конфигурации:', error);
+    }
+  }
+
+  // Load Dashboard Config
+  async function loadDashboardConfig() {
+    try {
+      console.log('[Dashboard] Loading config...');
+      console.log('[Dashboard] Saved config:', savedConfig);
+      
+      let metricsToLoad = [];
+      
+      // First try to load from saved config passed from server
+      if (savedConfig && savedConfig.metrics && Array.isArray(savedConfig.metrics)) {
+        metricsToLoad = savedConfig.metrics;
+        console.log('[Dashboard] Metrics from saved config:', metricsToLoad);
+      } else {
+        // Fallback to API
+        console.log('[Dashboard] Fetching from API...');
+        try {
+          const response = await fetch('/api/dashboard/config');
+          const data = await response.json();
+          console.log('[Dashboard] API response:', data);
+          
+          // Handle both formats: {config: {metrics: [...]}} and {metrics: [...]}
+          if (data.config && data.config.metrics && Array.isArray(data.config.metrics)) {
+            metricsToLoad = data.config.metrics;
+          } else if (data.metrics && Array.isArray(data.metrics)) {
+            metricsToLoad = data.metrics;
+          }
+          console.log('[Dashboard] Metrics from API:', metricsToLoad);
+        } catch (apiError) {
+          console.error('[Dashboard] API error:', apiError);
+        }
+      }
+      
+      // Load each metric
+      if (metricsToLoad.length > 0) {
+        console.log('[Dashboard] Loading', metricsToLoad.length, 'metrics');
+        metricsToLoad.forEach(metricType => {
+          try {
+            addStatCard(metricType, false);
+          } catch (e) {
+            console.error('[Dashboard] Error adding metric', metricType, ':', e);
+          }
+        });
+      } else {
+        console.log('[Dashboard] No metrics to load, empty dashboard');
+      }
+    } catch (error) {
+      console.error('[Dashboard] Config load error:', error);
+    }
+  }
+
+  // Load dashboard config on page load
+  document.addEventListener('DOMContentLoaded', function() {
+    loadDashboardConfig();
+  });
+
+  // Mobile sidebar functions
+  function toggleMobileSidebar() {
+    const sidebar = document.getElementById('mobileSidebar');
+    const overlay = document.getElementById('mobileSidebarOverlay');
+    
+    sidebar.classList.toggle('open');
+    overlay.classList.toggle('show');
+  }
+
+  function closeMobileSidebar() {
+    const sidebar = document.getElementById('mobileSidebar');
+    const overlay = document.getElementById('mobileSidebarOverlay');
+    
+    sidebar.classList.remove('open');
+    overlay.classList.remove('show');
+  }
+
+  // Mobile search functions
+  function toggleMobileSearch() {
+    const modal = document.getElementById('mobileSearchModal');
+    const isVisible = modal.style.display === 'block';
+    
+    if (isVisible) {
+      modal.style.display = 'none';
+    } else {
+      modal.style.display = 'block';
+      const input = document.getElementById('mobileSearchInput');
+      if (input) {
+        input.focus();
+      }
+    }
+  }
+
+  function closeMobileSidebar() {
+    const sidebar = document.getElementById('mobileSidebar');
+    const overlay = document.getElementById('mobileSidebarOverlay');
+    
+    sidebar.classList.remove('open');
+    overlay.classList.remove('show');
+  }
+
+  // Mobile search functions
+  function toggleMobileSearch() {
+    const modal = document.getElementById('mobileSearchModal');
+    const isVisible = modal.style.display === 'block';
+    
+    if (isVisible) {
+      modal.style.display = 'none';
+    } else {
+      modal.style.display = 'block';
+      const input = document.getElementById('mobileSearchInput');
+      if (input) {
+        input.focus();
+      }
+    }
+  }
+
+  // Close mobile search modal when clicking outside
+  document.addEventListener('click', function(e) {
+    const modal = document.getElementById('mobileSearchModal');
+    const searchBtn = document.querySelector('.mobile-search-btn');
+    const searchResults = document.getElementById('search-results');
+    const mobileResults = document.getElementById('mobile-search-results');
+    
+    // Проверяем, что клик не по модальному окну, кнопке поиска или результатам поиска
+    if (modal && modal.style.display === 'block' && 
+        !modal.contains(e.target) && 
+        !searchBtn.contains(e.target) && 
+        !searchResults.contains(e.target) &&
+        !(mobileResults && mobileResults.contains(e.target))) {
+      modal.style.display = 'none';
+      searchResults.style.display = 'none';
+      if (mobileResults) {
+        mobileResults.style.display = 'none';
+      }
+    }
+    
+    // Также закрываем мобильные результаты поиска при клике вне их
+    if (mobileResults && mobileResults.style.display === 'block' && 
+        !mobileResults.contains(e.target) && 
+        !searchBtn.contains(e.target) &&
+        !modal.contains(e.target)) {
+      mobileResults.style.display = 'none';
+    }
+  });
+
+  // Search functionality
+  document.addEventListener('DOMContentLoaded', function() {
+    const searchBox = document.querySelector('.search-box');
+    const searchResults = document.getElementById('search-results');
+    
+    if (!searchBox) {
+      console.error('Search box not found!');
+      return;
+    }
+    
+    if (!searchResults) {
+      console.error('Search results container not found!');
+      return;
+    }
+    
+    // Данные клиентов из сервера
+    const clientsData = [
+        {% for c in contacts %}
+        {
+            id: {{ c.id }},
+            firstName: "{{ c.first_name }}",
+            lastName: "{{ c.last_name or '' }}",
+            phone: "{{ c.phone or '' }}",
+            lastBookingDate: "{{ client_stats[c.id].last_visit_str if c.id in client_stats and client_stats[c.id].last_visit_str else '' }}",
+            lastBookingTime: "",
+            lastBookingStatus: "{{ client_stats[c.id].last_booking_status if c.id in client_stats and client_stats[c.id].last_booking_status else '' }}",
+            visitsCount: {{ client_stats[c.id].visits_confirmed if c.id in client_stats else 0 }},
+            averageSpend: {{ client_stats[c.id].avg_spend if c.id in client_stats and client_stats[c.id].avg_spend is not none else 0 }}
+        }{% if not loop.last %},{% endif %}
+        {% endfor %}
+    ];
+
+
+    function searchClients(query) {
+        if (!query || query.trim().length < 2) {
+            if (searchResults) {
+                searchResults.style.display = 'none';
+            }
+            return;
+        }
+
+        const searchTerm = query.toLowerCase().trim();
+        const results = clientsData.filter(client => {
+            const fullName = `${client.firstName} ${client.lastName}`.toLowerCase();
+            const phone = client.phone.toLowerCase();
+            
+            return fullName.includes(searchTerm) || 
+                   phone.includes(searchTerm) ||
+                   client.firstName.toLowerCase().includes(searchTerm) ||
+                   client.lastName.toLowerCase().includes(searchTerm);
+        });
+
+        displaySearchResults(results);
+    }
+
+    function displaySearchResults(results) {
+        const resultsContent = document.querySelector('.search-results-content');
+        
+        if (!resultsContent) {
+            console.error('Results content not found!');
+            return;
+        }
+        
+        resultsContent.innerHTML = '';
+
+        if (results.length === 0) {
+            resultsContent.innerHTML = '<div style="padding: 20px; text-align: center; color: #6b7280; font-family: \'Manrope\', sans-serif; font-size: 14px;">Nema rezultata pretrage</div>';
+        } else {
+            results.forEach(client => {
+                const resultItem = createSearchResultItem(client);
+                resultsContent.appendChild(resultItem);
+            });
+        }
+
+        if (searchResults) {
+            searchResults.style.display = 'block';
+            
+            // Mobile view
+            if (window.innerWidth <= 768) {
+                // Create mobile search results container
+                let mobileResults = document.getElementById('mobile-search-results');
+                if (!mobileResults) {
+                    mobileResults = document.createElement('div');
+                    mobileResults.id = 'mobile-search-results';
+                    mobileResults.style.position = 'fixed';
+                    mobileResults.style.top = '130px';
+                    mobileResults.style.left = '20px';
+                    mobileResults.style.right = '20px';
+                    mobileResults.style.height = '300px';
+                    mobileResults.style.backgroundColor = 'white';
+                    mobileResults.style.border = '1px solid #e5e7eb';
+                    mobileResults.style.borderRadius = '12px';
+                    mobileResults.style.boxShadow = '0 4px 12px rgba(0,0,0,0.15)';
+                    mobileResults.style.zIndex = '9999';
+                    mobileResults.style.padding = '8px';
+                    mobileResults.style.overflowY = 'auto';
+                    document.body.appendChild(mobileResults);
+                }
+                
+                // Clear and populate mobile results
+                mobileResults.innerHTML = '';
+                if (results.length === 0) {
+                    mobileResults.innerHTML = '<div style="padding: 20px; text-align: center; color: #6b7280; font-family: \'Manrope\', sans-serif; font-size: 14px;">Nema rezultata pretrage</div>';
+                } else {
+                    results.forEach(client => {
+                        const resultItem = createSearchResultItem(client);
+                        mobileResults.appendChild(resultItem);
+                    });
+                }
+                
+                mobileResults.style.display = 'block';
+                
+                // Hide desktop results
+                searchResults.style.display = 'none';
+            } else {
+                // Desktop - hide mobile results if exists
+                const mobileResults = document.getElementById('mobile-search-results');
+                if (mobileResults) {
+                    mobileResults.style.display = 'none';
+                }
+            }
+        }
+    }
+
+    // Функция создания элемента результата
+    function createSearchResultItem(client) {
+        const item = document.createElement('div');
+        item.className = 'search-result-item';
+        item.onclick = () => window.location.href = `/clients/${client.id}`;
+
+        const statusText = getStatusText(client.lastBookingStatus);
+        const statusClass = getStatusClass(client.lastBookingStatus);
+
+        const lastBookingInfo = client.lastBookingDate ? 
+            `<div class="search-result-date">${client.lastBookingDate}</div>
+             ${client.lastBookingStatus ? `<div class="search-result-status ${statusClass}">${statusText}</div>` : ''}` :
+            '<div class="search-result-date" style="color: #9ca3af; font-style: italic;">Nema rezervacije</div>';
+
+        const phoneInfo = client.phone ? 
+            `<div class="search-result-phone">${client.phone}</div>` :
+            '<div class="search-result-phone" style="color: #9ca3af; font-style: italic;">Nema telefona</div>';
+
+        item.innerHTML = `
+            <div class="search-result-main">
+                <div class="search-result-name">${client.firstName} ${client.lastName}</div>
+                ${phoneInfo}
+                <div class="search-result-last-booking">
+                    ${lastBookingInfo}
+                </div>
+            </div>
+        `;
+
+        return item;
+    }
+
+    // Функция получения текста статуса
+    function getStatusText(status) {
+        const statusMap = {
+            'dogovoreno': 'Dogovoreno',
+            'na_cekaju': 'Na čekanju',
+            'nacekanju': 'Na čekanju',
+            'potvrdjeno': 'Potvrđeno',
+            'otkazano': 'Otkazano',
+            'nisu': 'Nisu došli',
+            'dosli': 'Došli'
+        };
+        return statusMap[status] || status;
+    }
+
+    // Функция получения CSS класса статуса
+    function getStatusClass(status) {
+        const classMap = {
+            'dogovoreno': 'dogovoreno',
+            'na_cekaju': 'na-cekaju',
+            'nacekanju': 'na-cekaju',
+            'potvrdjeno': 'potvrdjeno',
+            'otkazano': 'otkazano',
+            'nisu': 'nisu-dosli',
+            'dosli': 'dosli'
+        };
+        return classMap[status] || '';
+    }
+
+    // Desktop search
+    if (searchBox) {
+      searchBox.addEventListener('input', function() {
+        searchClients(this.value);
+      });
+
+      searchBox.addEventListener('blur', function() {
+        if (!this.value.trim()) {
+          setTimeout(() => {
+            if (!this.value.trim()) {
+              searchResults.style.display = 'none';
+            }
+          }, 200);
+        }
+      });
+    }
+
+    // Mobile search
+    const mobileSearchInput = document.getElementById('mobileSearchInput');
+    if (mobileSearchInput) {
+      mobileSearchInput.addEventListener('input', function() {
+        searchClients(this.value);
+      });
+    }
+  });
+</script>
+
+<script>
+  // Note: All dashboard functions (saveDashboardConfig, loadDashboardConfig, addStatCard, etc.)
+  // are defined in the first script block above (starting at line 1413)
+  // and are available globally here
+
+  // Mobile sidebar functions
+  function toggleMobileSidebar() {
+    const sidebar = document.getElementById('mobileSidebar');
+    const overlay = document.getElementById('mobileSidebarOverlay');
+    
+    sidebar.classList.toggle('open');
+    overlay.classList.toggle('show');
+  }
+
+  function closeMobileSidebar() {
+    const sidebar = document.getElementById('mobileSidebar');
+    const overlay = document.getElementById('mobileSidebarOverlay');
+    
+    sidebar.classList.remove('open');
+    overlay.classList.remove('show');
+  }
+
+  // Mobile search functions
+  function toggleMobileSearch() {
+    const modal = document.getElementById('mobileSearchModal');
+    const isVisible = modal.style.display === 'block';
+    
+    if (isVisible) {
+      modal.style.display = 'none';
+    } else {
+      modal.style.display = 'block';
+      const input = document.getElementById('mobileSearchInput');
+      if (input) {
+        input.focus();
+      }
+    }
+  }
+
+  // Close mobile search modal when clicking outside
+  document.addEventListener('click', function(e) {
+    const modal = document.getElementById('mobileSearchModal');
+    const searchBtn = document.querySelector('.mobile-search-btn');
+    const searchResults = document.getElementById('search-results');
+    const mobileResults = document.getElementById('mobile-search-results');
+    
+    // Проверяем, что клик не по модальному окну, кнопке поиска или результатам поиска
+    if (modal && modal.style.display === 'block' && 
+        !modal.contains(e.target) && 
+        !searchBtn.contains(e.target) && 
+        !searchResults.contains(e.target) &&
+        !(mobileResults && mobileResults.contains(e.target))) {
+      modal.style.display = 'none';
+      searchResults.style.display = 'none';
+      if (mobileResults) {
+        mobileResults.style.display = 'none';
+      }
+    }
+    
+    // Также закрываем мобильные результаты поиска при клике вне их
+    if (mobileResults && mobileResults.style.display === 'block' && 
+        !mobileResults.contains(e.target) && 
+        !searchBtn.contains(e.target) &&
+        !modal.contains(e.target)) {
+      mobileResults.style.display = 'none';
+    }
+  });
+
+  // Search functionality
+  document.addEventListener('DOMContentLoaded', function() {
+    const searchBox = document.querySelector('.search-box');
+    const searchResults = document.getElementById('search-results');
+    
+    if (!searchBox) {
+      console.error('Search box not found!');
+      return;
+    }
+    
+    if (!searchResults) {
+      console.error('Search results container not found!');
+      return;
+    }
+    
+    // Данные клиентов из сервера
+    const clientsData = [
+        {% for c in contacts %}
+        {
+            id: {{ c.id }},
+            firstName: "{{ c.first_name }}",
+            lastName: "{{ c.last_name or '' }}",
+            phone: "{{ c.phone or '' }}",
+            lastBookingDate: "{{ client_stats[c.id].last_visit_str if c.id in client_stats and client_stats[c.id].last_visit_str else '' }}",
+            lastBookingTime: "",
+            lastBookingStatus: "{{ client_stats[c.id].last_booking_status if c.id in client_stats and client_stats[c.id].last_booking_status else '' }}",
+            visitsCount: {{ client_stats[c.id].visits_confirmed if c.id in client_stats else 0 }},
+            averageSpend: {{ client_stats[c.id].avg_spend if c.id in client_stats and client_stats[c.id].avg_spend is not none else 0 }}
+        }{% if not loop.last %},{% endif %}
+        {% endfor %}
+    ];
+
+
+    function searchClients(query) {
+        if (!query || query.trim().length < 2) {
+            if (searchResults) {
+                searchResults.style.display = 'none';
+            }
+            return;
+        }
+
+        const searchTerm = query.toLowerCase().trim();
+        const results = clientsData.filter(client => {
+            const fullName = `${client.firstName} ${client.lastName}`.toLowerCase();
+            const phone = client.phone.toLowerCase();
+            
+            return fullName.includes(searchTerm) || 
+                   phone.includes(searchTerm) ||
+                   client.firstName.toLowerCase().includes(searchTerm) ||
+                   client.lastName.toLowerCase().includes(searchTerm);
+        });
+
+        displaySearchResults(results);
+    }
+
+    function displaySearchResults(results) {
+        const resultsContent = document.querySelector('.search-results-content');
+        
+        if (!resultsContent) {
+            console.error('Results content not found!');
+            return;
+        }
+        
+        resultsContent.innerHTML = '';
+
+        if (results.length === 0) {
+            resultsContent.innerHTML = '<div style="padding: 20px; text-align: center; color: #6b7280; font-family: \'Manrope\', sans-serif; font-size: 14px;">Nema rezultata pretrage</div>';
+        } else {
+            results.forEach(client => {
+                const resultItem = createSearchResultItem(client);
+                resultsContent.appendChild(resultItem);
+            });
+        }
+
+        if (searchResults) {
+            searchResults.style.display = 'block';
+            
+            // Mobile view
+            if (window.innerWidth <= 768) {
+                // Create mobile search results container
+                let mobileResults = document.getElementById('mobile-search-results');
+                if (!mobileResults) {
+                    mobileResults = document.createElement('div');
+                    mobileResults.id = 'mobile-search-results';
+                    mobileResults.style.position = 'fixed';
+                    mobileResults.style.top = '130px';
+                    mobileResults.style.left = '20px';
+                    mobileResults.style.right = '20px';
+                    mobileResults.style.height = '300px';
+                    mobileResults.style.backgroundColor = 'white';
+                    mobileResults.style.border = '1px solid #e5e7eb';
+                    mobileResults.style.borderRadius = '12px';
+                    mobileResults.style.boxShadow = '0 4px 12px rgba(0,0,0,0.15)';
+                    mobileResults.style.zIndex = '9999';
+                    mobileResults.style.padding = '8px';
+                    mobileResults.style.overflowY = 'auto';
+                    document.body.appendChild(mobileResults);
+                }
+                
+                // Clear and populate mobile results
+                mobileResults.innerHTML = '';
+                if (results.length === 0) {
+                    mobileResults.innerHTML = '<div style="padding: 20px; text-align: center; color: #6b7280; font-family: \'Manrope\', sans-serif; font-size: 14px;">Nema rezultata pretrage</div>';
+                } else {
+                    results.forEach(client => {
+                        const resultItem = createSearchResultItem(client);
+                        mobileResults.appendChild(resultItem);
+                    });
+                }
+                
+                mobileResults.style.display = 'block';
+                
+                // Hide desktop results
+                searchResults.style.display = 'none';
+            } else {
+                // Desktop - hide mobile results if exists
+                const mobileResults = document.getElementById('mobile-search-results');
+                if (mobileResults) {
+                    mobileResults.style.display = 'none';
+                }
+            }
+        }
+    }
+
+    // Функция создания элемента результата
+    function createSearchResultItem(client) {
+        const item = document.createElement('div');
+        item.className = 'search-result-item';
+        item.onclick = () => window.location.href = `/clients/${client.id}`;
+
+        const statusText = getStatusText(client.lastBookingStatus);
+        const statusClass = getStatusClass(client.lastBookingStatus);
+
+        const lastBookingInfo = client.lastBookingDate ? 
+            `<div class="search-result-date">${client.lastBookingDate}</div>
+             ${client.lastBookingStatus ? `<div class="search-result-status ${statusClass}">${statusText}</div>` : ''}` :
+            '<div class="search-result-date" style="color: #9ca3af; font-style: italic;">Nema rezervacije</div>';
+
+        const phoneInfo = client.phone ? 
+            `<div class="search-result-phone">${client.phone}</div>` :
+            '<div class="search-result-phone" style="color: #9ca3af; font-style: italic;">Nema telefona</div>';
+
+        item.innerHTML = `
+            <div class="search-result-main">
+                <div class="search-result-name">${client.firstName} ${client.lastName}</div>
+                ${phoneInfo}
+                <div class="search-result-last-booking">
+                    ${lastBookingInfo}
+                </div>
+            </div>
+        `;
+
+        return item;
+    }
+
+    // Функция получения текста статуса
+    function getStatusText(status) {
+        const statusMap = {
+            'dogovoreno': 'Dogovoreno',
+            'na_cekaju': 'Na čekanju',
+            'nacekanju': 'Na čekanju',
+            'potvrdjeno': 'Potvrđeno',
+            'otkazano': 'Otkazano',
+            'nisu': 'Nisu došli',
+            'dosli': 'Došli'
+        };
+        return statusMap[status] || status;
+    }
+
+    // Функция получения CSS класса статуса
+    function getStatusClass(status) {
+        const classMap = {
+            'dogovoreno': 'dogovoreno',
+            'na_cekaju': 'na-cekaju',
+            'nacekanju': 'na-cekaju',
+            'potvrdjeno': 'potvrdjeno',
+            'otkazano': 'otkazano',
+            'nisu': 'nisu-dosli',
+            'dosli': 'dosli'
+        };
+        return classMap[status] || '';
+    }
+
+    // Desktop search
+    if (searchBox) {
+      searchBox.addEventListener('input', function() {
+        searchClients(this.value);
+      });
+
+      searchBox.addEventListener('blur', function() {
+        if (!this.value.trim()) {
+          setTimeout(() => {
+            if (!this.value.trim()) {
+              searchResults.style.display = 'none';
+            }
+          }, 200);
+        }
+      });
+    }
+
+    // Mobile search
+    const mobileSearchInput = document.getElementById('mobileSearchInput');
+    if (mobileSearchInput) {
+      mobileSearchInput.addEventListener('input', function() {
+        searchClients(this.value);
+      });
+    }
+  });
+
+  // Month Filter functionality
+  const monthFilter = document.getElementById('monthFilter');
+  const monthFilterText = document.getElementById('monthFilterText');
+  
+  if (monthFilter) {
+    monthFilter.addEventListener('click', function(e) {
+      // Toggle dropdown
+      monthFilter.classList.toggle('active');
+      e.stopPropagation();
+    });
+
+    // Close dropdown when clicking outside
+    document.addEventListener('click', function(e) {
+      if (!monthFilter.contains(e.target)) {
+        monthFilter.classList.remove('active');
+      }
+    });
+  }
+
+  function selectPeriod(period) {
+    // Update URL with period parameter
+    const url = new URL(window.location.href);
+    url.searchParams.set('period', period);
+    window.location.href = url.toString();
+  }
+</script>
+{% endblock %}
+

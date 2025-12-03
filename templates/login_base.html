@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html lang="sr">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Prijava - LOVACRM</title>
+  <link rel="icon" type="image/png" href="/static/images/fav1.png">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@200;300;400;500;600;700;800&display=swap" rel="stylesheet">
+  <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="min-h-screen text-gray-900" style="background-color: #efefef;">
+  <header style="background-color: #160e26;" class="text-white">
+    <div class="max-w-7xl mx-auto px-4 py-4 flex justify-between items-center">
+      <div class="flex items-center space-x-2">
+        <div class="w-10 h-10 flex items-center justify-center">
+          <img src="/static/images/logo.svg" alt="LOVACRM Logo" class="w-10 h-10" />
+        </div>
+        <span class="text-xl font-semibold text-white">LOVACRM</span>
+      </div>
+      
+      <div class="flex items-center space-x-4">
+        {% if user %}
+          <div class="flex items-center space-x-3">
+            <span class="text-sm">Пријављени: <strong>{{ user.username }}</strong></span>
+            <a href="/logout" class="bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded text-sm transition-colors">
+              Одјава
+            </a>
+          </div>
+        {% else %}
+          <a href="/login" class="bg-white text-[#160e26] hover:bg-gray-100 px-4 py-2 rounded text-sm font-medium transition-colors">
+            Пријавите се
+          </a>
+        {% endif %}
+      </div>
+    </div>
+  </header>
+  
+  <div class="flex items-center justify-center min-h-[calc(100vh-80px)]">
+    <div class="max-w-7xl mx-auto px-4 py-6">
+      {% block content %}{% endblock %}
+    </div>
+  </div>
+</body>
+</html>
+
+
+
+
+
+

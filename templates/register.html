@@ -1,0 +1,658 @@
+{% extends 'login_page_base.html' %}
+{% block content %}
+<style>
+  /* Canvas matches Frame 1 measurements - now responsive */
+  .register-canvas { 
+    position: relative; 
+    width: 100vw; 
+    height: 100vh; 
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0 20px;
+    box-sizing: border-box;
+    overflow-y: auto;
+  }
+
+  /* Контейнер для регистрации */
+  .register-container {
+    position: relative;
+    width: 1400px;
+    max-width: 1400px;
+    min-height: 800px;
+    margin: 0 auto;
+  }
+  
+  /* Logo block - центрированный */
+  .logo-wrap { 
+    position: absolute; 
+    width: 550px; 
+    height: 122px; 
+    left: 50%;
+    top: 54px;
+    transform: translateX(-50%);
+    display: flex; 
+    align-items: center; 
+    justify-content: center; 
+    pointer-events: none; 
+  }
+  .logo-img { width: 550px; height: 122px; object-fit: contain; }
+  
+  /* Таблица с выравниванием по центру */
+  .form-container {
+    position: absolute;
+    left: 50%;
+    top: 50%;
+    transform: translate(-50%, -50%);
+    width: 800px;
+    display: table;
+    table-layout: fixed;
+  }
+  
+  .form-row {
+    display: table-row;
+  }
+  
+  .form-cell {
+    display: table-cell;
+    width: 50%;
+    padding: 15px 20px;
+    vertical-align: top;
+    height: 86px;
+  }
+  
+  .form-cell:first-child {
+    padding-right: 10px;
+  }
+  
+  .form-cell:last-child {
+    padding-left: 10px;
+  }
+  
+  /* Поля ввода */
+  .input-group {
+    position: relative;
+  }
+  
+  .input-label {
+    position: absolute;
+    top: -25px;
+    left: 0;
+    font-family: 'Manrope', system-ui, sans-serif;
+    font-weight: 300;
+    font-size: 16px;
+    color: #FFFFFF;
+    z-index: 1;
+  }
+  
+  .input-field {
+    width: 100%;
+    height: 50px;
+    padding: 0 20px;
+    border: 1px solid #A8FFE9;
+    border-radius: 120px;
+    background: transparent;
+    color: #FFFFFF;
+    font-family: 'Manrope', system-ui, sans-serif;
+    font-size: 18px;
+    font-weight: 300;
+    outline: none;
+    transition: all 0.3s ease;
+  }
+  
+  .input-field:focus {
+    border-color: rgba(255, 255, 255, 0.8);
+    background: rgba(255, 255, 255, 0.1);
+  }
+  
+  .input-field::placeholder {
+    color: rgba(255, 255, 255, 0.6);
+  }
+  
+  /* Выпадающие списки */
+  .select-field {
+    width: 100%;
+    height: 50px;
+    padding: 0 20px;
+    border: 1px solid #A8FFE9;
+    border-radius: 120px;
+    background: transparent;
+    color: #FFFFFF;
+    font-family: 'Manrope', system-ui, sans-serif;
+    font-size: 18px;
+    font-weight: 300;
+    outline: none;
+    transition: all 0.3s ease;
+    appearance: none;
+    -webkit-appearance: none;
+    -moz-appearance: none;
+    cursor: pointer;
+  }
+  
+  .select-field:focus {
+    border-color: rgba(255, 255, 255, 0.8);
+    background: rgba(255, 255, 255, 0.1);
+  }
+  
+  .select-field option {
+    background: #2CAB5C;
+    color: #FFFFFF;
+  }
+  
+  /* Стрелка для select */
+  .select-wrapper {
+    position: relative;
+  }
+  
+  .select-wrapper::after {
+    content: '▼';
+    position: absolute;
+    right: 20px;
+    top: 50%;
+    transform: translateY(-50%);
+    color: #FFFFFF;
+    font-size: 12px;
+    pointer-events: none;
+  }
+  
+  /* Исправляем автозаполнение */
+  .input-field:-webkit-autofill,
+  .input-field:-webkit-autofill:hover,
+  .input-field:-webkit-autofill:focus,
+  .input-field:-webkit-autofill:active {
+    -webkit-box-shadow: 0 0 0 1000px transparent inset !important;
+    -webkit-text-fill-color: #FFFFFF !important;
+    background-color: transparent !important;
+    background: transparent !important;
+    font-size: 18px !important;
+    font-weight: 300 !important;
+    transition: background-color 5000s ease-in-out 0s;
+  }
+  
+  /* Кнопка регистрации */
+  .register-btn {
+    position: absolute;
+    left: 50%;
+    top: calc(50% + 200px);
+    transform: translateX(-50%);
+    width: 670px;
+    height: 60px;
+    background: #FFFFFF;
+    border: none;
+    border-radius: 30px;
+    cursor: pointer;
+    outline: none;
+    transition: all 0.3s ease;
+    z-index: 1000;
+    pointer-events: auto;
+  }
+  
+  .register-btn:hover {
+    background: #f0f0f0;
+    transform: translateX(-50%) translateY(-2px);
+  }
+  
+  .register-btn:active {
+    transform: translateX(-50%) translateY(0);
+  }
+  
+  .register-btn-text {
+    position: absolute;
+    left: 50%;
+    top: 50%;
+    transform: translate(-50%, -50%);
+    font-family: 'Manrope', system-ui, sans-serif;
+    font-weight: 300;
+    font-size: 18px;
+    color: #000000;
+    pointer-events: none;
+  }
+  
+  
+  /* Ссылка "Sign-in" */
+  .signin-link {
+    position: absolute;
+    left: 50%;
+    top: 80%;
+    transform: translateX(-50%);
+    font-family: 'Manrope', system-ui, sans-serif;
+    font-weight: 300;
+    font-size: 16px;
+    color: #FFFFFF;
+    text-decoration: underline;
+    cursor: pointer;
+    transition: color 0.3s ease;
+  }
+  
+  .signin-link:hover {
+    color: rgba(255, 255, 255, 0.8);
+  }
+  
+  /* Error message */
+  .error-message {
+    position: absolute;
+    left: 50%;
+    top: 20%;
+    transform: translateX(-50%);
+    width: 400px;
+    color: #ffdddd;
+    font-size: 14px;
+    text-align: center;
+    background: rgba(255, 0, 0, 0.2);
+    border: 1px solid rgba(255, 0, 0, 0.4);
+    border-radius: 8px;
+    padding: 10px;
+  }
+  
+  /* Success message */
+  .success-message {
+    position: absolute;
+    left: 50%;
+    top: 20%;
+    transform: translateX(-50%);
+    width: 400px;
+    color: #ddffdd;
+    font-size: 14px;
+    text-align: center;
+    background: rgba(0, 255, 0, 0.2);
+    border: 1px solid rgba(0, 255, 0, 0.4);
+    border-radius: 8px;
+    padding: 10px;
+  }
+  
+  /* Responsive */
+  @media (max-width: 1024px) {
+    .form-container {
+      width: 90%;
+      display: block;
+    }
+    
+    .form-row {
+      display: block;
+    }
+    
+    .form-cell {
+      display: block;
+      width: 100%;
+      padding: 10px 0;
+    }
+    
+    .form-cell:first-child,
+    .form-cell:last-child {
+      padding: 10px 0;
+    }
+  }
+
+  /* Mobile responsive */
+  @media (max-width: 768px) {
+    .register-container {
+      width: 100%;
+      max-width: 100%;
+      min-height: 100vh;
+      padding: 20px;
+      box-sizing: border-box;
+    }
+
+    .logo-wrap {
+      width: 100%;
+      height: auto;
+      top: 20px;
+      left: 50%;
+      transform: translateX(-50%);
+    }
+
+    .logo-img {
+      width: 100%;
+      height: auto;
+      max-height: 120px;
+    }
+
+    .form-container {
+      width: 100%;
+      max-width: 400px;
+      top: 160px;
+      left: 50%;
+      transform: translateX(-50%);
+      padding: 0;
+      position: absolute;
+    }
+
+    .form-row {
+      display: block;
+      width: 100%;
+    }
+
+    .form-cell {
+      display: block;
+      width: 100%;
+      padding: 50px 0;
+      height: auto;
+    }
+
+    .input-label {
+      font-size: 14px;
+      top: -20px;
+    }
+
+    .input-field,
+    .select-field {
+      height: 45px;
+      font-size: 16px;
+      padding: 0 15px;
+      width: 100%;
+      box-sizing: border-box;
+    }
+
+    .register-btn {
+      width: 100%;
+      max-width: 350px;
+      height: 50px;
+      top: 660px;
+      left: 50%;
+      transform: translateX(-50%);
+    }
+
+    .register-btn-text {
+      font-size: 16px;
+    }
+
+    .signin-link {
+      top: 720px;
+      left: 50%;
+      transform: translateX(-50%);
+      font-size: 14px;
+    }
+
+    .error-message {
+      width: 90%;
+      max-width: 350px;
+      font-size: 12px;
+      top: 15%;
+      left: 50%;
+      transform: translateX(-50%);
+    }
+  }
+
+  /* Small mobile devices */
+  @media (max-width: 480px) {
+    .register-container {
+      width: 100%;
+      max-width: 100%;
+      min-height: 100vh;
+      padding: 15px;
+      box-sizing: border-box;
+    }
+
+    .logo-wrap {
+      width: 100%;
+      height: auto;
+      top: 20px;
+      left: 50%;
+      transform: translateX(-50%);
+    }
+
+    .logo-img {
+      width: 100%;
+      height: auto;
+      max-height: 100px;
+    }
+
+    .form-container {
+      top: 140px;
+      left: 50%;
+      transform: translateX(-50%);
+      padding: 0;
+      position: absolute;
+    }
+
+    .input-label {
+      font-size: 13px;
+      top: -18px;
+    }
+
+    .form-cell {
+      padding: 40px 0;
+    }
+
+    .input-field,
+    .select-field {
+      height: 42px;
+      font-size: 15px;
+      padding: 0 12px;
+      width: 100%;
+      box-sizing: border-box;
+    }
+
+    .register-btn {
+      height: 45px;
+      top: 640px;
+      left: 50%;
+      transform: translateX(-50%);
+    }
+
+    .register-btn-text {
+      font-size: 15px;
+    }
+
+    .signin-link {
+      top: 700px;
+      left: 50%;
+      transform: translateX(-50%);
+      font-size: 13px;
+    }
+  }
+
+  /* Стили для error-message с анимацией - вверху страницы */
+  .error-message {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    width: 100%;
+    z-index: 9999;
+    transition: all 0.3s ease-in-out;
+    opacity: 0;
+    transform: translateY(-100%);
+    pointer-events: auto;
+    cursor: pointer;
+    margin: 0;
+    border-radius: 0;
+    box-shadow: 0 4px 12px rgba(220,53,69,0.3);
+  }
+</style>
+
+<div class="register-canvas">
+  <div class="register-container">
+    <!-- Logo -->
+    <div class="logo-wrap">
+      <img src="/static/images/logo_login.svg.png" alt="LOVACRM" class="logo-img" />
+    </div>
+
+    {% if error %}
+      <div class="error-message" style="color:#ffffff; font-size:14px; background-color:#dc3545; padding:12px 20px; border:1px solid #c82333; text-align:center;">{{ error }}</div>
+    {% endif %}
+    
+    {% if success %}
+      <div class="success-message">{{ success }}</div>
+    {% endif %}
+
+    <!-- Form container -->
+    <form method="post" action="/register" class="form-container" onsubmit="// console.log('Form submitting...'); return true;">
+    <!-- Row 1: Business Name | Contact Person -->
+    <div class="form-row">
+      <div class="form-cell">
+        <div class="input-group">
+          <label class="input-label">Business Name</label>
+          <input class="input-field" name="business_name" type="text" placeholder="" autocomplete="organization" required />
+        </div>
+      </div>
+      <div class="form-cell">
+        <div class="input-group">
+          <label class="input-label">Contact Person</label>
+          <input class="input-field" name="contact_person" type="text" placeholder="" autocomplete="name" required />
+        </div>
+      </div>
+    </div>
+    
+    <!-- Row 2: Email | Phone -->
+    <div class="form-row">
+      <div class="form-cell">
+        <div class="input-group">
+          <label class="input-label">Email</label>
+          <input class="input-field" name="email" type="email" placeholder="" autocomplete="email" required />
+        </div>
+      </div>
+      <div class="form-cell">
+        <div class="input-group">
+          <label class="input-label">Phone</label>
+          <input class="input-field" name="phone" type="tel" placeholder="" autocomplete="tel" required />
+        </div>
+      </div>
+    </div>
+    
+    <!-- Row 3: Address | City -->
+    <div class="form-row">
+      <div class="form-cell">
+        <div class="input-group">
+          <label class="input-label">Address</label>
+          <input class="input-field" name="address" type="text" placeholder="" autocomplete="address" />
+        </div>
+      </div>
+      <div class="form-cell">
+        <div class="input-group">
+          <label class="input-label">City</label>
+          <input class="input-field" name="city" type="text" placeholder="" autocomplete="address-level2" />
+        </div>
+      </div>
+    </div>
+    
+    <!-- Row 4: Business Type | Country -->
+    <div class="form-row">
+      <div class="form-cell">
+        <div class="input-group">
+          <label class="input-label">Business Type</label>
+          <div class="select-wrapper">
+            <select class="select-field" name="business_type">
+              <option value="">Select Type</option>
+              <option value="restaurant">Restaurant</option>
+              <option value="club">Club</option>
+              <option value="bar">Bar</option>
+              <option value="cafe">Cafe</option>
+              <option value="hotel">Hotel</option>
+              <option value="other">Other</option>
+            </select>
+          </div>
+        </div>
+      </div>
+      <div class="form-cell">
+        <div class="input-group">
+          <label class="input-label">Country</label>
+          <input class="input-field" name="country" type="text" placeholder="" autocomplete="country" />
+        </div>
+      </div>
+    </div>
+    
+    <!-- Row 5: Description -->
+    <div class="form-row">
+      <div class="form-cell" style="width: 100%;">
+        <div class="input-group">
+          <label class="input-label">Description (Optional)</label>
+          <textarea class="input-field" name="description" placeholder="" rows="3" style="height: auto; resize: vertical;"></textarea>
+        </div>
+      </div>
+    </div>
+    
+    <!-- Register button -->
+    <button type="submit" class="register-btn" aria-label="Register" onclick="// console.log('Form submit clicked'); return true;">
+      <div class="register-btn-text">Register</div>
+    </button>
+    
+    <!-- Alternative submit button for debugging -->
+    <div style="position: absolute; left: 50%; top: calc(50% + 280px); transform: translateX(-50%); z-index: 1001;">
+      <button type="submit" style="background: #ff0000; color: white; padding: 10px 20px; border: none; border-radius: 5px; cursor: pointer;" onclick="// console.log('Alternative button clicked')">
+        Alternative Submit
+      </button>
+    </div>
+    
+    <!-- Simple submit button at the bottom -->
+    <div style="margin-top: 20px; text-align: center;">
+      <button type="submit" style="background: #28a745; color: white; padding: 15px 30px; border: none; border-radius: 5px; cursor: pointer; font-size: 16px;" onclick="// console.log('Simple button clicked')">
+        🚀 SUBMIT FORM
+      </button>
+    </div>
+    </form>
+
+    <!-- Sign-in link -->
+    <a class="signin-link" href="/login">Sign-in</a>
+  </div>
+</div>
+
+<script>
+// console.log('Register page loaded');
+
+// Проверяем форму
+document.addEventListener('DOMContentLoaded', function() {
+    const form = document.querySelector('form');
+    const button = document.querySelector('.register-btn');
+    
+    // console.log('Form found:', form);
+    // console.log('Button found:', button);
+    
+    if (form) {
+        form.addEventListener('submit', function(e) {
+            // console.log('Form submit event triggered');
+            // console.log('Form data:', new FormData(form));
+        });
+    }
+    
+    if (button) {
+        button.addEventListener('click', function(e) {
+            // console.log('Button click event triggered');
+            e.preventDefault();
+            
+            // Принудительно отправляем форму
+            if (form) {
+                // console.log('Manually submitting form...');
+                form.submit();
+            }
+        });
+    }
+});
+
+// Управление анимацией error-message
+document.addEventListener('DOMContentLoaded', function() {
+    const errorMessage = document.querySelector('.error-message');
+    
+    if (errorMessage) {
+        // Запускаем анимацию появления сверху
+        errorMessage.style.opacity = '1';
+        errorMessage.style.transform = 'translateY(0)';
+        
+        // Устанавливаем таймер для скрытия через 5 секунд
+        setTimeout(function() {
+            errorMessage.style.opacity = '0';
+            errorMessage.style.transform = 'translateY(-100%)';
+            
+            // Полностью удаляем элемент через 0.3 секунды (время transition)
+            setTimeout(function() {
+                if (errorMessage.parentNode) {
+                    errorMessage.parentNode.removeChild(errorMessage);
+                }
+            }, 300);
+        }, 5000);
+        
+        // Добавляем возможность закрыть по клику
+        errorMessage.addEventListener('click', function() {
+            errorMessage.style.opacity = '0';
+            errorMessage.style.transform = 'translateY(-100%)';
+            
+            setTimeout(function() {
+                if (errorMessage.parentNode) {
+                    errorMessage.parentNode.removeChild(errorMessage);
+                }
+            }, 300);
+        });
+    }
+});
+</script>
+{% endblock %}

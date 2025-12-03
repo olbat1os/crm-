@@ -1,0 +1,752 @@
+<!DOCTYPE html>
+<html lang="sr">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>{{ title or 'Admin Panel - LOVACRM' }}</title>
+  <link rel="icon" type="image/png" href="/static/images/fav1.png">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@200;300;400;500;600;700;800&display=swap" rel="stylesheet">
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.js"></script>
+  <style>
+    html, body { 
+      height: 100%; 
+      margin: 0; 
+      font-family: 'Manrope', system-ui, sans-serif;
+      background: #FFFFFF;
+    }
+    
+    .admin-layout {
+      position: relative;
+      min-height: 100vh;
+      display: flex;
+      background: #FFFFFF;
+      color: #111827;
+      overflow: hidden;
+    }
+    
+    /* Анимации загрузки */
+    @keyframes fadeInUp {
+      from {
+        opacity: 0;
+        transform: translateY(30px);
+      }
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+    
+    @keyframes slideInLeft {
+      from {
+        opacity: 0;
+        transform: translateX(-30px);
+      }
+      to {
+        opacity: 1;
+        transform: translateX(0);
+      }
+    }
+    
+    @keyframes pulse {
+      0%, 100% {
+        transform: scale(1);
+      }
+      50% {
+        transform: scale(1.05);
+      }
+    }
+    
+    @keyframes shimmer {
+      0% {
+        background-position: -200px 0;
+      }
+      100% {
+        background-position: calc(200px + 100%) 0;
+      }
+    }
+    
+    /* Sidebar в стиле LovaCRM с эффектами */
+    .admin-sidebar {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 90px;
+      height: 100vh;
+      background: linear-gradient(179.27deg, #2CAB5C 0%, #11998E 100%), #160D27;
+      box-shadow: 20px 0px 40px rgba(0, 0, 0, 0.3), 0 0 0 1px rgba(255, 255, 255, 0.1);
+      border-radius: 0 20px 20px 0;
+      z-index: 50;
+      transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+      backdrop-filter: blur(10px);
+      animation: slideInLeft 0.6s ease-out;
+    }
+    
+    .admin-sidebar:hover { 
+      width: 280px;
+      box-shadow: 25px 0px 50px rgba(0, 0, 0, 0.4), 0 0 0 1px rgba(255, 255, 255, 0.2);
+    }
+    
+    .admin-sidebar::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background: linear-gradient(45deg, rgba(255, 255, 255, 0.1) 0%, transparent 50%, rgba(255, 255, 255, 0.05) 100%);
+      border-radius: 0 20px 20px 0;
+      pointer-events: none;
+    }
+    
+    /* Логотип с эффектами */
+    .admin-logo {
+      position: absolute;
+      width: 181px;
+      height: 40px;
+      left: 20px;
+      top: 20px;
+      opacity: 0;
+      transition: all 0.3s ease;
+      filter: drop-shadow(0 4px 8px rgba(0, 0, 0, 0.3));
+      overflow: hidden;
+    }
+    
+    .admin-sidebar:hover .admin-logo {
+      opacity: 1;
+      animation: fadeInUp 0.4s ease-out 0.2s both;
+    }
+    
+    .admin-logo img {
+      width: 100%;
+      height: 100%;
+      object-fit: contain;
+      max-width: 100%;
+      max-height: 100%;
+    }
+    
+    /* Пункты меню с эффектами */
+    .admin-menu-item {
+      position: absolute;
+      left: 0;
+      width: 90px;
+      height: 80px;
+      display: block;
+      text-decoration: none;
+      color: inherit;
+      transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+      cursor: pointer;
+      border-radius: 0 20px 20px 0;
+      overflow: hidden;
+    }
+    
+    .admin-sidebar:hover .admin-menu-item { 
+      width: 280px; 
+    }
+    
+    .admin-menu-item::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: -100%;
+      width: 100%;
+      height: 100%;
+      background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.1), transparent);
+      transition: left 0.5s ease;
+    }
+    
+    .admin-menu-item:hover::before {
+      left: 100%;
+    }
+    
+    .admin-menu-item.active {
+      background: rgba(255, 255, 255, 0.15);
+      box-shadow: inset 0 0 20px rgba(255, 255, 255, 0.1);
+    }
+    
+    .admin-menu-item:hover {
+      background: rgba(255, 255, 255, 0.1);
+      transform: translateX(5px);
+    }
+    
+    .admin-menu-item .icon { 
+      position: absolute; 
+      left: 30px; 
+      top: 25px; 
+      width: 30px; 
+      height: 30px; 
+      display: flex; 
+      align-items: center; 
+      justify-content: center; 
+    }
+    
+    .admin-menu-item .icon img { 
+      width: 30px; 
+      height: 30px; 
+      object-fit: contain; 
+      filter: brightness(0) invert(1); 
+    }
+    
+    .admin-menu-item .label { 
+      position: absolute; 
+      color: #FFFFFF; 
+      opacity: 0; 
+      transition: opacity 0.15s ease; 
+      left: 75px; 
+      top: 30px; 
+      font-family: 'Manrope', system-ui, sans-serif; 
+      font-weight: 400; 
+      font-size: 16px; 
+      line-height: 22px; 
+      display: flex; 
+      align-items: center; 
+    }
+    
+    .admin-sidebar:hover .admin-menu-item .label { 
+      opacity: 1; 
+    }
+    
+    /* Позиции пунктов меню */
+    .admin-item-dashboard { top: 80px; }
+    .admin-item-businesses { top: 160px; }
+    .admin-item-pending { top: 240px; }
+    .admin-item-settings { top: 320px; }
+    .admin-item-logout { bottom: 20px; top: auto; }
+    
+    /* Основной контент с белым фоном */
+    .admin-main {
+      flex: 1;
+      margin-left: 90px;
+      min-height: 100vh;
+      overflow: auto;
+      background: #f8f9fa;
+      position: relative;
+      animation: fadeInUp 0.8s ease-out;
+    }
+    
+    .admin-main-inner {
+      max-width: 1400px;
+      margin: 0 auto;
+      padding: 30px 20px;
+      position: relative;
+      z-index: 1;
+    }
+    
+    /* Заголовок страницы */
+    .admin-page-header {
+      margin-bottom: 30px;
+      animation: fadeInUp 0.6s ease-out 0.2s both;
+    }
+    
+    .admin-page-title {
+      font-family: 'Manrope', system-ui, sans-serif;
+      font-weight: 700;
+      font-size: 32px;
+      line-height: 42px;
+      color: #111827;
+      margin: 0;
+    }
+    
+    .admin-page-subtitle {
+      font-family: 'Manrope', system-ui, sans-serif;
+      font-weight: 400;
+      font-size: 16px;
+      line-height: 22px;
+      color: #6b7280;
+      margin: 8px 0 0 0;
+    }
+    
+    /* Карточки */
+    .admin-card {
+      background: #FFFFFF;
+      border-radius: 20px;
+      padding: 30px;
+      margin-bottom: 20px;
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+      border: 1px solid #e5e7eb;
+      transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+      animation: fadeInUp 0.6s ease-out;
+      position: relative;
+      overflow: hidden;
+    }
+    
+    .admin-card::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      height: 4px;
+      background: linear-gradient(90deg, #2CAB5C 0%, #11998E 50%, #2CAB5C 100%);
+      background-size: 200% 100%;
+      animation: shimmer 2s ease-in-out infinite;
+    }
+    
+    .admin-card:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 8px 25px rgba(0, 0, 0, 0.15);
+    }
+    
+    /* Статистические карточки */
+    .admin-stats-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+      gap: 20px;
+      margin-bottom: 30px;
+    }
+    
+    .admin-stat-card {
+      background: #FFFFFF;
+      border-radius: 20px;
+      padding: 30px;
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+      border: 1px solid #e5e7eb;
+      position: relative;
+      overflow: hidden;
+      transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+      animation: fadeInUp 0.6s ease-out;
+    }
+    
+    .admin-stat-card:nth-child(1) { animation-delay: 0.1s; }
+    .admin-stat-card:nth-child(2) { animation-delay: 0.2s; }
+    .admin-stat-card:nth-child(3) { animation-delay: 0.3s; }
+    .admin-stat-card:nth-child(4) { animation-delay: 0.4s; }
+    .admin-stat-card:nth-child(5) { animation-delay: 0.5s; }
+    .admin-stat-card:nth-child(6) { animation-delay: 0.6s; }
+    
+    .admin-stat-card::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      height: 4px;
+      background: linear-gradient(90deg, #2CAB5C 0%, #11998E 50%, #2CAB5C 100%);
+      background-size: 200% 100%;
+      animation: shimmer 2s ease-in-out infinite;
+    }
+    
+    .admin-stat-card:hover {
+      transform: translateY(-4px) scale(1.02);
+      box-shadow: 0 12px 30px rgba(0, 0, 0, 0.15);
+    }
+    
+    .admin-stat-number {
+      font-family: 'Manrope', system-ui, sans-serif;
+      font-weight: 800;
+      font-size: 36px;
+      line-height: 48px;
+      background: linear-gradient(135deg, #2CAB5C 0%, #11998E 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+      margin: 0;
+    }
+    
+    .admin-stat-label {
+      font-family: 'Manrope', system-ui, sans-serif;
+      font-weight: 500;
+      font-size: 14px;
+      line-height: 20px;
+      color: #6b7280;
+      margin: 8px 0 0 0;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+    
+    /* Таблицы */
+    .admin-table-container {
+      background: #FFFFFF;
+      border-radius: 20px;
+      padding: 30px;
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+      border: 1px solid #e5e7eb;
+      overflow-x: auto;
+      animation: fadeInUp 0.8s ease-out;
+    }
+    
+    .admin-table {
+      width: 100%;
+      border-collapse: collapse;
+      min-width: 800px; /* Минимальная ширина для прокрутки */
+    }
+    
+    .admin-table th {
+      font-family: 'Manrope', system-ui, sans-serif;
+      font-weight: 600;
+      font-size: 14px;
+      line-height: 20px;
+      color: #374151;
+      padding: 20px;
+      text-align: left;
+      border-bottom: 2px solid rgba(44, 171, 92, 0.2);
+      background: linear-gradient(135deg, rgba(44, 171, 92, 0.05) 0%, rgba(17, 153, 142, 0.05) 100%);
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+    
+    .admin-table td {
+      font-family: 'Manrope', system-ui, sans-serif;
+      font-weight: 400;
+      font-size: 14px;
+      line-height: 20px;
+      color: #111827;
+      padding: 20px;
+      border-bottom: 1px solid rgba(243, 244, 246, 0.8);
+      transition: all 0.2s ease;
+    }
+    
+    .admin-table tr:hover td {
+      background: rgba(44, 171, 92, 0.05);
+      transform: scale(1.01);
+    }
+    
+    /* Статусы с эффектами */
+    .admin-status {
+      display: inline-flex;
+      align-items: center;
+      padding: 8px 16px;
+      border-radius: 25px;
+      font-family: 'Manrope', system-ui, sans-serif;
+      font-weight: 600;
+      font-size: 12px;
+      line-height: 16px;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+      transition: all 0.3s ease;
+    }
+    
+    .admin-status:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 6px 20px rgba(0, 0, 0, 0.15);
+    }
+    
+    .admin-status-pending {
+      background: linear-gradient(135deg, #fef3c7 0%, #fbbf24 100%);
+      color: #92400e;
+    }
+    
+    .admin-status-active {
+      background: linear-gradient(135deg, #d1fae5 0%, #10b981 100%);
+      color: #065f46;
+    }
+    
+    .admin-status-suspended {
+      background: linear-gradient(135deg, #fee2e2 0%, #ef4444 100%);
+      color: #991b1b;
+    }
+    
+    .admin-status-expired {
+      background: linear-gradient(135deg, #f3f4f6 0%, #6b7280 100%);
+      color: #374151;
+    }
+    
+    /* Кнопки с эффектами */
+    .admin-btn {
+      display: inline-flex;
+      align-items: center;
+      padding: 12px 20px;
+      border-radius: 16px;
+      font-family: 'Manrope', system-ui, sans-serif;
+      font-weight: 600;
+      font-size: 14px;
+      line-height: 20px;
+      text-decoration: none;
+      border: none;
+      cursor: pointer;
+      transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+      position: relative;
+      overflow: hidden;
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+    }
+    
+    .admin-btn::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: -100%;
+      width: 100%;
+      height: 100%;
+      background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
+      transition: left 0.5s ease;
+    }
+    
+    .admin-btn:hover::before {
+      left: 100%;
+    }
+    
+    .admin-btn:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 8px 25px rgba(0, 0, 0, 0.15);
+    }
+    
+    .admin-btn:active {
+      transform: translateY(0);
+    }
+    
+    .admin-btn-primary {
+      background: linear-gradient(135deg, #2CAB5C 0%, #11998E 100%);
+      color: #FFFFFF;
+    }
+    
+    .admin-btn-primary:hover {
+      background: linear-gradient(135deg, #22a855 0%, #0f8a7a 100%);
+      box-shadow: 0 8px 25px rgba(44, 171, 92, 0.3);
+    }
+    
+    .admin-btn-secondary {
+      background: rgba(255, 255, 255, 0.9);
+      color: #374151;
+      border: 1px solid rgba(209, 213, 219, 0.5);
+    }
+    
+    .admin-btn-secondary:hover {
+      background: rgba(255, 255, 255, 1);
+      border-color: rgba(44, 171, 92, 0.3);
+      box-shadow: 0 8px 25px rgba(0, 0, 0, 0.1);
+    }
+    
+    .admin-btn-danger {
+      background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
+      color: #FFFFFF;
+    }
+    
+    .admin-btn-danger:hover {
+      background: linear-gradient(135deg, #dc2626 0%, #b91c1c 100%);
+      box-shadow: 0 8px 25px rgba(239, 68, 68, 0.3);
+    }
+    
+    .admin-btn-success {
+      background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+      color: #FFFFFF;
+    }
+    
+    .admin-btn-success:hover {
+      background: linear-gradient(135deg, #059669 0%, #047857 100%);
+      box-shadow: 0 8px 25px rgba(16, 185, 129, 0.3);
+    }
+    
+    .admin-btn-warning {
+      background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
+      color: #FFFFFF;
+    }
+    
+    .admin-btn-warning:hover {
+      background: linear-gradient(135deg, #d97706 0%, #b45309 100%);
+      box-shadow: 0 8px 25px rgba(245, 158, 11, 0.3);
+    }
+    
+    /* Модальные окна */
+    .admin-modal {
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background: rgba(0, 0, 0, 0.5);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      z-index: 1000;
+      opacity: 0;
+      visibility: hidden;
+      transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+    
+    .admin-modal.show {
+      opacity: 1;
+      visibility: visible;
+    }
+    
+    .admin-modal-content {
+      background: #FFFFFF;
+      border-radius: 20px;
+      padding: 40px;
+      max-width: 500px;
+      width: 90%;
+      max-height: 90vh;
+      overflow-y: auto;
+      box-shadow: 0 20px 40px rgba(0, 0, 0, 0.2);
+      transform: scale(0.9) translateY(20px);
+      transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+    
+    .admin-modal.show .admin-modal-content {
+      transform: scale(1) translateY(0);
+    }
+    
+    .admin-modal-header {
+      margin-bottom: 24px;
+    }
+    
+    .admin-modal-title {
+      font-family: 'Manrope', system-ui, sans-serif;
+      font-weight: 700;
+      font-size: 24px;
+      line-height: 32px;
+      color: #111827;
+      margin: 0;
+      background: linear-gradient(135deg, #2CAB5C 0%, #11998E 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+    
+    .admin-modal-body {
+      margin-bottom: 24px;
+    }
+    
+    .admin-modal-footer {
+      display: flex;
+      gap: 16px;
+      justify-content: flex-end;
+    }
+    
+    /* Формы с эффектами */
+    .admin-form-group {
+      margin-bottom: 24px;
+    }
+    
+    .admin-form-label {
+      display: block;
+      font-family: 'Manrope', system-ui, sans-serif;
+      font-weight: 600;
+      font-size: 14px;
+      line-height: 20px;
+      color: #374151;
+      margin-bottom: 8px;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+    
+    .admin-form-input {
+      width: 100%;
+      padding: 16px 20px;
+      border: 2px solid #d1d5db;
+      border-radius: 12px;
+      font-family: 'Manrope', system-ui, sans-serif;
+      font-weight: 400;
+      font-size: 14px;
+      line-height: 20px;
+      color: #111827;
+      background: #FFFFFF;
+      transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+    
+    .admin-form-input:focus {
+      outline: none;
+      border-color: #2CAB5C;
+      box-shadow: 0 0 0 4px rgba(44, 171, 92, 0.1);
+      transform: translateY(-2px);
+    }
+    
+    .admin-form-input:hover {
+      border-color: #2CAB5C;
+    }
+    
+    /* Адаптивность */
+    @media (max-width: 768px) {
+      .admin-sidebar {
+        width: 0;
+        overflow: hidden;
+      }
+      
+      .admin-main {
+        margin-left: 0;
+      }
+      
+      .admin-main::before {
+        left: 0;
+      }
+      
+      .admin-stats-grid {
+        grid-template-columns: 1fr;
+      }
+      
+      .admin-table-container {
+        overflow-x: auto;
+      }
+      
+      .admin-modal-content {
+        padding: 24px;
+        margin: 20px;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="admin-layout">
+    <!-- Sidebar -->
+    <div class="admin-sidebar">
+      <!-- Логотип -->
+      <div class="admin-logo">
+        <img src="/static/images/logo_login.svg.png" alt="LovaCRM">
+      </div>
+      
+      <!-- Пункты меню -->
+      <a href="/admin/dashboard" class="admin-menu-item admin-item-dashboard">
+        <div class="icon">
+          <img src="/static/images/logo dashbord.png" alt="Dashboard">
+        </div>
+        <div class="label">Dashboard</div>
+      </a>
+      
+      <a href="/admin/businesses" class="admin-menu-item admin-item-businesses">
+        <div class="icon">
+          <img src="/static/images/klijenti logo.png" alt="Businesses">
+        </div>
+        <div class="label">Biznisi</div>
+      </a>
+      
+      <a href="/admin/pending" class="admin-menu-item admin-item-pending">
+        <div class="icon">
+          <img src="/static/images/kolokolchik logo.png" alt="Pending">
+        </div>
+        <div class="label">Na čekanju</div>
+      </a>
+      
+      <a href="/admin/settings" class="admin-menu-item admin-item-settings">
+        <div class="icon">
+          <img src="/static/images/setting logo.png" alt="Settings">
+        </div>
+        <div class="label">Postavke</div>
+      </a>
+      
+      <a href="/admin/logout" class="admin-menu-item admin-item-logout">
+        <div class="icon">
+          <img src="/static/images/krest.png" alt="Logout">
+        </div>
+        <div class="label">Odjava</div>
+      </a>
+    </div>
+    
+    <!-- Основной контент -->
+    <div class="admin-main">
+      <div class="admin-main-inner">
+        {% block content %}{% endblock %}
+      </div>
+    </div>
+  </div>
+  
+  <script>
+    // Подсветка активного пункта меню
+    document.addEventListener('DOMContentLoaded', function() {
+      const currentPath = window.location.pathname;
+      const menuItems = document.querySelectorAll('.admin-menu-item');
+      
+      menuItems.forEach(item => {
+        const href = item.getAttribute('href');
+        if (href && currentPath.startsWith(href)) {
+          item.classList.add('active');
+        }
+      });
+    });
+    
+    // Инициализация Lucide иконок
+    lucide.createIcons();
+  </script>
+</body>
+</html>
