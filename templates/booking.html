@@ -4473,11 +4473,43 @@
         console.log('Booking duration loaded:', bookingDuration);
         console.log('Default booking time loaded:', defaultBookingTime);
         
+        // Обрабатываем lead_sources - может быть массивом или строкой JSON
+        let leadSources = data.settings.lead_sources || [];
+        if (typeof leadSources === 'string') {
+          try {
+            leadSources = JSON.parse(leadSources);
+          } catch (e) {
+            console.error('Error parsing lead_sources:', e);
+            leadSources = [];
+          }
+        }
+        // Убеждаемся, что это массив
+        if (!Array.isArray(leadSources)) {
+          console.warn('lead_sources is not an array:', leadSources);
+          leadSources = [];
+        }
+        
+        // Обрабатываем table_types - может быть массивом или строкой JSON
+        let tableTypes = data.settings.table_types || [];
+        if (typeof tableTypes === 'string') {
+          try {
+            tableTypes = JSON.parse(tableTypes);
+          } catch (e) {
+            console.error('Error parsing table_types:', e);
+            tableTypes = [];
+          }
+        }
+        // Убеждаемся, что это массив
+        if (!Array.isArray(tableTypes)) {
+          console.warn('table_types is not an array:', tableTypes);
+          tableTypes = [];
+        }
+        
         // Сначала загружаем lead sources, чтобы использовать их для фильтрации типов столов
-        loadLeadSources(data.settings.lead_sources || []);
+        loadLeadSources(leadSources);
         
         // Затем загружаем типы столов (они будут отфильтрованы от lead sources)
-        loadTableTypes(data.settings.table_types || []);
+        loadTableTypes(tableTypes);
         
         // Добавляем обработчики событий после загрузки настроек
         addTimeFromEventListeners();
@@ -4501,11 +4533,19 @@
     console.log('loadTableTypes called', {
       tableTypeSelect: !!tableTypeSelect,
       tableTypeMenu: !!tableTypeMenu,
-      tableTypes: tableTypes
+      tableTypes: tableTypes,
+      tableTypesType: typeof tableTypes,
+      isArray: Array.isArray(tableTypes)
     });
     if (!tableTypeSelect || !tableTypeMenu) {
       console.warn('loadTableTypes: Elements not found');
       return;
+    }
+    
+    // Убеждаемся, что tableTypes - это массив
+    if (!Array.isArray(tableTypes)) {
+      console.error('loadTableTypes: tableTypes is not an array:', tableTypes);
+      tableTypes = [];
     }
     
     // Очищаем список, оставляя только пустую опцию
@@ -4727,11 +4767,19 @@
     console.log('loadLeadSources called', {
       leadSourceSelect: !!leadSourceSelect,
       leadSourceMenu: !!leadSourceMenu,
-      leadSources: leadSources
+      leadSources: leadSources,
+      leadSourcesType: typeof leadSources,
+      isArray: Array.isArray(leadSources)
     });
     if (!leadSourceSelect) {
       console.warn('loadLeadSources: leadSourceSelect not found');
       return;
+    }
+    
+    // Убеждаемся, что leadSources - это массив
+    if (!Array.isArray(leadSources)) {
+      console.error('loadLeadSources: leadSources is not an array:', leadSources);
+      leadSources = [];
     }
     
     // Очищаем список, оставляя только пустую опцию
@@ -6392,11 +6440,11 @@
     
     // Используем текущие настройки из tableColumnsConfig (не загружаем заново)
     // Это гарантирует, что чекбоксы отражают актуальное состояние
-    renderTableColumnsList();
-    
-    if (modal) {
-      modal.style.display = 'flex';
-    }
+        renderTableColumnsList();
+        
+        if (modal) {
+          modal.style.display = 'flex';
+        }
   }
 
   window.closeTableColumnsModal = function() {
@@ -6448,7 +6496,7 @@
 
   // Настройки колонок из сервера (передаются прямо в шаблон для быстрой загрузки)
   const serverTableColumns = {% if table_columns %}{{ table_columns | tojson }}{% else %}null{% endif %};
-  
+
   function loadTableColumnsSettings() {
     return new Promise((resolve, reject) => {
       // Если настройки уже есть из сервера, используем их сразу (быстрее!)
@@ -6549,7 +6597,7 @@
               tableColumnsConfig[key].visible = false;
             }
           });
-        } else {
+      } else {
           // Если в ответе нет настроек, используем сохраненные локально
           // (они уже в tableColumnsConfig)
         }
@@ -6675,7 +6723,7 @@
           if (serverTableColumns[key].index !== undefined) {
             tableColumnsConfig[key].index = serverTableColumns[key].index;
           }
-        } else {
+  } else {
           tableColumnsConfig[key].visible = false;
         }
       });
@@ -7253,7 +7301,7 @@
         modalDisplay: modal.style.display
       });
       
-      loadBusinessSettings().then(() => {
+    loadBusinessSettings().then(() => {
         // Обновляем отображение dropdown'ов после загрузки данных
         setTimeout(() => {
           if (typeof updateTableTypeDisplay === 'function') {
@@ -7264,7 +7312,7 @@
           }
         }, 100);
         
-        // Set default time if configured, otherwise clear
+      // Set default time if configured, otherwise clear
       const timeFromInput = document.getElementById('timeFrom');
       const timeToInput = document.getElementById('timeTo');
       if (timeFromInput) {
@@ -7281,7 +7329,7 @@
       if (timeToInput) {
         timeToInput.value = '';
       }
-      });
+    });
     }, 100);
     
     // Force update end time after modal is fully loaded (only if timeFrom is set)
@@ -7419,7 +7467,7 @@
     // Load booking data (after settings are loaded)
     // Небольшая задержка, чтобы опции точно загрузились
     setTimeout(() => {
-      loadBookingData(bookingId);
+    loadBookingData(bookingId);
     }, 200);
   }
   
@@ -7499,7 +7547,7 @@
               // Небольшая задержка, чтобы опции успели загрузиться
               setTimeout(() => {
                 if (typeof updateTableTypeDisplay === 'function') {
-                  updateTableTypeDisplay();
+              updateTableTypeDisplay();
                 }
               }, 100);
             }
@@ -7556,9 +7604,9 @@
                 // Если не найдена, пробуем разбить по пробелам (для опций с input)
                 // Например, "promoter anna" -> "promoter" (base) и "anna" (input)
                 const leadSourceParts = fullLeadSource.split(' ');
-                const baseSource = leadSourceParts[0];
-                const additionalText = leadSourceParts.slice(1).join(' ');
-                
+            const baseSource = leadSourceParts[0];
+            const additionalText = leadSourceParts.slice(1).join(' ');
+            
                 // Ищем опцию по первому слову
                 foundOption = null;
                 for (let i = 0; i < leadSourceSelect.options.length; i++) {
@@ -7579,18 +7627,18 @@
                     if (typeof updateLeadSourceDisplay === 'function') {
                       updateLeadSourceDisplay();
                     }
-                    // Проверяем, нужно ли показать дополнительное поле
+              // Проверяем, нужно ли показать дополнительное поле
                     if (typeof handleLeadSourceChange === 'function') {
-                      handleLeadSourceChange();
+              handleLeadSourceChange();
                     }
-                    
-                    // Если есть дополнительный текст, заполняем поле
-                    if (additionalText) {
-                      const leadSourceInput = document.getElementById('leadSourceInput');
-                      if (leadSourceInput) {
-                        leadSourceInput.value = additionalText;
-                      }
-                    }
+              
+              // Если есть дополнительный текст, заполняем поле
+              if (additionalText) {
+                const leadSourceInput = document.getElementById('leadSourceInput');
+                if (leadSourceInput) {
+                  leadSourceInput.value = additionalText;
+                }
+              }
                   }, 150);
                 } else {
                   // Если опция не найдена вообще, создаем её с полным названием
@@ -8548,8 +8596,8 @@
   document.addEventListener('DOMContentLoaded', function() {
     // Откладываем configureScrollbar на после полной загрузки
     setTimeout(() => {
-      configureScrollbar();
-      window.addEventListener('resize', configureScrollbar);
+    configureScrollbar();
+    window.addEventListener('resize', configureScrollbar);
       window.addEventListener('resize', centerNoBookingsMessage);
     }, 500);
     
