@@ -417,6 +417,270 @@
       padding-right: 0 !important; /* Убираем правый padding в мобильной версии */
     }
   }
+
+  /* Кастомные dropdown'ы для Tip stola и Lead source */
+  #tableType {
+    display: none !important;
+  }
+
+  #leadSource {
+    display: none !important;
+  }
+
+  /* Кастомный dropdown для типа стола */
+  .custom-table-type-dropdown {
+    position: relative;
+    flex: 0 0 auto;
+    width: 222.08px;
+    max-width: 222.08px;
+    min-width: 222.08px;
+  }
+
+  .table-type-button {
+    width: 100%;
+    height: 40px;
+    padding: 8px 16px;
+    padding-right: 40px;
+    border-radius: 40px;
+    font-family: 'Manrope', sans-serif;
+    font-size: 16px;
+    border: 1px solid #D9D9D9;
+    background: white;
+    color: #000000;
+    outline: none;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    box-sizing: border-box;
+    transition: border-color 0.2s;
+  }
+
+  .table-type-button:hover {
+    border-color: #11998E;
+  }
+
+  .table-type-text {
+    flex: 1;
+    text-align: left;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    line-height: 24px;
+  }
+
+  .table-type-arrow {
+    width: 0;
+    height: 0;
+    border-left: 4px solid transparent;
+    border-right: 4px solid transparent;
+    border-top: 5px solid #6B7280;
+    margin-left: 10px;
+    flex-shrink: 0;
+    transition: transform 0.3s ease;
+    display: inline-block;
+  }
+
+  .table-type-dropdown-menu {
+    position: fixed;
+    max-height: 200px;
+    background: white;
+    border: 1px solid #D9D9D9;
+    border-radius: 20px;
+    box-shadow: 0px 7px 30px rgba(0, 0, 0, 0.15);
+    z-index: 3000;
+    display: none;
+    overflow-y: auto;
+    padding: 8px;
+    opacity: 0;
+    transform: translateY(-10px);
+    transition: all 0.3s ease;
+    pointer-events: auto;
+  }
+
+  .table-type-dropdown-menu.show {
+    display: block;
+    opacity: 1;
+    transform: translateY(0);
+  }
+
+  .table-type-option {
+    width: 100%;
+    min-height: 40px;
+    padding: 8px 16px;
+    border-radius: 20px;
+    font-family: 'Manrope', sans-serif;
+    font-size: 16px;
+    color: #000000;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    box-sizing: border-box;
+    margin-bottom: 4px;
+    word-wrap: break-word;
+    overflow-wrap: break-word;
+    white-space: normal;
+    line-height: 1.4;
+    text-align: left;
+    background: white;
+    border: 1px solid transparent;
+    display: flex;
+    align-items: center;
+  }
+
+  .table-type-option:hover {
+    background: #F8F9FA;
+    border-color: #D9D9D9;
+  }
+
+  .table-type-option.selected {
+    background: #E8F5E9;
+    border-color: #11998E;
+    color: #11998E;
+    font-weight: 600;
+  }
+
+  /* Custom Lead Source Dropdown */
+  .custom-lead-source-dropdown {
+    position: relative;
+    flex: 1;
+    min-width: 0;
+    width: 0;
+  }
+
+  .lead-source-button {
+    width: 100%;
+    height: 40px;
+    padding: 8px 16px;
+    padding-right: 40px;
+    border-radius: 40px;
+    font-family: 'Manrope', sans-serif;
+    font-size: 16px;
+    border: 1px solid #D9D9D9;
+    background: white;
+    color: #000000;
+    outline: none;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    box-sizing: border-box;
+    transition: border-color 0.2s;
+  }
+
+  .lead-source-button:hover {
+    border-color: #11998E;
+  }
+
+  .lead-source-text {
+    flex: 1;
+    text-align: left;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    line-height: 1.4;
+  }
+
+  .lead-source-arrow {
+    width: 0;
+    height: 0;
+    border-left: 4px solid transparent;
+    border-right: 4px solid transparent;
+    border-top: 5px solid #6B7280;
+    margin-left: 10px;
+    flex-shrink: 0;
+    transition: transform 0.3s ease;
+    display: inline-block;
+  }
+
+  .lead-source-dropdown-menu {
+    position: fixed;
+    max-height: 200px;
+    background: white;
+    border: 1px solid #D9D9D9;
+    border-radius: 20px;
+    box-shadow: 0px 7px 30px rgba(0, 0, 0, 0.15);
+    z-index: 3000;
+    display: none;
+    overflow-y: auto;
+    padding: 8px;
+    opacity: 0;
+    transform: translateY(-10px);
+    transition: all 0.3s ease;
+    pointer-events: auto;
+  }
+
+  .lead-source-dropdown-menu.show {
+    display: block;
+    opacity: 1;
+    transform: translateY(0);
+  }
+
+  .lead-source-option {
+    width: 100%;
+    min-height: 40px;
+    padding: 8px 16px;
+    border-radius: 20px;
+    font-family: 'Manrope', sans-serif;
+    font-size: 16px;
+    color: #000000;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    box-sizing: border-box;
+    margin-bottom: 4px;
+    word-wrap: break-word;
+    overflow-wrap: break-word;
+    white-space: normal;
+    line-height: 1.4;
+    text-align: left;
+    background: white;
+    border: 1px solid transparent;
+    display: flex;
+    align-items: center;
+  }
+
+  .lead-source-option:hover {
+    background: #F8F9FA;
+    border-color: #D9D9D9;
+  }
+
+  .lead-source-option.selected {
+    background: #E8F5E9;
+    border-color: #11998E;
+    color: #11998E;
+    font-weight: 600;
+  }
+
+  /* Фиксированная ширина для поля Lead source input */
+  #leadSourceInput {
+    width: 220px;
+    height: 40px;
+    padding: 8px 16px;
+    border-radius: 40px;
+    font-family: 'Manrope', sans-serif;
+    font-size: 16px;
+    border: 1px solid #D9D9D9;
+    background: white;
+    color: #000000;
+    outline: none;
+    box-sizing: border-box;
+    transition: border-color 0.2s;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  #leadSourceInput:hover {
+    border-color: #11998E;
+  }
+
+  #leadSourceInput:focus {
+    border-color: #11998E;
+    background: #FFFFFF;
+  }
+
+  .new-booking-modal-content {
+    overflow: visible !important;
+  }
 </style>
 
 <!-- Desktop Logo -->
@@ -4370,10 +4634,43 @@ async function loadBusinessSettings() {
             console.log('Booking duration loaded:', bookingDuration);
             console.log('Default booking time loaded:', defaultBookingTime);
             
-            // Загружаем типы столов
-            if (data.settings.table_types) {
-                loadTableTypes(data.settings.table_types);
+            // Обрабатываем lead_sources - может быть массивом или строкой JSON
+            let leadSources = data.settings.lead_sources || [];
+            if (typeof leadSources === 'string') {
+                try {
+                    leadSources = JSON.parse(leadSources);
+                } catch (e) {
+                    console.error('Error parsing lead_sources:', e);
+                    leadSources = [];
+                }
             }
+            // Убеждаемся, что это массив
+            if (!Array.isArray(leadSources)) {
+                console.warn('lead_sources is not an array:', leadSources);
+                leadSources = [];
+            }
+            
+            // Обрабатываем table_types - может быть массивом или строкой JSON
+            let tableTypes = data.settings.table_types || [];
+            if (typeof tableTypes === 'string') {
+                try {
+                    tableTypes = JSON.parse(tableTypes);
+                } catch (e) {
+                    console.error('Error parsing table_types:', e);
+                    tableTypes = [];
+                }
+            }
+            // Убеждаемся, что это массив
+            if (!Array.isArray(tableTypes)) {
+                console.warn('table_types is not an array:', tableTypes);
+                tableTypes = [];
+            }
+            
+            // Сначала загружаем lead sources, чтобы использовать их для фильтрации типов столов
+            loadLeadSources(leadSources);
+            
+            // Затем загружаем типы столов (они будут отфильтрованы от lead sources)
+            loadTableTypes(tableTypes);
             
             // Добавляем обработчики событий после загрузки настроек
             addTimeFromEventListeners();
@@ -4388,21 +4685,412 @@ async function loadBusinessSettings() {
 
 function loadTableTypes(tableTypes) {
     const tableTypeSelect = document.getElementById('tableType');
-    if (!tableTypeSelect) return;
+    const tableTypeMenu = document.getElementById('tableTypeMenu');
+    console.log('loadTableTypes called', {
+        tableTypeSelect: !!tableTypeSelect,
+        tableTypeMenu: !!tableTypeMenu,
+        tableTypes: tableTypes,
+        tableTypesType: typeof tableTypes,
+        isArray: Array.isArray(tableTypes)
+    });
+    if (!tableTypeSelect || !tableTypeMenu) {
+        console.warn('loadTableTypes: Elements not found');
+        return;
+    }
     
-    // Очищаем существующие опции (кроме первой пустой)
+    // Убеждаемся, что tableTypes - это массив
+    if (!Array.isArray(tableTypes)) {
+        console.error('loadTableTypes: tableTypes is not an array:', tableTypes);
+        tableTypes = [];
+    }
+    
+    // Очищаем список, оставляя только пустую опцию
     tableTypeSelect.innerHTML = '<option value="">...</option>';
+    tableTypeMenu.innerHTML = '';
+    
+    // Добавляем опцию "..." в кастомный dropdown
+    const emptyOption = document.createElement('div');
+    emptyOption.className = 'table-type-option';
+    emptyOption.textContent = '...';
+    emptyOption.onclick = function() { selectTableType(''); };
+    tableTypeMenu.appendChild(emptyOption);
+    
+    // Фильтруем все lead sources из типов столов
+    const allLeadSources = window.allLeadSourceNames || new Set(['whatsapp', 'phone', 'email', 'instagram']);
+    
+    const filteredTableTypes = (tableTypes || []).filter(type => {
+        const typeLower = String(type).toLowerCase().trim();
+        return !allLeadSources.has(typeLower);
+    });
     
     // Добавляем типы столов
-    if (tableTypes && Array.isArray(tableTypes)) {
-        tableTypes.forEach(type => {
-            const option = document.createElement('option');
-            option.value = type;
-            option.textContent = type;
-            tableTypeSelect.appendChild(option);
+    filteredTableTypes.forEach(type => {
+        // Добавляем в скрытый select для совместимости
+        const option = document.createElement('option');
+        option.value = type;
+        option.textContent = type;
+        tableTypeSelect.appendChild(option);
+        
+        // Добавляем в кастомный dropdown
+        const customOption = document.createElement('div');
+        customOption.className = 'table-type-option';
+        customOption.textContent = type;
+        customOption.dataset.value = type;
+        customOption.onclick = function() { selectTableType(type); };
+        tableTypeMenu.appendChild(customOption);
+    });
+    
+    // Обновляем отображение текущего выбранного значения
+    updateTableTypeDisplay();
+}
+
+// Функция для загрузки Lead Sources в выпадающий список
+function loadLeadSources(leadSources) {
+    const leadSourceSelect = document.getElementById('leadSource');
+    const leadSourceMenu = document.getElementById('leadSourceMenu');
+    console.log('loadLeadSources called', {
+        leadSourceSelect: !!leadSourceSelect,
+        leadSourceMenu: !!leadSourceMenu,
+        leadSources: leadSources,
+        leadSourcesType: typeof leadSources,
+        isArray: Array.isArray(leadSources)
+    });
+    if (!leadSourceSelect) {
+        console.warn('loadLeadSources: leadSourceSelect not found');
+        return;
+    }
+    
+    // Убеждаемся, что leadSources - это массив
+    if (!Array.isArray(leadSources)) {
+        console.error('loadLeadSources: leadSources is not an array:', leadSources);
+        leadSources = [];
+    }
+    
+    // Очищаем список, оставляя только пустую опцию
+    leadSourceSelect.innerHTML = '<option value="">...</option>';
+    if (leadSourceMenu) leadSourceMenu.innerHTML = '';
+    
+    // Добавляем опцию "..." в кастомный dropdown
+    if (leadSourceMenu) {
+        const emptyOption = document.createElement('div');
+        emptyOption.className = 'lead-source-option';
+        emptyOption.textContent = '...';
+        emptyOption.onclick = function() { selectLeadSource(''); };
+        leadSourceMenu.appendChild(emptyOption);
+    }
+    
+    // Дефолтные опции (всегда присутствуют)
+    const defaultSources = [
+        { name: 'whatsapp', display: 'WhatsApp' },
+        { name: 'phone', display: 'Telefon' },
+        { name: 'email', display: 'Email' },
+        { name: 'instagram', display: 'Instagram' }
+    ];
+    
+    defaultSources.forEach(source => {
+        const option = document.createElement('option');
+        option.value = source.name;
+        option.textContent = source.display;
+        option.dataset.requiresInput = 'false';
+        leadSourceSelect.appendChild(option);
+        
+        // Добавляем в кастомный dropdown
+        if (leadSourceMenu) {
+            const customOption = document.createElement('div');
+            customOption.className = 'lead-source-option';
+            customOption.textContent = source.display;
+            customOption.dataset.value = source.name;
+            customOption.dataset.requiresInput = 'false';
+            customOption.onclick = function() { selectLeadSource(source.name); };
+            leadSourceMenu.appendChild(customOption);
+        }
+    });
+    
+    // Добавляем кастомные источники из настроек
+    leadSources.forEach(source => {
+        const name = typeof source === 'string' ? source : source.name;
+        const requiresInput = typeof source === 'object' ? (source.requires_input || false) : false;
+        const display = name.charAt(0).toUpperCase() + name.slice(1);
+        
+        const option = document.createElement('option');
+        option.value = name;
+        option.textContent = display;
+        option.dataset.requiresInput = requiresInput ? 'true' : 'false';
+        leadSourceSelect.appendChild(option);
+        
+        // Добавляем в кастомный dropdown
+        if (leadSourceMenu) {
+            const customOption = document.createElement('div');
+            customOption.className = 'lead-source-option';
+            customOption.textContent = display;
+            customOption.dataset.value = name;
+            customOption.dataset.requiresInput = requiresInput ? 'true' : 'false';
+            customOption.onclick = function() { selectLeadSource(name); };
+            leadSourceMenu.appendChild(customOption);
+        }
+    });
+    
+    // Сохраняем lead sources для использования в handleLeadSourceChange и фильтрации типов столов
+    window.leadSourcesData = leadSources;
+    
+    // Сохраняем все имена lead sources (включая дефолтные) для фильтрации
+    const allLeadSourceNames = new Set(['whatsapp', 'phone', 'email', 'instagram']);
+    leadSources.forEach(source => {
+        const name = typeof source === 'string' ? source : source.name;
+        if (name) {
+            allLeadSourceNames.add(name.toLowerCase().trim());
+        }
+    });
+    window.allLeadSourceNames = allLeadSourceNames;
+    
+    // Обновляем отображение текущего выбранного значения
+    updateLeadSourceDisplay();
+}
+
+// Функция для открытия/закрытия dropdown типа стола
+window.toggleTableTypeDropdown = function() {
+    const menu = document.getElementById('tableTypeMenu');
+    const arrow = document.getElementById('tableTypeArrow');
+    if (!menu || !arrow) {
+        console.warn('toggleTableTypeDropdown: Elements not found');
+        return;
+    }
+    
+    const isOpen = menu.classList.contains('show');
+    if (isOpen) {
+        menu.classList.remove('show');
+        arrow.style.transform = 'rotate(0deg)';
+        menu.style.position = '';
+        menu.style.top = '';
+        menu.style.left = '';
+        menu.style.width = '';
+        menu.style.display = '';
+        menu.style.opacity = '';
+        menu.style.visibility = '';
+        menu.style.transform = '';
+    } else {
+        closeAllDropdowns();
+        const button = document.getElementById('tableTypeButton');
+        if (button) {
+            const rect = button.getBoundingClientRect();
+            menu.style.position = 'fixed';
+            menu.style.top = (rect.bottom + 5) + 'px';
+            menu.style.left = rect.left + 'px';
+            menu.style.width = rect.width + 'px';
+            menu.style.display = 'block';
+            menu.style.opacity = '1';
+            menu.style.visibility = 'visible';
+            menu.style.transform = 'translateY(0)';
+        }
+        menu.classList.add('show');
+        arrow.style.transform = 'rotate(180deg)';
+    }
+};
+
+// Функция для выбора типа стола
+window.selectTableType = function(value) {
+    const tableTypeSelect = document.getElementById('tableType');
+    const tableTypeText = document.getElementById('tableTypeText');
+    const menu = document.getElementById('tableTypeMenu');
+    const arrow = document.getElementById('tableTypeArrow');
+    
+    if (!tableTypeSelect) return;
+    
+    tableTypeSelect.value = value;
+    updateTableTypeDisplay();
+    
+    if (menu) {
+        menu.classList.remove('show');
+        menu.style.position = '';
+        menu.style.top = '';
+        menu.style.left = '';
+        menu.style.width = '';
+        menu.style.display = '';
+        menu.style.opacity = '';
+        menu.style.visibility = '';
+        menu.style.transform = '';
+    }
+    if (arrow) arrow.style.transform = 'rotate(0deg)';
+};
+
+// Функция для обновления отображения выбранного типа стола
+function updateTableTypeDisplay() {
+    const tableTypeSelect = document.getElementById('tableType');
+    const tableTypeText = document.getElementById('tableTypeText');
+    const menu = document.getElementById('tableTypeMenu');
+    
+    if (!tableTypeSelect || !tableTypeText) return;
+    
+    const selectedValue = tableTypeSelect.value;
+    if (selectedValue) {
+        tableTypeText.textContent = selectedValue;
+    } else {
+        tableTypeText.textContent = '...';
+    }
+    
+    if (menu) {
+        const options = menu.querySelectorAll('.table-type-option');
+        options.forEach(option => {
+            if (option.dataset.value === selectedValue || (!selectedValue && option.textContent === '...')) {
+                option.classList.add('selected');
+            } else {
+                option.classList.remove('selected');
+            }
         });
     }
 }
+
+// Функция для открытия/закрытия dropdown Lead source
+window.toggleLeadSourceDropdown = function() {
+    const menu = document.getElementById('leadSourceMenu');
+    const arrow = document.getElementById('leadSourceArrow');
+    if (!menu || !arrow) {
+        console.warn('toggleLeadSourceDropdown: Elements not found');
+        return;
+    }
+    
+    const isOpen = menu.classList.contains('show');
+    if (isOpen) {
+        menu.classList.remove('show');
+        arrow.style.transform = 'rotate(0deg)';
+        menu.style.position = '';
+        menu.style.top = '';
+        menu.style.left = '';
+        menu.style.width = '';
+        menu.style.display = '';
+        menu.style.opacity = '';
+        menu.style.visibility = '';
+        menu.style.transform = '';
+    } else {
+        closeAllDropdowns();
+        const button = document.getElementById('leadSourceButton');
+        if (button) {
+            const rect = button.getBoundingClientRect();
+            menu.style.position = 'fixed';
+            menu.style.top = (rect.bottom + 5) + 'px';
+            menu.style.left = rect.left + 'px';
+            menu.style.width = rect.width + 'px';
+            menu.style.display = 'block';
+            menu.style.opacity = '1';
+            menu.style.visibility = 'visible';
+            menu.style.transform = 'translateY(0)';
+        }
+        menu.classList.add('show');
+        arrow.style.transform = 'rotate(180deg)';
+    }
+};
+
+// Функция для выбора Lead source
+window.selectLeadSource = function(value) {
+    const leadSourceSelect = document.getElementById('leadSource');
+    const menu = document.getElementById('leadSourceMenu');
+    const arrow = document.getElementById('leadSourceArrow');
+    
+    if (!leadSourceSelect) return;
+    
+    leadSourceSelect.value = value;
+    handleLeadSourceChange();
+    updateLeadSourceDisplay();
+    
+    if (menu) {
+        menu.classList.remove('show');
+        menu.style.position = '';
+        menu.style.top = '';
+        menu.style.left = '';
+        menu.style.width = '';
+        menu.style.display = '';
+        menu.style.opacity = '';
+        menu.style.visibility = '';
+        menu.style.transform = '';
+    }
+    if (arrow) arrow.style.transform = 'rotate(0deg)';
+};
+
+// Функция для обновления отображения выбранного Lead source
+function updateLeadSourceDisplay() {
+    const leadSourceSelect = document.getElementById('leadSource');
+    const leadSourceText = document.getElementById('leadSourceText');
+    const menu = document.getElementById('leadSourceMenu');
+    
+    if (!leadSourceSelect || !leadSourceText) return;
+    
+    const selectedValue = leadSourceSelect.value;
+    const selectedOption = leadSourceSelect.options[leadSourceSelect.selectedIndex];
+    
+    if (selectedOption && selectedValue) {
+        leadSourceText.textContent = selectedOption.textContent;
+    } else {
+        leadSourceText.textContent = '...';
+    }
+    
+    if (menu) {
+        const options = menu.querySelectorAll('.lead-source-option');
+        options.forEach(opt => {
+            if (opt.dataset.value === selectedValue) {
+                opt.classList.add('selected');
+            } else {
+                opt.classList.remove('selected');
+            }
+        });
+    }
+}
+
+// Функция для обработки изменения Lead source
+function handleLeadSourceChange() {
+    const leadSourceSelect = document.getElementById('leadSource');
+    const leadSourceInput = document.getElementById('leadSourceInput');
+    
+    if (!leadSourceSelect || !leadSourceInput) return;
+    
+    const selectedOption = leadSourceSelect.options[leadSourceSelect.selectedIndex];
+    const requiresInput = selectedOption && selectedOption.dataset.requiresInput === 'true';
+    
+    if (requiresInput) {
+        leadSourceInput.style.display = 'block';
+    } else {
+        leadSourceInput.style.display = 'none';
+        leadSourceInput.value = '';
+    }
+}
+
+// Функция для закрытия всех dropdown
+function closeAllDropdowns() {
+    const menus = document.querySelectorAll('.table-type-dropdown-menu.show, .lead-source-dropdown-menu.show');
+    const arrows = document.querySelectorAll('.table-type-arrow, .lead-source-arrow');
+    menus.forEach(menu => {
+        menu.classList.remove('show');
+        menu.style.position = '';
+        menu.style.top = '';
+        menu.style.left = '';
+        menu.style.width = '';
+        menu.style.display = '';
+        menu.style.opacity = '';
+        menu.style.visibility = '';
+        menu.style.transform = '';
+    });
+    arrows.forEach(arrow => arrow.style.transform = 'rotate(0deg)');
+}
+
+// Закрываем dropdown при клике вне его
+document.addEventListener('click', function(event) {
+    const tableTypeDropdown = document.getElementById('tableTypeDropdown');
+    const leadSourceDropdown = document.getElementById('leadSourceDropdown');
+    const tableTypeMenu = document.getElementById('tableTypeMenu');
+    const leadSourceMenu = document.getElementById('leadSourceMenu');
+    
+    const clickedInsideTableType = tableTypeDropdown && (
+        tableTypeDropdown.contains(event.target) || 
+        (tableTypeMenu && tableTypeMenu.contains(event.target))
+    );
+    const clickedInsideLeadSource = leadSourceDropdown && (
+        leadSourceDropdown.contains(event.target) || 
+        (leadSourceMenu && leadSourceMenu.contains(event.target))
+    );
+    
+    if (!clickedInsideTableType && !clickedInsideLeadSource) {
+        closeAllDropdowns();
+    }
+});
 
 // Функция для добавления обработчиков событий к полю timeFrom
 function addTimeFromEventListeners() {
@@ -4587,8 +5275,20 @@ function openNewBookingModal() {
     }
     newBookingModal.style.display = 'flex';
     
+    closeAllDropdowns();
+    
     // Load business settings and set default time
     loadBusinessSettings().then(() => {
+        // Обновляем отображение dropdown'ов после загрузки данных
+        setTimeout(() => {
+            if (typeof updateTableTypeDisplay === 'function') {
+                updateTableTypeDisplay();
+            }
+            if (typeof updateLeadSourceDisplay === 'function') {
+                updateLeadSourceDisplay();
+            }
+        }, 100);
+        
         // Set default time if configured, otherwise clear
         const timeFromInput = document.getElementById('timeFrom');
         const timeToInput = document.getElementById('timeTo');
@@ -4607,7 +5307,7 @@ function openNewBookingModal() {
         }
         if (timeToInput) {
             timeToInput.value = '';
-    }
+        }
     });
     
     // Устанавливаем сегодняшнюю дату по умолчанию
@@ -4637,7 +5337,13 @@ function closeNewBookingModal() {
     document.getElementById('clientName').value = '{{ contact.first_name or '' }} {{ contact.last_name or '' }}';
     document.getElementById('partySize').value = '1';
     document.getElementById('clientPhone').value = '{{ contact.phone or '' }}';
-    document.getElementById('tableType').value = '';
+    const tableTypeSelect = document.getElementById('tableType');
+    if (tableTypeSelect) {
+        tableTypeSelect.value = '';
+        if (typeof updateTableTypeDisplay === 'function') {
+            updateTableTypeDisplay();
+        }
+    }
     document.getElementById('bookingDate').value = '';
     document.getElementById('specialOccasion').value = '';
     document.getElementById('timeFrom').value = '';
@@ -4647,7 +5353,21 @@ function closeNewBookingModal() {
     document.getElementById('femalesCount').value = '0';
     document.getElementById('initialCheckRsd').value = '';
     document.getElementById('deposit').value = '';
-    document.getElementById('leadSource').value = '';
+    const leadSourceSelect = document.getElementById('leadSource');
+    if (leadSourceSelect) {
+        leadSourceSelect.value = '';
+        if (typeof updateLeadSourceDisplay === 'function') {
+            updateLeadSourceDisplay();
+        }
+        if (typeof handleLeadSourceChange === 'function') {
+            handleLeadSourceChange();
+        }
+    }
+    const leadSourceInput = document.getElementById('leadSourceInput');
+    if (leadSourceInput) {
+        leadSourceInput.value = '';
+        leadSourceInput.style.display = 'none';
+    }
     const finalCheckInput = document.getElementById('finalCheckRsd');
     if (finalCheckInput) {
         finalCheckInput.value = '';
@@ -4691,7 +5411,7 @@ function closeNewBookingModal() {
 
 window.closeNewBookingModal = closeNewBookingModal;
 
-function openEditBookingModal(bookingId, currentStatus) {
+window.openEditBookingModal = async function(bookingId, currentStatus) {
     console.log('openEditBookingModal called with:', bookingId, currentStatus);
     const editModal = document.getElementById('newBookingModal');
     if (!editModal) {
@@ -4703,10 +5423,10 @@ function openEditBookingModal(bookingId, currentStatus) {
     editModal.style.display = 'flex';
     console.log('Modal displayed');
     
-    // Load business settings to get table types
-    if (typeof loadBusinessSettings === 'function') {
-        loadBusinessSettings();
-    }
+    closeAllDropdowns();
+    
+    // Load business settings to get table types and lead sources
+    await loadBusinessSettings();
     
     // Set booking ID for editing
     editModal.dataset.bookingId = bookingId;
@@ -4724,11 +5444,12 @@ function openEditBookingModal(bookingId, currentStatus) {
         console.warn('selectStatus function not found');
     }
     
-    // Load booking data
-    loadBookingData(bookingId);
+    // Load booking data (after settings are loaded)
+    // Небольшая задержка, чтобы опции точно загрузились
+    setTimeout(() => {
+        loadBookingData(bookingId);
+    }, 200);
 }
-
-window.openEditBookingModal = openEditBookingModal;
 
 function loadBookingData(bookingId) {
     console.log('loadBookingData called with bookingId:', bookingId);
@@ -4808,18 +5529,31 @@ function loadBookingData(bookingId) {
                 }
                 
                 if (booking.table_type) {
-                    // Wait for table types to load
-                    setTimeout(() => {
-                        const tableTypeSelect = document.getElementById('tableType');
-                        if (tableTypeSelect) {
-                            tableTypeSelect.value = booking.table_type;
+                    const tableTypeEl = document.getElementById('tableType');
+                    if (tableTypeEl) {
+                        // Ensure option exists, if not, add it dynamically
+                        if (!Array.from(tableTypeEl.options).some(opt => opt.value === booking.table_type)) {
+                            const newOption = document.createElement('option');
+                            newOption.value = booking.table_type;
+                            newOption.textContent = booking.table_type;
+                            tableTypeEl.appendChild(newOption);
+                            // Also add to custom dropdown
+                            const tableTypeMenu = document.getElementById('tableTypeMenu');
+                            if (tableTypeMenu) {
+                                const customOption = document.createElement('div');
+                                customOption.className = 'table-type-option';
+                                customOption.textContent = booking.table_type;
+                                customOption.dataset.value = booking.table_type;
+                                customOption.onclick = function() { selectTableType(booking.table_type); };
+                                tableTypeMenu.appendChild(customOption);
+                            }
                         }
-                    }, 500);
-                } else {
-                    // Clear table type if not set
-                    const tableTypeSelect = document.getElementById('tableType');
-                    if (tableTypeSelect) {
-                        tableTypeSelect.value = '';
+                        tableTypeEl.value = booking.table_type;
+                        setTimeout(() => {
+                            if (typeof updateTableTypeDisplay === 'function') {
+                                updateTableTypeDisplay();
+                            }
+                        }, 150);
                     }
                 }
                 
@@ -4836,7 +5570,77 @@ function loadBookingData(bookingId) {
                 }
                 
                 if (booking.lead_source) {
-                    document.getElementById('leadSource').value = booking.lead_source;
+                    const leadSourceSelect = document.getElementById('leadSource');
+                    if (leadSourceSelect) {
+                        let baseSource = booking.lead_source;
+                        let additionalText = '';
+                        let foundOption = null;
+
+                        // Try to find by full name first (case-insensitive)
+                        for (let i = 0; i < leadSourceSelect.options.length; i++) {
+                            const option = leadSourceSelect.options[i];
+                            if (option.textContent.toLowerCase() === booking.lead_source.toLowerCase() && option.dataset.requiresInput !== 'true') {
+                                foundOption = option;
+                                baseSource = option.value;
+                                break;
+                            }
+                        }
+
+                        // If not found by full name, try splitting (for promoter-like sources)
+                        if (!foundOption) {
+                            const leadSourceParts = booking.lead_source.split(' ');
+                            const tempBaseSource = leadSourceParts[0];
+                            const tempAdditionalText = leadSourceParts.slice(1).join(' ');
+
+                            for (let i = 0; i < leadSourceSelect.options.length; i++) {
+                                const option = leadSourceSelect.options[i];
+                                if (option.value.toLowerCase() === tempBaseSource.toLowerCase() && option.dataset.requiresInput === 'true') {
+                                    foundOption = option;
+                                    baseSource = option.value;
+                                    additionalText = tempAdditionalText;
+                                    break;
+                                }
+                            }
+                        }
+
+                        // If still no option found, create a new one for the full lead_source
+                        if (!foundOption) {
+                            const newOption = document.createElement('option');
+                            newOption.value = booking.lead_source;
+                            newOption.textContent = booking.lead_source;
+                            newOption.dataset.requiresInput = 'false';
+                            leadSourceSelect.appendChild(newOption);
+                            baseSource = booking.lead_source;
+
+                            // Add to custom dropdown as well
+                            const leadSourceMenu = document.getElementById('leadSourceMenu');
+                            if (leadSourceMenu) {
+                                const customOption = document.createElement('div');
+                                customOption.className = 'lead-source-option';
+                                customOption.textContent = booking.lead_source;
+                                customOption.dataset.value = booking.lead_source;
+                                customOption.dataset.requiresInput = 'false';
+                                customOption.onclick = function() { selectLeadSource(booking.lead_source); };
+                                leadSourceMenu.appendChild(customOption);
+                            }
+                        }
+
+                        leadSourceSelect.value = baseSource;
+                        setTimeout(() => {
+                            if (typeof updateLeadSourceDisplay === 'function') {
+                                updateLeadSourceDisplay();
+                            }
+                            if (typeof handleLeadSourceChange === 'function') {
+                                handleLeadSourceChange();
+                            }
+                            if (additionalText) {
+                                const leadSourceInput = document.getElementById('leadSourceInput');
+                                if (leadSourceInput) {
+                                    leadSourceInput.value = additionalText;
+                                }
+                            }
+                        }, 150);
+                    }
                 }
                 
                 // Set status
@@ -5125,7 +5929,13 @@ function saveNewBooking() {
     const initialCheckRsd = document.getElementById('initialCheckRsd').value;
     const finalCheckRsd = document.getElementById('finalCheckRsd') ? document.getElementById('finalCheckRsd').value : '';
     const deposit = document.getElementById('deposit').value;
-    const leadSource = document.getElementById('leadSource').value;
+    let leadSource = document.getElementById('leadSource').value;
+    const leadSourceInput = document.getElementById('leadSourceInput');
+    
+    // Если есть дополнительный ввод для lead source, добавляем его к значению
+    if (leadSource && leadSourceInput && leadSourceInput.style.display !== 'none' && leadSourceInput.value.trim()) {
+        leadSource = leadSource + ' ' + leadSourceInput.value.trim();
+    }
     
     // Validate required fields
     if (!bookingDate || !timeFrom) {
@@ -5388,7 +6198,17 @@ document.addEventListener('click', function(e) {
             <div class="form-row">
                 <div class="form-field">
                     <label class="form-label">Tip stola:</label>
-                    <select class="form-input" id="tableType" style="appearance: auto;">
+                    <div class="custom-table-type-dropdown" id="tableTypeDropdown">
+                        <div class="table-type-button" id="tableTypeButton" onclick="toggleTableTypeDropdown()">
+                            <span class="table-type-text" id="tableTypeText">...</span>
+                            <span class="table-type-arrow" id="tableTypeArrow"></span>
+                        </div>
+                        <div class="table-type-dropdown-menu" id="tableTypeMenu">
+                            <!-- Опции будут добавлены через JavaScript -->
+                        </div>
+                    </div>
+                    <!-- Скрытый select для совместимости с формой -->
+                    <select class="form-input" id="tableType" style="display: none;">
                         <option value="">...</option>
                     </select>
                 </div>
@@ -5416,15 +6236,21 @@ document.addEventListener('click', function(e) {
                 </div>
                 <div class="form-field">
                     <label class="form-label">Lead source:</label>
-                    <select class="form-input" id="leadSource" style="appearance: auto;">
+                    <div class="custom-lead-source-dropdown" id="leadSourceDropdown">
+                        <div class="lead-source-button" id="leadSourceButton" onclick="toggleLeadSourceDropdown()">
+                            <span class="lead-source-text" id="leadSourceText">...</span>
+                            <span class="lead-source-arrow" id="leadSourceArrow"></span>
+                        </div>
+                        <div class="lead-source-dropdown-menu" id="leadSourceMenu">
+                            <!-- Опции будут добавлены через JavaScript -->
+                        </div>
+                    </div>
+                    <!-- Скрытый select для совместимости с формой -->
+                    <select class="form-input" id="leadSource" style="display: none;" onchange="handleLeadSourceChange()">
                         <option value="">...</option>
-                        <option value="whatsapp">WhatsApp</option>
-                        <option value="instagram">Instagram</option>
-                        <option value="phone">Telefon</option>
-                        <option value="email">Email</option>
-                        <option value="promoter">Promoter</option>
-                        <option value="random_guest">Slučajni gost</option>
                     </select>
+                    <!-- Поле для дополнительного ввода (если требуется) -->
+                    <input type="text" class="form-input" id="leadSourceInput" placeholder="Unesite dodatni tekst..." style="display: none; margin-top: 10px; width: 220px; height: 40px;">
                 </div>
             </div>
             
