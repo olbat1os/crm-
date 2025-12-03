@@ -4204,6 +4204,55 @@ async def update_booking_api(
         session.rollback()
         return {"success": False, "error": str(e)}
 
+@app.put("/api/bookings/{booking_id}")
+async def update_booking_feedback(
+    booking_id: int,
+    request: Request,
+    session: Session = Depends(get_session),
+):
+    """Обновить обратную связь резервации (feedback, food_drink, final_check)"""
+    # Проверяем подписку
+    subscription_check = check_subscription_in_api(request, session)
+    if subscription_check:
+        return subscription_check
+    
+    user = get_current_user(request)
+    if not user:
+        return {"success": False, "error": "Unauthorized"}
+    
+    booking = session.get(Booking, booking_id)
+    if not booking:
+        return {"success": False, "error": "Booking not found"}
+    
+    # Проверяем, что резервация принадлежит бизнесу пользователя
+    contact = session.get(Contact, booking.contact_id)
+    if not contact or contact.business_id != user.get("business_id"):
+        return {"success": False, "error": "Booking not found or access denied"}
+    
+    try:
+        data = await request.json()
+        
+        # Обратная связь доступна только для статуса "dosli"
+        if "feedback" in data or "food_drink" in data or "final_check" in data:
+            if booking.status != "dosli":
+                return {"success": False, "error": "Obratna veza je dostupna samo za rezervacije sa statusom 'Došli'"}
+        
+        if "feedback" in data:
+            booking.feedback = data["feedback"] if data["feedback"] else None
+        if "food_drink" in data:
+            booking.food_drink = data["food_drink"] if data["food_drink"] else None
+        if "final_check" in data:
+            booking.final_check_rsd = float(data["final_check"]) if data["final_check"] is not None else None
+        
+        booking.updated_at = datetime.utcnow()
+        session.add(booking)
+        session.commit()
+        
+        return {"success": True}
+    except Exception as e:
+        session.rollback()
+        return {"success": False, "error": str(e)}
+
 @app.delete("/api/bookings/{booking_id}")
 async def delete_booking_api(
     booking_id: int,
