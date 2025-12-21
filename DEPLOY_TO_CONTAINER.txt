@@ -1,0 +1,42 @@
+# Команды для загрузки файлов ВНУТРЬ Docker контейнера
+# Используйте, если файлы не сохраняются после перезапуска
+
+# 1. Сначала загрузите файлы на сервер (в любую временную директорию)
+# Например, в /tmp/crm-update/
+
+# 2. Затем скопируйте файлы ВНУТРЬ контейнера:
+
+# Определите имя контейнера:
+ssh root@72.60.182.59 "docker ps --format '{{.Names}}' | grep crm"
+
+# Предположим, контейнер называется "crm-app" или "crm_crm-app_1"
+# Замените CONTAINER_NAME на реальное имя
+
+CONTAINER_NAME="crm-app"  # ИЗМЕНИТЕ НА РЕАЛЬНОЕ ИМЯ!
+
+# Копирование файлов внутрь контейнера:
+docker cp templates/booking.html root@72.60.182.59:/tmp/booking.html
+ssh root@72.60.182.59 "docker cp /tmp/booking.html $CONTAINER_NAME:/app/templates/booking.html"
+
+# Или проще - загрузить на сервер, затем скопировать в контейнер:
+# 1. Загрузить на сервер
+scp templates/booking.html root@72.60.182.59:/tmp/booking.html
+
+# 2. Скопировать в контейнер
+ssh root@72.60.182.59 "docker cp /tmp/booking.html $CONTAINER_NAME:/app/templates/booking.html"
+
+# 3. Перезапустить контейнер
+ssh root@72.60.182.59 "docker restart $CONTAINER_NAME"
+
+# ============================================
+# АЛЬТЕРНАТИВА: Если Docker использует volume на хосте
+# ============================================
+
+# Проверьте, где находится volume:
+ssh root@72.60.182.59 "docker inspect $CONTAINER_NAME | grep -A 10 Mounts"
+
+# Если volume примонтирован с хоста, копируйте напрямую в эту директорию
+# Например, если volume: /var/lib/docker/volumes/crm_data/_data
+# То копируйте туда:
+scp templates/booking.html root@72.60.182.59:/var/lib/docker/volumes/crm_data/_data/templates/booking.html
+

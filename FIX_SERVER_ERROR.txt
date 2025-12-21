@@ -1,0 +1,16 @@
+# Исправление ошибки на сервере
+# Ошибка: AttributeError: 'Business' object has no attribute 'table_columns'
+
+# 1. Загрузите исправленный файл на сервер (с вашего компьютера):
+scp app/main.py root@72.60.182.59:/root/crm-/app/main.py
+
+# 2. Затем на сервере скопируйте файл внутрь контейнера:
+CONTAINER="crm--crm-app-1"
+docker cp /root/crm-/app/main.py ${CONTAINER}:/app/app/main.py
+
+# 3. Перезапустите контейнер:
+docker-compose restart crm-app
+
+# 4. Проверьте логи:
+docker-compose logs --tail=30 crm-app
+

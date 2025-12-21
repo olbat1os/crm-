@@ -1,0 +1,587 @@
+{% extends 'dashboard_base.html' %}
+{% block content %}
+<style>
+  /* Переопределяем активный пункт для Map */
+  .app-layout { --active-bg: rgba(255, 255, 255, 0.20); --active-top: 240px; }
+  .menu-item.active { background: transparent; }
+  .item-dash { background: transparent; }
+  .item-mapa { background: var(--active-bg); }
+</style>
+<style>
+  /* Mobile Header */
+  .mobile-header {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 70px;
+    background: #FFFFFF;
+    display: none;
+    align-items: center;
+    z-index: 1000;
+  }
+
+  .logo-home {
+    position: absolute;
+    width: 181px;
+    height: 40px;
+    top: 25px;
+    left: 30px;
+    z-index: 0;
+    opacity: 1;
+  }
+
+  .mobile-logo {
+    position: absolute;
+    width: 109px;
+    height: 24px;
+    top: 23px;
+    left: 20px;
+  }
+
+  .mobile-search-btn {
+    position: absolute;
+    width: 22px;
+    height: 22px;
+    top: 20px;
+    right: 84px;
+    cursor: pointer;
+  }
+
+  .mobile-notification-btn {
+    position: absolute;
+    width: 22px;
+    height: 22px;
+    top: 20px;
+    right: 52px;
+    cursor: pointer;
+  }
+
+  .mobile-menu-btn {
+    position: absolute;
+    width: 22px;
+    height: 22px;
+    top: 20px;
+    right: 20px;
+    cursor: pointer;
+  }
+
+  .mobile-search-modal {
+    position: fixed;
+    top: 70px;
+    left: 0;
+    right: 0;
+    background: #FFFFFF;
+    border-top: 1px solid #D9D9D9;
+    padding: 20px;
+    z-index: 999;
+    display: none;
+  }
+
+  .mobile-search-input {
+    width: 100%;
+    height: 40px;
+    border: 1px solid #D9D9D9;
+    border-radius: 20px;
+    padding: 0 20px;
+    font-family: 'Manrope', sans-serif;
+    font-size: 16px;
+    outline: none;
+  }
+
+  /* Mobile Sidebar */
+  .mobile-sidebar {
+    position: fixed;
+    top: 0;
+    right: 0;
+    width: 235px;
+    height: 100vh;
+    background: linear-gradient(179.27deg, #2CAB5C 0%, #11998E 100%);
+    border-radius: 1px;
+    transition: transform 0.3s ease;
+    z-index: 2000;
+    overflow-y: auto;
+    transform: translateX(100%);
+  }
+
+  .mobile-sidebar-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.5);
+    z-index: 1500;
+    display: none;
+  }
+
+  .mobile-sidebar-overlay.show {
+    display: block;
+  }
+
+  .mobile-sidebar.open {
+    transform: translateX(0);
+  }
+
+  /* Mobile Sidebar Content */
+  .mobile-sidebar-content {
+    padding: 20px;
+    color: #FFFFFF;
+  }
+
+  .mobile-sidebar-item {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    height: 60px;
+    padding: 0 20px;
+    cursor: pointer;
+    color: #FFFFFF;
+    text-decoration: none;
+    font-family: 'Manrope', sans-serif;
+  }
+
+  .mobile-sidebar-item:hover {
+    background: rgba(255, 255, 255, 0.1);
+  }
+
+  .mobile-sidebar-arrow {
+    width: 7px;
+    height: 14px;
+  }
+
+  .mobile-sidebar-logo {
+    position: absolute;
+    bottom: 20px;
+    left: 20px;
+    width: 136px;
+    height: 30px;
+  }
+
+  /* Стили для поиска */
+  .search-results {
+    background: #ffffff;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+    border-radius: 12px;
+    border: 1px solid #e5e7eb;
+    overflow: hidden;
+    z-index: 1000;
+  }
+
+  .search-results-content {
+    padding: 8px;
+    height: 100%;
+    overflow-y: auto;
+  }
+
+  .search-result-item {
+    display: flex;
+    align-items: center;
+    padding: 12px;
+    border-bottom: 1px solid #f3f4f6;
+    cursor: pointer;
+    transition: background-color 0.2s ease;
+    border-radius: 8px;
+    margin-bottom: 4px;
+  }
+
+  .search-result-item:hover {
+    background-color: #f9fafb;
+  }
+
+  .search-result-item:last-child {
+    border-bottom: none;
+    margin-bottom: 0;
+  }
+
+  .search-result-main {
+    flex: 1;
+  }
+
+  .search-result-name {
+    font-family: 'Manrope', sans-serif;
+    font-weight: 600;
+    font-size: 14px;
+    color: #000000;
+    margin-bottom: 2px;
+  }
+
+  .search-result-phone {
+    font-family: 'Manrope', sans-serif;
+    font-weight: 400;
+    font-size: 12px;
+    color: #6b7280;
+    margin-bottom: 6px;
+  }
+
+  .search-result-last-booking {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .search-result-date {
+    font-family: 'Manrope', sans-serif;
+    font-weight: 400;
+    font-size: 11px;
+    color: #6b7280;
+  }
+
+  .search-result-status {
+    font-family: 'Manrope', sans-serif;
+    font-weight: 600;
+    font-size: 10px;
+    padding: 2px 6px;
+    border-radius: 8px;
+    color: #000000;
+  }
+
+  .search-result-status.dogovoreno { background: #FFF0BF; border: 1px solid #DBC787; }
+  .search-result-status.na-cekaju { background: #E8D8F8; border: 1px solid #9C27B0; }
+  .search-result-status.potvrdjeno { background: #D8F8E4; border: 1px solid #4CAF50; }
+  .search-result-status.otkazano { background: #FFBFBF; border: 1px solid #F44336; }
+  .search-result-status.nisu-dosli { background: #FFD59E; border: 1px solid #FF9800; }
+  .search-result-status.dosli { background: #C7F4FF; border: 1px solid #2196F3; }
+
+  .search-results::-webkit-scrollbar {
+    width: 4px;
+  }
+
+  .search-results::-webkit-scrollbar-track {
+    background: #f1f1f1;
+    border-radius: 2px;
+  }
+
+  .search-results::-webkit-scrollbar-thumb {
+    background: #11998E;
+    border-radius: 2px;
+  }
+
+  .search-results::-webkit-scrollbar-thumb:hover {
+    background: #0d7a6f;
+  }
+
+  /* Белый фон для ПК версии */
+  body {
+    background: #ffffff !important;
+  }
+  
+  .app-layout {
+    background: #ffffff !important;
+  }
+  
+  .main {
+    background: #ffffff !important;
+  }
+
+  /* Mobile Responsive Styles */
+  @media (max-width: 768px) {
+    .mobile-header {
+      display: flex;
+    }
+    
+    .sidebar {
+      display: none !important;
+    }
+    
+    .logo-home {
+      display: none !important;
+    }
+    
+    .search-icon {
+      display: none !important;
+    }
+    
+    .notification-icon {
+      display: none !important;
+    }
+    
+    .top-right {
+      display: none !important;
+    }
+
+    /* Mobile search results */
+    #search-results {
+      position: fixed !important;
+      top: 130px !important;
+      left: 20px !important;
+      right: 20px !important;
+      width: auto !important;
+      height: 250px !important;
+    }
+
+    /* Mobile main margin */
+    .main {
+      margin: 0 !important;
+    }
+  }
+</style>
+
+<!-- Mobile Header -->
+<div class="mobile-header">
+  <img src="/static/images/logo home.png" alt="LOVACRM" class="mobile-logo">
+  <img src="/static/images/poisk.png" alt="Search" class="mobile-search-btn" onclick="toggleMobileSearch()">
+  <img src="/static/images/kolokolchik logo.png" alt="Notifications" class="mobile-notification-btn">
+  <img src="/static/images/menu.png" alt="Menu" class="mobile-menu-btn" onclick="toggleMobileSidebar()">
+</div>
+
+<!-- Mobile Search Modal -->
+<div class="mobile-search-modal" id="mobileSearchModal">
+  <input type="text" class="mobile-search-input" placeholder="Search..." id="mobileSearchInput">
+</div>
+
+<!-- Mobile Sidebar Overlay -->
+<div class="mobile-sidebar-overlay" id="mobileSidebarOverlay" onclick="closeMobileSidebar()"></div>
+
+<!-- Mobile Sidebar -->
+<div class="mobile-sidebar" id="mobileSidebar">
+  <div class="mobile-sidebar-content">
+    <a href="/dashboard" class="mobile-sidebar-item">
+      <div style="display: flex; align-items: center;">
+        <img src="/static/images/logo dashbord.png" alt="Dashboard" style="width: 20px; height: 20px; margin-right: 15px;">
+        Dashboard
+      </div>
+      <img src="/static/images/strelka logo.png" alt="Arrow" class="mobile-sidebar-arrow">
+    </a>
+    <a href="/booking" class="mobile-sidebar-item">
+      <div style="display: flex; align-items: center;">
+        <img src="/static/images/booking logo.png" alt="Booking" style="width: 20px; height: 20px; margin-right: 15px;">
+        Booking
+      </div>
+      <img src="/static/images/strelka logo.png" alt="Arrow" class="mobile-sidebar-arrow">
+    </a>
+    <a href="/clients" class="mobile-sidebar-item">
+      <div style="display: flex; align-items: center;">
+        <img src="/static/images/klijenti logo.png" alt="Klijenti" style="width: 20px; height: 20px; margin-right: 15px;">
+        Klijenti
+      </div>
+      <img src="/static/images/strelka logo.png" alt="Arrow" class="mobile-sidebar-arrow">
+    </a>
+    <a href="/map" class="mobile-sidebar-item">
+      <div style="display: flex; align-items: center;">
+        <img src="/static/images/mapa logo.png" alt="Mapa" style="width: 20px; height: 20px; margin-right: 15px;">
+        Mapa
+      </div>
+      <img src="/static/images/strelka logo.png" alt="Arrow" class="mobile-sidebar-arrow">
+    </a>
+    <a href="/marketing" class="mobile-sidebar-item">
+      <div style="display: flex; align-items: center;">
+        <img src="/static/images/marketing logo.png" alt="Marketing" style="width: 20px; height: 20px; margin-right: 15px;">
+        Marketing
+      </div>
+      <img src="/static/images/strelka logo.png" alt="Arrow" class="mobile-sidebar-arrow">
+    </a>
+    <a href="/settings" class="mobile-sidebar-item">
+      <div style="display: flex; align-items: center;">
+        <img src="/static/images/setting logo.png" alt="Podešavanja" style="width: 20px; height: 20px; margin-right: 15px;">
+        Podešavanja
+      </div>
+      <img src="/static/images/strelka logo.png" alt="Arrow" class="mobile-sidebar-arrow">
+    </a>
+  </div>
+  <img src="/static/images/logo_login.svg.png" alt="Logo" class="mobile-sidebar-logo">
+</div>
+
+<!-- Результаты поиска -->
+<div id="search-results" class="search-results" style="position:absolute; right:25px; top:75px; width:290px; height:250px; display:none;">
+  <div class="search-results-content">
+    <!-- Результаты будут добавлены динамически -->
+  </div>
+</div>
+
+<div class="bg-white shadow rounded p-6" style="margin-top: 95px;">
+  <h1 class="text-2xl font-semibold mb-4">Mapa</h1>
+  <p class="text-gray-600">Stranica za prikaz mape klijenata.</p>
+</div>
+
+<script>
+  // Mobile sidebar functions
+  function toggleMobileSidebar() {
+    const sidebar = document.getElementById('mobileSidebar');
+    const overlay = document.getElementById('mobileSidebarOverlay');
+    
+    sidebar.classList.toggle('open');
+    overlay.classList.toggle('show');
+  }
+
+  function closeMobileSidebar() {
+    const sidebar = document.getElementById('mobileSidebar');
+    const overlay = document.getElementById('mobileSidebarOverlay');
+    
+    sidebar.classList.remove('open');
+    overlay.classList.remove('show');
+  }
+
+  // Mobile search functions
+  function toggleMobileSearch() {
+    const modal = document.getElementById('mobileSearchModal');
+    const isVisible = modal.style.display === 'block';
+    
+    if (isVisible) {
+      modal.style.display = 'none';
+    } else {
+      modal.style.display = 'block';
+      document.getElementById('mobileSearchInput').focus();
+    }
+  }
+
+  // Close mobile search modal when clicking outside
+  document.addEventListener('click', function(e) {
+    const modal = document.getElementById('mobileSearchModal');
+    const searchBtn = document.querySelector('.mobile-search-btn');
+    const searchResults = document.getElementById('search-results');
+    
+    // Проверяем, что клик не по модальному окну, кнопке поиска или результатам поиска
+    if (modal && modal.style.display === 'block' && 
+        !modal.contains(e.target) && 
+        !searchBtn.contains(e.target) && 
+        !searchResults.contains(e.target)) {
+      modal.style.display = 'none';
+      searchResults.style.display = 'none';
+    }
+  });
+
+  // Search functionality
+  document.addEventListener('DOMContentLoaded', function() {
+    const searchBox = document.querySelector('.search-box');
+    const searchResults = document.getElementById('search-results');
+    
+    // Данные клиентов из сервера
+    const clientsData = [
+        {% for c in contacts %}
+        {
+            id: {{ c.id }},
+            firstName: "{{ c.first_name or '' }}",
+            lastName: "{{ c.last_name or '' }}",
+            phone: "{{ c.phone or '' }}",
+            lastBookingDate: "{{ client_stats[c.id].last_visit_str or '' }}",
+            lastBookingTime: "",
+            lastBookingStatus: "{{ client_stats[c.id].last_booking_status or '' }}",
+            visitsCount: {{ client_stats[c.id].visits_confirmed or 0 }},
+            averageSpend: {{ client_stats[c.id].avg_spend or 0 }}
+        }{% if not loop.last %},{% endif %}
+        {% endfor %}
+    ];
+
+    function searchClients(query) {
+        if (!query || query.trim().length < 2) {
+            searchResults.style.display = 'none';
+            return;
+        }
+
+        const searchTerm = query.toLowerCase().trim();
+        const results = clientsData.filter(client => {
+            const fullName = `${client.firstName} ${client.lastName}`.toLowerCase();
+            const phone = client.phone.toLowerCase();
+            
+            return fullName.includes(searchTerm) || 
+                   phone.includes(searchTerm) ||
+                   client.firstName.toLowerCase().includes(searchTerm) ||
+                   client.lastName.toLowerCase().includes(searchTerm);
+        });
+
+        displaySearchResults(results);
+    }
+
+    function displaySearchResults(results) {
+        const resultsContent = document.querySelector('.search-results-content');
+        resultsContent.innerHTML = '';
+
+        if (results.length === 0) {
+            resultsContent.innerHTML = '<div style="padding: 20px; text-align: center; color: #6b7280; font-family: \'Manrope\', sans-serif; font-size: 14px;">Nema rezultata pretrage</div>';
+        } else {
+            results.forEach(client => {
+                const resultItem = createSearchResultItem(client);
+                resultsContent.appendChild(resultItem);
+            });
+        }
+
+        searchResults.style.display = 'block';
+    }
+
+    // Функция создания элемента результата
+    function createSearchResultItem(client) {
+        const item = document.createElement('div');
+        item.className = 'search-result-item';
+        item.onclick = () => window.location.href = `/clients/${client.id}`;
+
+        const statusText = getStatusText(client.lastBookingStatus);
+        const statusClass = getStatusClass(client.lastBookingStatus);
+
+        const lastBookingInfo = client.lastBookingDate ? 
+            `<div class="search-result-date">${client.lastBookingDate}</div>
+             ${client.lastBookingStatus ? `<div class="search-result-status ${statusClass}">${statusText}</div>` : ''}` :
+            '<div class="search-result-date" style="color: #9ca3af; font-style: italic;">Nema rezervacije</div>';
+
+        const phoneInfo = client.phone ? 
+            `<div class="search-result-phone">${client.phone}</div>` :
+            '<div class="search-result-phone" style="color: #9ca3af; font-style: italic;">Nema telefona</div>';
+
+        item.innerHTML = `
+            <div class="search-result-main">
+                <div class="search-result-name">${client.firstName} ${client.lastName}</div>
+                ${phoneInfo}
+                <div class="search-result-last-booking">
+                    ${lastBookingInfo}
+                </div>
+            </div>
+        `;
+
+        return item;
+    }
+
+    // Функция получения текста статуса
+    function getStatusText(status) {
+        const statusMap = {
+            'dogovoreno': 'Dogovoreno',
+            'na_cekaju': 'Na čekanju',
+            'nacekanju': 'Na čekanju',
+            'potvrdjeno': 'Potvrđeno',
+            'otkazano': 'Otkazano',
+            'nisu': 'Nisu došli',
+            'dosli': 'Došli'
+        };
+        return statusMap[status] || status;
+    }
+
+    // Функция получения CSS класса статуса
+    function getStatusClass(status) {
+        const classMap = {
+            'dogovoreno': 'dogovoreno',
+            'na_cekaju': 'na-cekaju',
+            'nacekanju': 'na-cekaju',
+            'potvrdjeno': 'potvrdjeno',
+            'otkazano': 'otkazano',
+            'nisu': 'nisu-dosli',
+            'dosli': 'dosli'
+        };
+        return classMap[status] || '';
+    }
+
+    // Desktop search
+    if (searchBox) {
+      searchBox.addEventListener('input', function() {
+        searchClients(this.value);
+      });
+
+      searchBox.addEventListener('blur', function() {
+        if (!this.value.trim()) {
+          setTimeout(() => {
+            if (!this.value.trim()) {
+              searchResults.style.display = 'none';
+            }
+          }, 200);
+        }
+      });
+    }
+
+    // Mobile search
+    const mobileSearchInput = document.getElementById('mobileSearchInput');
+    if (mobileSearchInput) {
+      mobileSearchInput.addEventListener('input', function() {
+        searchClients(this.value);
+      });
+    }
+  });
+</script>
+{% endblock %}

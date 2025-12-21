@@ -1,0 +1,393 @@
+<!DOCTYPE html>
+<html lang="sr">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Admin Login - LOVACRM</title>
+  <link rel="icon" type="image/png" href="/static/images/fav1.png">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@200;300;400;500;600;700;800&display=swap" rel="stylesheet">
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    html, body { 
+      height: 100%; 
+      margin: 0; 
+      font-family: 'Manrope', system-ui, sans-serif;
+      background: #f8f9fa;
+      overflow: hidden;
+    }
+    
+    /* Анимации */
+    @keyframes fadeInUp {
+      from {
+        opacity: 0;
+        transform: translateY(30px);
+      }
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+    
+    @keyframes slideInLeft {
+      from {
+        opacity: 0;
+        transform: translateX(-30px);
+      }
+      to {
+        opacity: 1;
+        transform: translateX(0);
+      }
+    }
+    
+    @keyframes pulse {
+      0%, 100% {
+        transform: scale(1);
+      }
+      50% {
+        transform: scale(1.05);
+      }
+    }
+    
+    @keyframes shimmer {
+      0% {
+        background-position: -200px 0;
+      }
+      100% {
+        background-position: calc(200px + 100%) 0;
+      }
+    }
+    
+    /* Контейнер логина */
+    .login-container {
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: #f8f9fa;
+      padding: 20px;
+    }
+    
+    /* Карточка логина */
+    .login-card {
+      background: #FFFFFF;
+      border-radius: 20px;
+      padding: 50px;
+      max-width: 450px;
+      width: 100%;
+      box-shadow: 0 8px 25px rgba(0, 0, 0, 0.1);
+      border: 1px solid #e5e7eb;
+      animation: fadeInUp 0.8s ease-out;
+      position: relative;
+      overflow: hidden;
+    }
+    
+    .login-card::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      height: 4px;
+      background: linear-gradient(90deg, #2CAB5C 0%, #11998E 50%, #2CAB5C 100%);
+      background-size: 200% 100%;
+      animation: shimmer 2s ease-in-out infinite;
+    }
+    
+    /* Логотип */
+    .login-logo {
+      text-align: center;
+      margin-bottom: 40px;
+      animation: slideInLeft 0.6s ease-out 0.2s both;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+    }
+    
+    .login-logo img {
+      max-width: 200px;
+      height: auto;
+      filter: drop-shadow(0 4px 8px rgba(0, 0, 0, 0.1));
+      display: block;
+      margin: 0 auto;
+    }
+    
+    /* Заголовок */
+    .login-title {
+      font-family: 'Manrope', system-ui, sans-serif;
+      font-weight: 700;
+      font-size: 28px;
+      line-height: 36px;
+      color: #111827;
+      text-align: center;
+      margin: 0 0 8px 0;
+      background: linear-gradient(135deg, #2CAB5C 0%, #11998E 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+    
+    .login-subtitle {
+      font-family: 'Manrope', system-ui, sans-serif;
+      font-weight: 400;
+      font-size: 16px;
+      line-height: 22px;
+      color: #6b7280;
+      text-align: center;
+      margin: 0 0 40px 0;
+    }
+    
+    /* Форма */
+    .login-form {
+      animation: fadeInUp 0.6s ease-out 0.4s both;
+    }
+    
+    .form-group {
+      margin-bottom: 24px;
+    }
+    
+    .form-label {
+      display: block;
+      font-family: 'Manrope', system-ui, sans-serif;
+      font-weight: 600;
+      font-size: 14px;
+      line-height: 20px;
+      color: #374151;
+      margin-bottom: 8px;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+    
+    .form-input {
+      width: 100%;
+      padding: 16px 20px;
+      border: 2px solid #d1d5db;
+      border-radius: 12px;
+      font-family: 'Manrope', system-ui, sans-serif;
+      font-weight: 400;
+      font-size: 16px;
+      line-height: 22px;
+      color: #111827;
+      background: #FFFFFF;
+      transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+      box-sizing: border-box;
+    }
+    
+    .form-input:focus {
+      outline: none;
+      border-color: #2CAB5C;
+      box-shadow: 0 0 0 4px rgba(44, 171, 92, 0.1);
+      transform: translateY(-2px);
+    }
+    
+    .form-input:hover {
+      border-color: #2CAB5C;
+    }
+    
+    /* Кнопка входа */
+    .login-btn {
+      width: 100%;
+      padding: 16px 20px;
+      border: none;
+      border-radius: 16px;
+      font-family: 'Manrope', system-ui, sans-serif;
+      font-weight: 600;
+      font-size: 16px;
+      line-height: 22px;
+      color: #FFFFFF;
+      background: linear-gradient(135deg, #2CAB5C 0%, #11998E 100%);
+      cursor: pointer;
+      transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+      position: relative;
+      overflow: hidden;
+      box-shadow: 0 8px 20px rgba(44, 171, 92, 0.3);
+      margin-top: 20px;
+    }
+    
+    .login-btn::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: -100%;
+      width: 100%;
+      height: 100%;
+      background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
+      transition: left 0.5s ease;
+    }
+    
+    .login-btn:hover::before {
+      left: 100%;
+    }
+    
+    .login-btn:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 12px 30px rgba(44, 171, 92, 0.4);
+    }
+    
+    .login-btn:active {
+      transform: translateY(0);
+    }
+    
+    /* Сообщение об ошибке */
+    .error-message {
+      background: linear-gradient(135deg, #fee2e2 0%, #ef4444 100%);
+      color: #991b1b;
+      padding: 16px 20px;
+      border-radius: 16px;
+      font-family: 'Manrope', system-ui, sans-serif;
+      font-weight: 500;
+      font-size: 14px;
+      line-height: 20px;
+      margin-bottom: 24px;
+      text-align: center;
+      box-shadow: 0 4px 12px rgba(239, 68, 68, 0.2);
+      animation: fadeInUp 0.6s ease-out;
+    }
+    
+    /* Дополнительные ссылки */
+    .login-links {
+      text-align: center;
+      margin-top: 30px;
+      animation: fadeInUp 0.6s ease-out 0.6s both;
+    }
+    
+    .login-link {
+      color: #2CAB5C;
+      text-decoration: none;
+      font-family: 'Manrope', system-ui, sans-serif;
+      font-weight: 500;
+      font-size: 14px;
+      line-height: 20px;
+      transition: all 0.3s ease;
+    }
+    
+    .login-link:hover {
+      color: #11998E;
+      text-decoration: underline;
+    }
+    
+    /* Адаптивность */
+    @media (max-width: 768px) {
+      .login-card {
+        padding: 30px 20px;
+        margin: 20px;
+      }
+      
+      .login-title {
+        font-size: 24px;
+        line-height: 32px;
+      }
+      
+      .login-logo img {
+        max-width: 150px;
+      }
+    }
+    
+    /* Декоративные элементы */
+    .login-container::before {
+      content: '';
+      position: absolute;
+      top: -50%;
+      left: -50%;
+      width: 200%;
+      height: 200%;
+      background: radial-gradient(circle, rgba(255, 255, 255, 0.1) 0%, transparent 70%);
+      animation: pulse 4s ease-in-out infinite;
+      pointer-events: none;
+    }
+    
+    .login-container::after {
+      content: '';
+      position: absolute;
+      bottom: -50%;
+      right: -50%;
+      width: 200%;
+      height: 200%;
+      background: radial-gradient(circle, rgba(44, 171, 92, 0.1) 0%, transparent 70%);
+      animation: pulse 4s ease-in-out infinite 2s;
+      pointer-events: none;
+    }
+  </style>
+</head>
+<body>
+  <div class="login-container">
+    <div class="login-card">
+      <!-- Логотип -->
+      <div class="login-logo">
+        <img src="/static/images/logo home.png" alt="LovaCRM">
+      </div>
+      
+      <!-- Заголовок -->
+      <h1 class="login-title">Admin Panel</h1>
+      <p class="login-subtitle">Prijavite se u administratorski panel</p>
+      
+      <!-- Сообщение об ошибке -->
+      {% if error %}
+      <div class="error-message">
+        {{ error }}
+      </div>
+      {% endif %}
+      
+      <!-- Форма входа -->
+      <form method="post" class="login-form">
+        <div class="form-group">
+          <label class="form-label" for="username">Korisničko ime</label>
+          <input 
+            type="text" 
+            id="username" 
+            name="username" 
+            class="form-input" 
+            placeholder="Unesite korisničko ime"
+            required
+            autocomplete="username"
+          >
+        </div>
+        
+        <div class="form-group">
+          <label class="form-label" for="password">Lozinka</label>
+          <input 
+            type="password" 
+            id="password" 
+            name="password" 
+            class="form-input" 
+            placeholder="Unesite lozinku"
+            required
+            autocomplete="current-password"
+          >
+        </div>
+        
+        <button type="submit" class="login-btn">
+          Prijavi se
+        </button>
+      </form>
+      
+      <!-- Дополнительные ссылки -->
+      <div class="login-links">
+        <a href="/" class="login-link">← Nazad na glavnu stranicu</a>
+      </div>
+    </div>
+  </div>
+  
+  <script>
+    // Фокус на первое поле при загрузке
+    document.addEventListener('DOMContentLoaded', function() {
+      const usernameInput = document.getElementById('username');
+      if (usernameInput) {
+        usernameInput.focus();
+      }
+    });
+    
+    // Анимация при отправке формы
+    document.querySelector('.login-form').addEventListener('submit', function() {
+      const btn = document.querySelector('.login-btn');
+      btn.style.transform = 'scale(0.95)';
+      btn.textContent = 'Prijavljivanje...';
+    });
+  </script>
+</body>
+</html>

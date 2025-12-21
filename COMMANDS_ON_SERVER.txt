@@ -1,0 +1,48 @@
+# Команды для выполнения НА СЕРВЕРЕ (вы уже там: root@srv1037394:~/crm-#)
+# Скопируйте и выполните эти команды по очереди
+
+# 1. Проверяем имя контейнера (уже знаем: crm--crm-app-1)
+docker ps | grep crm-app
+
+# 2. Копируем все файлы внутрь контейнера одной командой:
+CONTAINER="crm--crm-app-1"
+
+# Templates (21 файл с favicon)
+docker cp /root/crm-/templates/booking_base.html ${CONTAINER}:/app/templates/booking_base.html
+docker cp /root/crm-/templates/clients_base.html ${CONTAINER}:/app/templates/clients_base.html
+docker cp /root/crm-/templates/client_detail_base.html ${CONTAINER}:/app/templates/client_detail_base.html
+docker cp /root/crm-/templates/dashboard_base.html ${CONTAINER}:/app/templates/dashboard_base.html
+docker cp /root/crm-/templates/admin_base.html ${CONTAINER}:/app/templates/admin_base.html
+docker cp /root/crm-/templates/settings_base.html ${CONTAINER}:/app/templates/settings_base.html
+docker cp /root/crm-/templates/marketing_base.html ${CONTAINER}:/app/templates/marketing_base.html
+docker cp /root/crm-/templates/login_base.html ${CONTAINER}:/app/templates/login_base.html
+docker cp /root/crm-/templates/login_page_base.html ${CONTAINER}:/app/templates/login_page_base.html
+docker cp /root/crm-/templates/map_base.html ${CONTAINER}:/app/templates/map_base.html
+docker cp /root/crm-/templates/landing.html ${CONTAINER}:/app/templates/landing.html
+docker cp /root/crm-/templates/error.html ${CONTAINER}:/app/templates/error.html
+docker cp /root/crm-/templates/admin_login.html ${CONTAINER}:/app/templates/admin_login.html
+docker cp /root/crm-/templates/admin_login_new.html ${CONTAINER}:/app/templates/admin_login_new.html
+docker cp /root/crm-/templates/admin_verify_code.html ${CONTAINER}:/app/templates/admin_verify_code.html
+docker cp /root/crm-/templates/admin_dashboard.html ${CONTAINER}:/app/templates/admin_dashboard.html
+docker cp /root/crm-/templates/admin_businesses.html ${CONTAINER}:/app/templates/admin_businesses.html
+docker cp /root/crm-/templates/admin_business_detail.html ${CONTAINER}:/app/templates/admin_business_detail.html
+docker cp /root/crm-/templates/admin_business_edit.html ${CONTAINER}:/app/templates/admin_business_edit.html
+docker cp /root/crm-/templates/admin_settings.html ${CONTAINER}:/app/templates/admin_settings.html
+docker cp /root/crm-/templates/admin_pending.html ${CONTAINER}:/app/templates/admin_pending.html
+
+# Основные файлы (4 файла)
+docker cp /root/crm-/templates/booking.html ${CONTAINER}:/app/templates/booking.html
+docker cp /root/crm-/templates/clients.html ${CONTAINER}:/app/templates/clients.html
+docker cp /root/crm-/templates/client_detail.html ${CONTAINER}:/app/templates/client_detail.html
+docker cp /root/crm-/app/main.py ${CONTAINER}:/app/app/main.py
+
+# 3. Перезапускаем контейнер
+docker-compose restart crm-app
+
+# 4. Проверяем что файлы скопировались
+docker exec ${CONTAINER} ls -lh /app/templates/booking.html
+docker exec ${CONTAINER} ls -lh /app/app/main.py
+
+# 5. Проверяем логи
+docker-compose logs --tail=50 crm-app
+

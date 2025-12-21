@@ -1,0 +1,54 @@
+# Команды для поиска базы данных и выполнения миграции
+
+# 1. Найдите где находится база данных:
+CONTAINER="crm--crm-app-1"
+
+# Проверьте volumes контейнера:
+docker inspect ${CONTAINER} | grep -A 10 Mounts
+
+# Или найдите все .db файлы в контейнере:
+docker exec ${CONTAINER} find /app -name "*.db" -type f 2>/dev/null
+
+# Или проверьте переменные окружения:
+docker exec ${CONTAINER} env | grep -i db
+
+# 2. Если база данных в volume на хосте, найдите путь:
+docker volume ls
+docker volume inspect <volume_name>
+
+# 3. После того как найдете путь к базе, выполните миграцию:
+
+# Вариант A: Если база на хосте (например в volume):
+# Найдите путь к volume:
+docker volume inspect crm-_app_data  # или другое имя volume
+
+# Затем выполните миграцию на хосте:
+sqlite3 /var/lib/docker/volumes/<volume_name>/_data/app.db "ALTER TABLE business ADD COLUMN table_columns TEXT;"
+
+# Вариант B: Если база внутри контейнера, но в другом месте:
+# Обновите migrate_table_columns.py с правильным путем и выполните:
+docker exec ${CONTAINER} python /app/migrate_table_columns.py
+
+# 4. Или выполните миграцию через Python напрямую в контейнере:
+docker exec ${CONTAINER} python -c "
+import sqlite3
+import os
+# Попробуйте разные пути
+paths = ['/app/app.db', '/app/data/app.db', '/data/app.db', '/var/lib/app.db']
+for path in paths:
+    if os.path.exists(path):
+        print(f'Найдена база: {path}')
+        conn = sqlite3.connect(path)
+        cursor = conn.cursor()
+        cursor.execute('PRAGMA table_info(business)')
+        columns = [col[1] for col in cursor.fetchall()]
+        if 'table_columns' not in columns:
+            cursor.execute('ALTER TABLE business ADD COLUMN table_columns TEXT')
+            conn.commit()
+            print('Колонка table_columns добавлена!')
+        else:
+            print('Колонка table_columns уже существует')
+        conn.close()
+        break
+"
+

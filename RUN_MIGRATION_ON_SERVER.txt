@@ -1,0 +1,25 @@
+# Команды для выполнения миграции на сервере
+
+# 1. Загрузите файл миграции на сервер (с вашего компьютера):
+scp migrate_table_columns.py root@72.60.182.59:/root/crm-/migrate_table_columns.py
+
+# 2. На сервере скопируйте файл в контейнер:
+CONTAINER="crm--crm-app-1"
+docker cp /root/crm-/migrate_table_columns.py ${CONTAINER}:/app/migrate_table_columns.py
+
+# 3. Выполните миграцию внутри контейнера:
+docker exec ${CONTAINER} python /app/migrate_table_columns.py
+
+# 4. Или выполните миграцию напрямую через SQL (если база данных на хосте):
+# Сначала найдите где находится база данных:
+docker exec ${CONTAINER} ls -la /app/app.db
+
+# Если база на хосте, подключитесь к ней и выполните:
+# sqlite3 /path/to/app.db "ALTER TABLE business ADD COLUMN table_columns TEXT;"
+
+# 5. После миграции перезапустите контейнер:
+docker-compose restart crm-app
+
+# 6. Проверьте логи:
+docker-compose logs --tail=30 crm-app
+

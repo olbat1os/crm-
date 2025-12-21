@@ -1,0 +1,1525 @@
+{% extends 'dashboard_base.html' %}
+{% block content %}
+<style>
+  /* Переопределяем активный пункт для Marketing */
+  .app-layout { --active-bg: rgba(255, 255, 255, 0.20); --active-top: 320px; }
+  .menu-item.active { background: transparent; }
+  .item-dash { background: transparent; }
+  .item-mark { background: var(--active-bg); }
+  
+  .reactivation-detail-container {
+    position: absolute;
+    left: 30px;
+    top: 95px;
+    right: 25px;
+  }
+  
+  /* Предупреждение для экранов меньше 900px */
+  .screen-size-warning {
+    display: none !important;
+    position: fixed;
+    top: 120px;
+    left: 120px;
+    right: 25px;
+    z-index: 100;
+    pointer-events: none;
+  }
+  
+  .screen-size-warning.show {
+    display: block !important;
+  }
+  
+  .screen-size-warning-content {
+    background: #FFFFFF;
+    border: 1px solid #E5E7EB;
+    border-radius: 20px;
+    padding: 30px;
+    max-width: 500px;
+    text-align: center;
+    box-shadow: 0 7px 30px rgba(0, 0, 0, 0.1);
+    pointer-events: auto;
+  }
+  
+  .screen-size-warning-content h2 {
+    font-family: 'Manrope', sans-serif;
+    font-size: 24px;
+    font-weight: 700;
+    color: #000000;
+    margin-bottom: 16px;
+  }
+  
+  .screen-size-warning-content p {
+    font-family: 'Manrope', sans-serif;
+    font-size: 16px;
+    color: #6B7280;
+    line-height: 1.5;
+  }
+
+  /* White background for main area on reactivation pages */
+  .app-layout { background: #FFFFFF !important; }
+  .main { background: #FFFFFF !important; }
+  .main-inner { background: transparent !important; }
+  
+  .reactivation-header {
+    margin-bottom: 20px;
+  }
+
+  /* Page header (back + title + meta) */
+  .reactivation-page-header {
+    background: #FFFFFF;
+    border: 1px solid #E5E7EB;
+    border-radius: 20px;
+    box-shadow: 0 7px 30px rgba(0, 0, 0, 0.06);
+    padding: 18px 20px;
+    margin-bottom: 20px;
+  }
+
+  /* Reactivation list status (Novi / U toku / Gotovo) */
+  .reactivation-list-status {
+    margin-left: auto;
+    position: relative;
+  }
+
+  .reactivation-list-status-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    height: 34px;
+    padding: 0 14px;
+    border-radius: 20px;
+    font-family: 'Manrope', sans-serif;
+    font-weight: 700;
+    font-size: 14px;
+    cursor: pointer;
+    border: 1px solid #D9D9D9;
+    background: #F3F4F6;
+    color: #000000;
+    user-select: none;
+  }
+
+  .reactivation-list-status-badge::after {
+    content: '';
+    width: 0;
+    height: 0;
+    border-left: 5px solid transparent;
+    border-right: 5px solid transparent;
+    border-top: 6px solid #6B7280;
+    margin-top: 2px;
+  }
+
+  .reactivation-list-status-badge.status-novi { background: #E8D8F8; border: 1px solid #9C27B0; }
+  .reactivation-list-status-badge.status-u-toku { background: #FFF0BF; border: 1px solid #DBC787; }
+  .reactivation-list-status-badge.status-gotovo { background: #D8F8E4; border: 1px solid #4CAF50; }
+
+  .reactivation-list-status-menu {
+    position: fixed;
+    width: 220px;
+    background: #FFFFFF;
+    border: 1px solid #D9D9D9;
+    border-radius: 20px;
+    box-shadow: 0px 7px 30px rgba(0, 0, 0, 0.15);
+    z-index: 12000;
+    display: none;
+    padding: 8px;
+    flex-direction: column;
+    gap: 6px;
+  }
+
+  .reactivation-list-status-menu.show { display: flex; }
+
+  .reactivation-list-status-option {
+    height: 40px;
+    border-radius: 20px;
+    font-family: 'Manrope', sans-serif;
+    font-weight: 700;
+    font-size: 14px;
+    border: 1px solid transparent;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: opacity 0.15s ease;
+    user-select: none;
+  }
+
+  .reactivation-list-status-option:hover { opacity: 0.85; }
+  .reactivation-list-status-option.status-novi { background: #E8D8F8; border-color: #9C27B0; }
+  .reactivation-list-status-option.status-u-toku { background: #FFF0BF; border-color: #DBC787; }
+  .reactivation-list-status-option.status-gotovo { background: #D8F8E4; border-color: #4CAF50; }
+
+  .reactivation-page-header-top {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    margin-bottom: 12px;
+  }
+
+  .reactivation-back-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 10px;
+    height: 40px;
+    padding: 0 16px;
+    border-radius: 30px;
+    background: #FFFFFF;
+    border: 1px solid #D9D9D9;
+    color: #111827;
+    font-family: 'Manrope', sans-serif;
+    font-weight: 600;
+    font-size: 14px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+  }
+
+  .reactivation-back-btn:hover {
+    border-color: #11998E;
+    box-shadow: 0 6px 16px rgba(17, 153, 142, 0.12);
+    transform: translateY(-1px);
+  }
+
+  .reactivation-back-btn:active {
+    transform: translateY(0);
+  }
+
+  .reactivation-back-btn img {
+    width: 10px;
+    height: 16px;
+  }
+
+  .reactivation-title {
+    margin: 0;
+  }
+
+  .reactivation-meta-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px 14px;
+    flex-wrap: wrap;
+  }
+
+  .reactivation-meta {
+    font-family: 'Manrope', sans-serif;
+    font-size: 14px;
+    color: #6B7280;
+    line-height: 20px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    flex-wrap: wrap;
+  }
+
+  .reactivation-meta strong {
+    color: #111827;
+    font-weight: 600;
+  }
+
+  .reactivation-meta-sep {
+    color: #D1D5DB;
+  }
+
+  .reactivation-meta-badges {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    flex-wrap: wrap;
+  }
+
+  /* (откат) белый фон страницы убран */
+  
+  .reactivation-title {
+    font-family: 'Manrope', sans-serif;
+    font-size: 28px;
+    font-weight: 600;
+    color: #000000;
+    margin-bottom: 10px;
+  }
+  
+  /* legacy (kept for safety; header now uses .reactivation-meta) */
+  .reactivation-date {
+    font-family: 'Manrope', sans-serif;
+    font-size: 14px;
+    color: #6B7280;
+    margin-bottom: 20px;
+  }
+  
+  .reactivation-filters {
+    display: flex;
+    gap: 16px;
+    margin-bottom: 20px;
+    flex-wrap: wrap;
+  }
+  
+  /* Status Filters Container - горизонтальный скролл */
+  .status-filters-container {
+    display: flex;
+    gap: 16px;
+    align-items: center;
+    position: relative;
+    z-index: 1;
+    flex-wrap: nowrap;
+    margin-bottom: 20px;
+    padding-bottom: 10px;
+    overflow-x: auto;
+    overflow-y: hidden;
+    scrollbar-width: thin;
+    scrollbar-color: #2CAB5C #f1f1f1;
+    -webkit-overflow-scrolling: touch;
+  }
+  
+  .status-filters-container::-webkit-scrollbar {
+    height: 8px;
+  }
+  
+  .status-filters-container::-webkit-scrollbar-track {
+    background: #f1f1f1;
+    border-radius: 4px;
+  }
+  
+  .status-filters-container::-webkit-scrollbar-thumb {
+    background: #2CAB5C;
+    border-radius: 4px;
+  }
+  
+  .status-filters-container::-webkit-scrollbar-thumb:hover {
+    background: #11998E;
+  }
+
+  .filter-group {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    position: relative;
+    z-index: 100;
+    cursor: pointer;
+  }
+  
+  .filter-checkbox {
+    width: 16px;
+    height: 16px;
+    border: 1px solid #D9D9D9;
+    border-radius: 4px;
+    position: relative;
+    cursor: pointer;
+    background: #FFFFFF;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+  }
+  
+  .filter-checkbox.checked {
+    background: #11998E;
+    border-color: #11998E;
+  }
+  
+  .filter-checkbox.checked::after {
+    content: '✓';
+    color: #FFFFFF;
+    font-size: 12px;
+    font-weight: bold;
+    position: absolute;
+  }
+  
+  .filter-label {
+    font-family: 'Manrope', sans-serif;
+    font-weight: 700;
+    font-size: 16px;
+    line-height: 100%;
+    letter-spacing: 0%;
+    text-align: center;
+    color: #000000;
+    white-space: nowrap;
+  }
+
+  /* Размеры статусов: в фильтрах 16px, в таблице 14px */
+  .status-filters-container .filter-label {
+    font-weight: 700;
+    font-size: 16px;
+    line-height: 16px;
+  }
+
+  .reactivation-table .status-badge {
+    font-weight: 700;
+    font-size: 14px;
+    line-height: 14px;
+  }
+  
+  .filter-badge {
+    padding: 8px 16px;
+    background: #F3F4F6;
+    border-radius: 20px;
+    font-family: 'Manrope', sans-serif;
+    font-size: 14px;
+    color: #000000;
+  }
+  
+  .reactivation-table-container {
+    background: #FFFFFF;
+    /* slightly stronger shadow like other cards */
+    box-shadow: 0 7px 30px rgba(0, 0, 0, 0.08);
+    border-radius: 8px;
+    overflow: hidden;
+    position: relative;
+    height: calc(100vh - 400px);
+    overflow-x: auto;
+    overflow-y: hidden;
+    scrollbar-width: auto;
+    scrollbar-color: #2CAB5C #f1f1f1;
+  }
+  
+  .reactivation-table-container::-webkit-scrollbar {
+    height: 12px !important;
+    display: block !important;
+    -webkit-appearance: none !important;
+    background: #f1f1f1 !important;
+  }
+  
+  .reactivation-table-container::-webkit-scrollbar-track {
+    background: #f1f1f1 !important;
+    border-radius: 6px !important;
+    -webkit-box-shadow: inset 0 0 6px rgba(0,0,0,0.1) !important;
+  }
+  
+  .reactivation-table-container::-webkit-scrollbar-thumb {
+    background: #2CAB5C !important;
+    border-radius: 6px !important;
+    min-width: 50px !important;
+    -webkit-box-shadow: inset 0 0 6px rgba(0,0,0,0.2) !important;
+  }
+  
+  .reactivation-table-container::-webkit-scrollbar-thumb:hover {
+    background: #11998E !important;
+  }
+  
+  .reactivation-table-wrapper {
+    height: 100%;
+    overflow-y: auto !important;
+    overflow-x: visible !important;
+    scrollbar-width: thin;
+    scrollbar-color: #888 #f1f1f1;
+    width: max-content;
+    min-width: 100%;
+  }
+  
+  .reactivation-table-wrapper::-webkit-scrollbar {
+    width: 8px !important;
+    display: block !important;
+  }
+  
+  .reactivation-table-wrapper::-webkit-scrollbar-track {
+    background: #f1f1f1 !important;
+    border-radius: 4px !important;
+  }
+  
+  .reactivation-table-wrapper::-webkit-scrollbar-thumb {
+    background: #888 !important;
+    border-radius: 4px !important;
+  }
+  
+  .reactivation-table-wrapper::-webkit-scrollbar-thumb:hover {
+    background: #555 !important;
+  }
+  
+  .reactivation-table {
+    width: 100%;
+    min-width: 800px;
+    border-collapse: separate;
+    border-spacing: 0;
+    font-family: 'Manrope', sans-serif;
+  }
+  
+  .reactivation-table thead tr {
+    height: 65px;
+    background: #FFFFFF;
+  }
+  
+  .reactivation-table thead th {
+    border: none !important;
+    padding: 0.5rem 1rem;
+    text-align: left;
+    background: #FFFFFF;
+    color: #000000;
+    border-bottom: 2px solid #e5e7eb !important;
+    height: 65px;
+    vertical-align: middle;
+    font-weight: 600;
+    font-size: 16px;
+  }
+  
+  .reactivation-table tbody tr {
+    border: none !important;
+    height: 70px;
+    transition: background-color 0.2s ease;
+  }
+  
+  .reactivation-table tbody tr:hover {
+    background-color: #F7F7F7;
+  }
+  
+  .reactivation-table tbody td {
+    border: none !important;
+    padding: 0.5rem 1rem;
+    color: #111111;
+    font-size: 14px;
+    font-weight: 400;
+    border-bottom: 2px solid #e5e7eb !important;
+    height: 70px;
+    vertical-align: middle;
+  }
+  
+  .status-badge {
+    padding: 4px 12px;
+    border-radius: 12px;
+    font-size: 12px;
+    font-weight: 500;
+    display: inline-block;
+  }
+  
+  .status-cell {
+    position: relative;
+  }
+  
+  /* Статусы реактивации */
+  .status-poslato { background: #E8D8F8; border: 1px solid #9C27B0; color: #000000; }
+  .status-zainteresovan { background: #D8F8E4; border: 1px solid #4CAF50; color: #000000; }
+  .status-rezervisao { background: #FFF0BF; border: 1px solid #DBC787; color: #000000; }
+  .status-stop-spam { background: #FFBFBF; border: 1px solid #F44336; color: #000000; }
+  .status-neaktivan-broj { background: #FFD59E; border: 1px solid #FF9800; color: #000000; }
+  
+  /* Dropdown меню для статусов */
+  .status-dropdown-menu {
+    position: fixed !important;
+    width: 211px;
+    background: white;
+    z-index: 1000 !important;
+    border: 1px solid #D9D9D9;
+    border-radius: 20px;
+    box-shadow: 0px 7px 30px rgba(0, 0, 0, 0.15);
+    z-index: 10000 !important;
+    display: none !important;
+    margin-top: 5px;
+    overflow: hidden;
+    padding: 8px;
+    opacity: 0;
+    transform: translateY(-10px);
+    transition: all 0.3s ease;
+    flex-direction: column;
+    visibility: hidden;
+  }
+  
+  .status-dropdown-menu.show {
+    display: flex !important;
+    opacity: 1 !important;
+    transform: translateY(0) !important;
+    visibility: visible !important;
+  }
+  
+  .status-dropdown-menu .status-option {
+    width: 100% !important;
+    margin: 0 !important;
+    margin-bottom: 4px !important;
+    display: block !important;
+    height: 40px !important;
+    padding: 0 16px !important;
+    border-radius: 20px !important;
+    font-size: 16px !important;
+    line-height: 40px !important;
+    text-align: center !important;
+    font-family: 'Manrope', sans-serif !important;
+    font-weight: 700 !important;
+    color: #000000 !important;
+    cursor: pointer !important;
+    transition: all 0.2s ease !important;
+    box-sizing: border-box !important;
+  }
+  
+  .status-dropdown-menu .status-option:hover {
+    opacity: 0.8 !important;
+  }
+
+  /* Make dropdown options colorful (robust, not dependent on nth-child) */
+  .reactivation-status-dropdown.status-dropdown-menu {
+    width: 240px;
+    padding: 10px;
+  }
+
+  .reactivation-status-dropdown .status-option {
+    border-radius: 20px !important;
+    margin-bottom: 6px !important;
+    text-align: center !important;
+  }
+
+  .reactivation-status-dropdown .status-option:last-child {
+    margin-bottom: 0 !important;
+  }
+
+  .reactivation-status-dropdown .status-option.status-poslato { background: #E8D8F8 !important; border: 1px solid #9C27B0 !important; }
+  .reactivation-status-dropdown .status-option.status-zainteresovan { background: #D8F8E4 !important; border: 1px solid #4CAF50 !important; }
+  .reactivation-status-dropdown .status-option.status-rezervisao { background: #FFF0BF !important; border: 1px solid #DBC787 !important; }
+  .reactivation-status-dropdown .status-option.status-stop-spam { background: #FFBFBF !important; border: 1px solid #F44336 !important; }
+  .reactivation-status-dropdown .status-option.status-neaktivan-broj { background: #FFD59E !important; border: 1px solid #FF9800 !important; }
+  
+  /* Reactivation comment modal */
+  .reactivation-comment-modal {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0,0,0,0.5);
+    display: none;
+    z-index: 2500;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .reactivation-comment-modal.show { display: flex; }
+
+  .reactivation-comment-modal-content {
+    width: 520px;
+    max-width: calc(100% - 32px);
+    background: #FFFFFF;
+    border-radius: 20px;
+    box-shadow: 0 7px 30px rgba(0,0,0,0.15);
+    padding: 20px;
+    position: relative;
+  }
+
+  .reactivation-comment-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+    margin-bottom: 14px;
+  }
+
+  .reactivation-comment-title {
+    font-family: 'Manrope', sans-serif;
+    font-weight: 700;
+    font-size: 18px;
+    color: #000000;
+    margin: 0;
+  }
+
+  .reactivation-comment-close {
+    background: none;
+    border: none;
+    cursor: pointer;
+    padding: 6px;
+    border-radius: 10px;
+  }
+
+  .reactivation-comment-close:hover { background: #F3F4F6; }
+
+  .reactivation-comment-textarea {
+    width: 100%;
+    min-height: 120px;
+    border: 1px solid #D9D9D9;
+    border-radius: 16px;
+    padding: 12px 14px;
+    font-family: 'Manrope', sans-serif;
+    font-size: 14px;
+    outline: none;
+    resize: vertical;
+  }
+
+  .reactivation-comment-textarea:focus {
+    border-color: #11998E;
+    box-shadow: 0 0 0 3px rgba(17,153,142,0.10);
+  }
+
+  .reactivation-comment-actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: 10px;
+    margin-top: 14px;
+  }
+
+  .reactivation-btn-secondary {
+    height: 40px;
+    padding: 0 16px;
+    border-radius: 20px;
+    border: 1px solid #D9D9D9;
+    background: #FFFFFF;
+    font-family: 'Manrope', sans-serif;
+    font-weight: 600;
+    cursor: pointer;
+  }
+
+  .reactivation-btn-primary {
+    height: 40px;
+    padding: 0 18px;
+    border-radius: 20px;
+    border: none;
+    background: linear-gradient(270deg, #11998E 0%, #2CAB5C 100%);
+    color: #FFFFFF;
+    font-family: 'Manrope', sans-serif;
+    font-weight: 600;
+    cursor: pointer;
+  }
+
+  .reactivation-btn-primary:hover { opacity: 0.9; }
+
+  /* Action buttons */
+  .action-buttons {
+    display: flex;
+    gap: 10px;
+    align-items: center;
+    justify-content: center;
+  }
+  
+  .action-btn {
+    width: 20px;
+    height: 20px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: opacity 0.2s ease;
+  }
+  
+  .action-btn:hover {
+    opacity: 0.7;
+  }
+  
+  .action-btn img {
+    width: 20px;
+    height: 20px;
+  }
+
+  /* Make profile icon slightly gray (visual hierarchy like in CRM) */
+  .action-btn.profile-icon {
+    filter: grayscale(100%) brightness(1.45);
+    opacity: 1;
+  }
+
+  .action-btn.profile-icon:hover {
+    filter: grayscale(0%) brightness(1);
+    opacity: 1;
+  }
+  
+  /* Call Modal */
+  .call-modal {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.5);
+    display: none;
+    z-index: 2000;
+  }
+
+  .call-modal.show {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .call-modal-content {
+    background: white;
+    width: 380px;
+    height: 230px;
+    border-radius: 20px;
+    text-align: center;
+    position: relative;
+    padding: 30px;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+  }
+
+  .call-modal-content .close-button {
+    position: absolute;
+    top: 15px;
+    right: 15px;
+    background: none;
+    border: none;
+    cursor: pointer;
+    padding: 5px;
+  }
+
+  .call-modal-content .client-name {
+    font-family: 'Manrope', sans-serif;
+    font-weight: 700;
+    font-size: 24px;
+    line-height: 30px;
+    height: 30px;
+    color: #000000;
+    margin: 0 0 0 0;
+    width: 100%;
+    text-align: center;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .call-modal-content .last-reservation-date {
+    font-family: 'Manrope', sans-serif;
+    font-weight: 700;
+    font-size: 16px;
+    line-height: 100%;
+    letter-spacing: 0%;
+    color: #000000;
+    margin: 0 0 20px 0;
+    width: 100%;
+    text-align: left;
+  }
+
+  .call-modal-content .client-phone {
+    font-family: 'Manrope', sans-serif;
+    font-weight: 400;
+    font-size: 20px;
+    line-height: 100%;
+    letter-spacing: 0%;
+    color: #000000;
+    margin: 0 0 20px 0;
+    width: 100%;
+    text-align: left;
+  }
+
+  .call-actions {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-top: auto;
+  }
+
+  .call-button {
+    background: linear-gradient(270deg, #11998E 0%, #2CAB5C 100%);
+    color: white;
+    border: none;
+    width: 130px;
+    height: 40px;
+    border-radius: 30px;
+    font-family: 'Manrope', sans-serif;
+    font-weight: 600;
+    font-size: 16px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+  }
+
+  .call-button:hover {
+    transform: scale(1.05);
+  }
+
+  .whatsapp-button {
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    background: linear-gradient(270deg, #11998E 0%, #2CAB5C 100%);
+    border: none;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.2s ease;
+  }
+
+  .whatsapp-button:hover {
+    opacity: 0.9;
+    transform: translateY(-1px);
+  }
+
+  .whatsapp-button svg {
+    width: 20px;
+    height: 20px;
+  }
+</style>
+
+<!-- Предупреждение о размере экрана -->
+<div class="screen-size-warning" id="screenSizeWarning" style="display: none;">
+  <div class="screen-size-warning-content">
+    <h2>Stranica još nije spremna</h2>
+    <p>Za vaš uređaj stranica još nije spremna. Molimo koristite veći ekran.</p>
+  </div>
+</div>
+
+<div class="reactivation-detail-container">
+  <!-- Header -->
+  <div class="reactivation-page-header">
+    <div class="reactivation-page-header-top">
+      <button class="reactivation-back-btn" onclick="window.location.href='/marketing'">
+        <img src="/static/images/nazad.png" alt="Nazad">
+        Nazad
+      </button>
+
+      <div class="reactivation-list-status">
+        {% set list_status = reactivation_list.status or 'Novi' %}
+        <span class="reactivation-list-status-badge {% if list_status == 'Novi' %}status-novi{% elif list_status == 'U toku' %}status-u-toku{% elif list_status == 'Gotovo' %}status-gotovo{% endif %}"
+              id="reactivationListStatusBadge"
+              onclick="toggleReactivationListStatusMenu(this); event.stopPropagation();">
+          {{ list_status }}
+        </span>
+        <div class="reactivation-list-status-menu" id="reactivationListStatusMenu">
+          <div class="reactivation-list-status-option status-novi" onclick="updateReactivationListStatus('Novi'); event.stopPropagation();">Novi</div>
+          <div class="reactivation-list-status-option status-u-toku" onclick="updateReactivationListStatus('U toku'); event.stopPropagation();">U toku</div>
+          <div class="reactivation-list-status-option status-gotovo" onclick="updateReactivationListStatus('Gotovo'); event.stopPropagation();">Gotovo</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="reactivation-header" style="margin-bottom: 0;">
+      <h1 class="reactivation-title">{{ reactivation_list.name }}</h1>
+      <div class="reactivation-meta-row">
+        <div class="reactivation-meta">
+          <span>Datum akcije: <strong>
+            {% if reactivation_list.filter_last_visit_from and reactivation_list.filter_last_visit_to %}
+              {% if reactivation_list.filter_last_visit_from == reactivation_list.filter_last_visit_to %}
+                {{ reactivation_list.filter_last_visit_from.strftime('%d.%m.%Y') }}
+              {% else %}
+                {{ reactivation_list.filter_last_visit_from.strftime('%d.%m.%Y') }} - {{ reactivation_list.filter_last_visit_to.strftime('%d.%m.%Y') }}
+              {% endif %}
+            {% elif reactivation_list.filter_last_visit_from %}
+              Od {{ reactivation_list.filter_last_visit_from.strftime('%d.%m.%Y') }}
+            {% elif reactivation_list.filter_last_visit_to %}
+              Do {{ reactivation_list.filter_last_visit_to.strftime('%d.%m.%Y') }}
+            {% else %}
+              -
+            {% endif %}
+          </strong></span>
+          {% if reactivation_list.sales_manager %}
+            <span class="reactivation-meta-sep">|</span>
+            <span>Sales manager: <strong>{{ reactivation_list.sales_manager }}</strong></span>
+          {% endif %}
+        </div>
+
+        <div class="reactivation-meta-badges">
+        </div>
+      </div>
+    </div>
+  </div>
+  
+  <!-- Фильтры -->
+  {% if filter_data %}
+  <div class="reactivation-filters">
+    {# Rezervacije badge moved to header for nicer look #}
+    
+    {% if filter_data.get('last_visit_date') %}
+    <div class="filter-badge">
+      Datum posete: {{ filter_data.get('last_visit_date').strftime('%d.%m.%Y') }}
+    </div>
+    {% endif %}
+    
+    {% if filter_data.get('visits_count_min') is not none or filter_data.get('visits_count_max') is not none %}
+    <div class="filter-badge">
+      Broj poseta: 
+      {% if filter_data.get('visits_count_min') is not none %}{{ filter_data.get('visits_count_min') }}{% endif %}
+      {% if filter_data.get('visits_count_min') is not none and filter_data.get('visits_count_max') is not none %} - {% endif %}
+      {% if filter_data.get('visits_count_max') is not none %}{{ filter_data.get('visits_count_max') }}{% endif %}
+    </div>
+    {% endif %}
+    
+    {% if filter_data.get('max_spend_min') is not none or filter_data.get('max_spend_max') is not none %}
+    <div class="filter-badge">
+      Maks. potrošnja: 
+      {% if filter_data.get('max_spend_min') is not none %}{{ filter_data.get('max_spend_min') }}{% endif %}
+      {% if filter_data.get('max_spend_min') is not none and filter_data.get('max_spend_max') is not none %} - {% endif %}
+      {% if filter_data.get('max_spend_max') is not none %}{{ filter_data.get('max_spend_max') }}{% endif %}
+    </div>
+    {% endif %}
+    
+    {% if filter_data.get('last_offer_from_days') is not none or filter_data.get('last_offer_to_days') is not none %}
+    <div class="filter-badge">
+      Poslednja akcija: 
+      {% if filter_data.get('last_offer_from_days') is not none %}{{ filter_data.get('last_offer_from_days') }}{% endif %}
+      {% if filter_data.get('last_offer_from_days') is not none and filter_data.get('last_offer_to_days') is not none %} - {% endif %}
+      {% if filter_data.get('last_offer_to_days') is not none %}{{ filter_data.get('last_offer_to_days') }}{% endif %}
+      dana unazad
+    </div>
+    {% endif %}
+  </div>
+  {% endif %}
+  
+  <!-- Status Filters -->
+  <div class="status-filters-container">
+    <div class="filter-group" onclick="toggleAllStatusFilter(this.querySelector('.filter-checkbox'))">
+      <div class="filter-checkbox checked"></div>
+      <span class="filter-label" id="allStatusCounter">Sve ({{ contacts_data|length }})</span>
+    </div>
+    <div class="filter-group" onclick="toggleStatusFilter(this.querySelector('.filter-checkbox'), 'Poslato')">
+      <div class="filter-checkbox"></div>
+      <span class="status-badge status-poslato filter-label" id="poslatoCounter">Poslato - {{ contacts_data|selectattr('status', 'equalto', 'Poslato')|list|length }}</span>
+    </div>
+    <div class="filter-group" onclick="toggleStatusFilter(this.querySelector('.filter-checkbox'), 'Zainteresovan')">
+      <div class="filter-checkbox"></div>
+      <span class="status-badge status-zainteresovan filter-label" id="zainteresovanCounter">Zainteresovan - {{ contacts_data|selectattr('status', 'equalto', 'Zainteresovan')|list|length }}</span>
+    </div>
+    <div class="filter-group" onclick="toggleStatusFilter(this.querySelector('.filter-checkbox'), 'rezervisao')">
+      <div class="filter-checkbox"></div>
+      <span class="status-badge status-rezervisao filter-label" id="rezervisaoCounter">Rezervisao - {{ contacts_data|selectattr('status', 'equalto', 'rezervisao')|list|length }}</span>
+    </div>
+    <div class="filter-group" onclick="toggleStatusFilter(this.querySelector('.filter-checkbox'), 'stop spam')">
+      <div class="filter-checkbox"></div>
+      <span class="status-badge status-stop-spam filter-label" id="stopspamCounter">Stop spam - {{ contacts_data|selectattr('status', 'equalto', 'stop spam')|list|length }}</span>
+    </div>
+    <div class="filter-group" onclick="toggleStatusFilter(this.querySelector('.filter-checkbox'), 'neaktivan broj')">
+      <div class="filter-checkbox"></div>
+      <span class="status-badge status-neaktivan-broj filter-label" id="neaktivanbrojCounter">Neaktivan broj - {{ contacts_data|selectattr('status', 'equalto', 'neaktivan broj')|list|length }}</span>
+    </div>
+    <div class="filter-group" onclick="toggleStatusFilter(this.querySelector('.filter-checkbox'), '')">
+      <div class="filter-checkbox"></div>
+      <span class="filter-label" id="noStatusCounter" style="border: 1px dashed #D9D9D9; padding: 4px 12px; border-radius: 12px; background: #F9FAFB;">Bez statusa - 0</span>
+    </div>
+  </div>
+  
+  <!-- Таблица -->
+  <div class="reactivation-table-container">
+    <div class="reactivation-table-wrapper">
+      <table class="reactivation-table">
+      <thead>
+        <tr>
+          <th>Poslednja poseta</th>
+          <th>Gost</th>
+          <th>Telefon</th>
+          <th>Prosečan račun</th>
+          <th>Dolazak</th>
+          <th>Komentar</th>
+          <th>Status</th>
+          <th>Akcije</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% if contacts_data %}
+          {% for item in contacts_data %}
+          {% set contact = item.contact %}
+          {% set last_booking = item.last_booking %}
+          {% set last_offer = item.last_offer %}
+          {% set avg_spend = item.avg_spend %}
+          {% set visits_count = item.visits_count %}
+          {% set status = item.status %}
+          <tr class="reactivation-contact-row" data-status="{{ status or '' }}">
+            <td>
+              {% if last_booking %}
+                {{ last_booking.date.strftime('%d.%m.%Y') if last_booking.date else '-' }}
+              {% else %}
+                -
+              {% endif %}
+            </td>
+            <td>{{ contact.first_name }} {{ contact.last_name or '' }}</td>
+            <td>{{ contact.phone or '-' }}</td>
+            <td>
+              {% if avg_spend %}
+                {{ "%.2f"|format(avg_spend) }} RSD
+              {% else %}
+                -
+              {% endif %}
+            </td>
+            <td>{{ visits_count or 0 }}</td>
+            <td>{{ (last_offer.comment if last_offer and last_offer.comment else '-') }}</td>
+            <td>
+              {% set current_status = status or '' %}
+              {% set offer_id = last_offer.id if last_offer else None %}
+              {% set contact_id = item.contact_id %}
+              <div class="status-cell" style="position: relative;">
+                <span class="status-badge status-{{ current_status|lower|replace(' ', '-')|replace('_', '-') if current_status else '' }} reactivation-status-badge" 
+                      onclick="toggleReactivationStatusMenu(this, '{{ offer_id if offer_id else 'null' }}', {{ contact_id }}); event.stopPropagation();" 
+                      style="cursor: pointer;{% if not current_status %}border: 1px dashed #D9D9D9; background: #F9FAFB;{% endif %}"
+                      data-offer-id="{{ offer_id if offer_id else '' }}"
+                      data-contact-id="{{ contact_id }}"
+                      data-current-status="{{ current_status }}">
+                  {% if current_status %}
+                    {{ current_status|capitalize }}
+                  {% else %}
+                    -
+                  {% endif %}
+                </span>
+                <div class="status-dropdown-menu reactivation-status-dropdown" id="statusMenu_{{ contact_id }}_{{ offer_id if offer_id else 'new' }}" style="display: none;">
+                  <div class="status-option status-poslato" onclick="updateReactivationStatus('{{ offer_id if offer_id else 'null' }}', {{ contact_id }}, {{ reactivation_list.id }}, 'Poslato'); event.stopPropagation();">Poslato</div>
+                  <div class="status-option status-zainteresovan" onclick="updateReactivationStatus('{{ offer_id if offer_id else 'null' }}', {{ contact_id }}, {{ reactivation_list.id }}, 'Zainteresovan'); event.stopPropagation();">Zainteresovan</div>
+                  <div class="status-option status-rezervisao" onclick="updateReactivationStatus('{{ offer_id if offer_id else 'null' }}', {{ contact_id }}, {{ reactivation_list.id }}, 'rezervisao'); event.stopPropagation();">Rezervisao</div>
+                  <div class="status-option status-stop-spam" onclick="updateReactivationStatus('{{ offer_id if offer_id else 'null' }}', {{ contact_id }}, {{ reactivation_list.id }}, 'stop spam'); event.stopPropagation();">Stop spam</div>
+                  <div class="status-option status-neaktivan-broj" onclick="updateReactivationStatus('{{ offer_id if offer_id else 'null' }}', {{ contact_id }}, {{ reactivation_list.id }}, 'neaktivan broj'); event.stopPropagation();">Neaktivan broj</div>
+                </div>
+              </div>
+            </td>
+            <td>
+              <div class="action-buttons">
+                <img src="/static/images/profil.png" alt="Klijent" class="action-btn profile-icon" onclick="event.stopPropagation(); window.location.href='/clients/{{ contact_id }}'">
+                <img src="/static/images/karandash.png" alt="Komentar" class="action-btn" onclick="event.stopPropagation(); openReactivationCommentModal('{{ offer_id if offer_id else 'null' }}', {{ contact_id }}, {{ reactivation_list.id }}, `{{ (last_offer.comment or '')|replace('`','\\`') }}`)">
+                {% if contact.phone %}
+                <img src="/static/images/telefon.png" alt="Phone" class="action-btn" onclick="event.stopPropagation(); showCallModal('{{ contact.first_name or '' }} {{ contact.last_name or '' }}', '{{ contact.phone }}', '{{ last_booking.date.strftime("%d. %B %Y") if last_booking and last_booking.date else "Nema rezervacije" }}')">
+                {% endif %}
+              </div>
+            </td>
+          </tr>
+          {% endfor %}
+        {% else %}
+          <tr>
+            <td colspan="8" style="text-align: center; padding: 40px; color: #6B7280;">
+              Nema kontakata u ovoj akciji
+            </td>
+          </tr>
+        {% endif %}
+      </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<!-- Reactivation Comment Modal -->
+<div class="reactivation-comment-modal" id="reactivationCommentModal">
+  <div class="reactivation-comment-modal-content" role="dialog" aria-modal="true" aria-labelledby="reactivationCommentTitle">
+    <div class="reactivation-comment-header">
+      <h3 class="reactivation-comment-title" id="reactivationCommentTitle">Komentar (akcija)</h3>
+      <button class="reactivation-comment-close" onclick="closeReactivationCommentModal()">
+        <img src="/static/images/krest.png" alt="Close" width="18" height="18">
+      </button>
+    </div>
+    <textarea id="reactivationCommentText" class="reactivation-comment-textarea" placeholder="Unesite komentar..."></textarea>
+    <div class="reactivation-comment-actions">
+      <button class="reactivation-btn-secondary" onclick="closeReactivationCommentModal()">Otkaži</button>
+      <button class="reactivation-btn-primary" onclick="saveReactivationComment()">Sačuvaj</button>
+    </div>
+  </div>
+</div>
+
+<script>
+  // Переменная для отслеживания открытого меню статуса
+  let currentStatusMenu = null;
+  // reactivation list id (pass explicitly to status update to avoid cache / scope issues)
+  const reactivationListId = {{ reactivation_list.id }};
+
+  // Comment modal state
+  let currentCommentOfferId = null;
+  let currentCommentContactId = null;
+  let currentCommentListId = null;
+
+  // Reactivation list status dropdown
+  const currentReactivationListId = {{ reactivation_list.id }};
+
+  function toggleReactivationListStatusMenu(badgeEl) {
+    const menu = document.getElementById('reactivationListStatusMenu');
+    if (!menu || !badgeEl) return;
+
+    const isOpen = menu.classList.contains('show');
+    if (isOpen) {
+      menu.classList.remove('show');
+      return;
+    }
+
+    // Position near badge with clamping
+    const rect = badgeEl.getBoundingClientRect();
+    menu.classList.add('show');
+
+    const menuWidth = menu.offsetWidth || 220;
+    const menuHeight = menu.offsetHeight || 140;
+    const pad = 8;
+
+    let left = rect.right - menuWidth;
+    left = Math.max(pad, Math.min(left, window.innerWidth - menuWidth - pad));
+
+    let top = rect.bottom + 6;
+    if (top + menuHeight > window.innerHeight - pad) {
+      top = rect.top - menuHeight - 6;
+    }
+    top = Math.max(pad, Math.min(top, window.innerHeight - menuHeight - pad));
+
+    menu.style.left = left + 'px';
+    menu.style.top = top + 'px';
+  }
+
+  function updateReactivationListStatus(newStatus) {
+    fetch(`/api/reactivation/list/${currentReactivationListId}/status`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ status: newStatus })
+    })
+    .then(r => r.json())
+    .then(data => {
+      if (data.success) {
+        location.reload();
+      } else {
+        alert('Greška pri izmeni statusa akcije: ' + (data.error || 'Nepoznata greška'));
+      }
+    })
+    .catch(err => {
+      console.error(err);
+      alert('Greška pri izmeni statusa akcije');
+    });
+  }
+
+  function openReactivationCommentModal(offerId, contactId, listId, initialComment) {
+    currentCommentOfferId = offerId;
+    currentCommentContactId = contactId;
+    currentCommentListId = listId;
+    const modal = document.getElementById('reactivationCommentModal');
+    const ta = document.getElementById('reactivationCommentText');
+    if (ta) ta.value = initialComment || '';
+    modal.classList.add('show');
+    setTimeout(() => { if (ta) ta.focus(); }, 0);
+  }
+
+  function closeReactivationCommentModal() {
+    const modal = document.getElementById('reactivationCommentModal');
+    modal.classList.remove('show');
+    currentCommentOfferId = null;
+    currentCommentContactId = null;
+    currentCommentListId = null;
+  }
+
+  function saveReactivationComment() {
+    const ta = document.getElementById('reactivationCommentText');
+    const comment = ta ? ta.value : '';
+    const isValidOfferId = currentCommentOfferId && currentCommentOfferId !== null && currentCommentOfferId !== 'null' && currentCommentOfferId !== '';
+    const url = isValidOfferId
+      ? `/api/reactivation/offer/${currentCommentOfferId}/comment`
+      : `/api/reactivation/contact/${currentCommentContactId}/comment`;
+    const body = isValidOfferId
+      ? JSON.stringify({ comment })
+      : JSON.stringify({ comment, reactivation_list_id: currentCommentListId || reactivationListId });
+
+    fetch(url, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body
+    })
+    .then(r => r.json())
+    .then(data => {
+      if (data.success) {
+        location.reload();
+      } else {
+        alert('Greška pri čuvanju komentara: ' + (data.error || 'Nepoznata greška'));
+      }
+    })
+    .catch(err => {
+      console.error(err);
+      alert('Greška pri čuvanju komentara');
+    });
+  }
+
+  // Close modal on outside click / Escape
+  document.addEventListener('click', function(e) {
+    const modal = document.getElementById('reactivationCommentModal');
+    if (modal && modal.classList.contains('show') && e.target === modal) {
+      closeReactivationCommentModal();
+    }
+
+    // Close list status menu if click outside
+    const statusMenu = document.getElementById('reactivationListStatusMenu');
+    if (statusMenu && statusMenu.classList.contains('show') &&
+        !statusMenu.contains(e.target) &&
+        !e.target.closest('#reactivationListStatusBadge')) {
+      statusMenu.classList.remove('show');
+    }
+  });
+  document.addEventListener('keydown', function(e) {
+    if (e.key === 'Escape') {
+      const modal = document.getElementById('reactivationCommentModal');
+      if (modal && modal.classList.contains('show')) closeReactivationCommentModal();
+    }
+  });
+  
+  // Закрыть все меню статусов при клике вне их
+  document.addEventListener('click', function(event) {
+    if (currentStatusMenu && !currentStatusMenu.contains(event.target) && !event.target.closest('.reactivation-status-badge')) {
+      currentStatusMenu.classList.remove('show');
+      currentStatusMenu = null;
+    }
+  });
+  
+  // Переключить меню статуса
+  function toggleReactivationStatusMenu(badge, offerId, contactId) {
+    // Формируем ID меню в том же формате, что и в HTML
+    const offerIdStr = (offerId === null || offerId === 'null' || offerId === '' || !offerId) ? 'new' : String(offerId);
+    const menuId = 'statusMenu_' + contactId + '_' + offerIdStr;
+    console.log('Looking for menu with ID:', menuId, 'offerId:', offerId, 'contactId:', contactId);
+    const menu = document.getElementById(menuId);
+    if (!menu) {
+      console.error('Menu not found with ID:', menuId);
+      console.log('Available menus:', document.querySelectorAll('.status-dropdown-menu').length);
+      return;
+    }
+    
+    // Закрываем другие открытые меню
+    if (currentStatusMenu && currentStatusMenu !== menu) {
+      currentStatusMenu.classList.remove('show');
+    }
+    
+    // Переключаем текущее меню
+    const isOpen = menu.classList.contains('show');
+    if (isOpen) {
+      menu.classList.remove('show');
+      menu.style.display = 'none';
+      menu.style.visibility = 'hidden';
+      currentStatusMenu = null;
+    } else {
+      const rect = badge.getBoundingClientRect();
+      menu.style.position = 'fixed';
+      menu.style.left = rect.left + 'px';
+      menu.style.top = (rect.bottom + 5) + 'px';
+      menu.style.zIndex = '10000';
+      menu.style.display = 'flex';
+      menu.style.visibility = 'visible';
+      menu.classList.add('show');
+      currentStatusMenu = menu;
+      console.log('Menu opened:', menuId, menu);
+    }
+  }
+  
+  // Обновить статус реактивации
+  function updateReactivationStatus(offerId, contactId, listId, newStatus) {
+    // Проверяем, является ли offerId валидным ID (не null и не 'null')
+    const isValidOfferId = offerId && offerId !== null && offerId !== 'null' && offerId !== '';
+    const url = isValidOfferId 
+      ? `/api/reactivation/offer/${offerId}/status` 
+      : `/api/reactivation/contact/${contactId}/status`;
+    const body = isValidOfferId 
+      ? JSON.stringify({ status: newStatus })
+      : JSON.stringify({ status: newStatus, reactivation_list_id: listId || reactivationListId });
+    
+    console.log('Updating status:', { offerId, contactId, newStatus, url, body, isValidOfferId });
+    
+    // Закрываем меню
+    if (currentStatusMenu) {
+      currentStatusMenu.classList.remove('show');
+      currentStatusMenu = null;
+    }
+    
+    fetch(url, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: body
+    })
+    .then(response => response.json())
+    .then(data => {
+      if (data.success) {
+        location.reload();
+      } else {
+        alert('Greška pri izmeni statusa: ' + (data.error || 'Nepoznata greška'));
+      }
+    })
+    .catch(error => {
+      console.error('Error:', error);
+      alert('Greška pri izmeni statusa');
+    });
+  }
+  
+  // Call Modal Functions
+  function showCallModal(name, phone, lastReservation) {
+    // Обрезаем имя если оно слишком длинное
+    const maxLength = 25;
+    let displayName = name.trim();
+    if (displayName.length > maxLength) {
+      displayName = displayName.substring(0, maxLength - 3) + '...';
+    }
+    
+    document.getElementById('callClientName').textContent = displayName || 'N/A';
+    document.getElementById('callClientPhone').textContent = phone || 'N/A';
+    document.getElementById('callLastReservation').textContent = lastReservation || "Nema rezervacije";
+    document.getElementById('callModal').classList.add('show');
+  }
+
+  function closeCallModal() {
+    document.getElementById('callModal').classList.remove('show');
+  }
+
+  function makeCall() {
+    const phoneNumber = document.getElementById('callClientPhone').textContent;
+    window.location.href = `tel:${phoneNumber}`;
+    closeCallModal();
+  }
+
+  function openWhatsApp() {
+    const phoneNumber = document.getElementById('callClientPhone').textContent;
+    // Убираем все символы кроме цифр
+    const cleanPhone = phoneNumber.replace(/\D/g, '');
+    // Добавляем код страны если нужно
+    const whatsappPhone = cleanPhone.startsWith('381') ? cleanPhone : '381' + cleanPhone;
+    window.open(`https://wa.me/${whatsappPhone}`, '_blank');
+    closeCallModal();
+  }
+  
+  // Status Filter Functions
+  let selectedStatusFilters = new Set();
+  let currentStatusFilter = 'all';
+  
+  // Initialize status filters on page load
+  document.addEventListener('DOMContentLoaded', function() {
+    updateStatusCounters();
+  });
+  
+  function toggleAllStatusFilter(checkbox) {
+    // Снять checked со всех чекбоксов статусов
+    document.querySelectorAll('.status-filters-container .filter-checkbox:not(:first-child)').forEach(cb => {
+      cb.classList.remove('checked');
+    });
+    
+    // Добавить checked к кнопке "Sve"
+    checkbox.classList.add('checked');
+    
+    // Установить фильтр на "all"
+    currentStatusFilter = 'all';
+    selectedStatusFilters.clear();
+    
+    // Применить фильтр
+    filterReactivationContacts('all');
+  }
+  
+  function toggleStatusFilter(checkbox, status) {
+    // Убрать checked с кнопки "Sve"
+    const allCheckbox = document.querySelector('.status-filters-container .filter-group:first-child .filter-checkbox');
+    if (allCheckbox) allCheckbox.classList.remove('checked');
+    
+    // Переключить состояние чекбокса
+    if (checkbox.classList.contains('checked')) {
+      checkbox.classList.remove('checked');
+      selectedStatusFilters.delete(status);
+    } else {
+      checkbox.classList.add('checked');
+      selectedStatusFilters.add(status);
+    }
+    
+    // Если нет выбранных фильтров, показать все
+    if (selectedStatusFilters.size === 0) {
+      currentStatusFilter = 'all';
+      if (allCheckbox) allCheckbox.classList.add('checked');
+      filterReactivationContacts('all');
+    } else {
+      currentStatusFilter = 'multiple';
+      filterReactivationContactsMultiple();
+    }
+  }
+  
+  function filterReactivationContacts(status) {
+    const rows = document.querySelectorAll('.reactivation-contact-row');
+    
+    rows.forEach(row => {
+      let shouldShow = false;
+      
+      // Check status filter
+      if (status === 'all' || row.dataset.status === status) {
+        shouldShow = true;
+      }
+      
+      if (shouldShow) {
+        row.style.display = 'table-row';
+        row.classList.remove('hidden-row');
+      } else {
+        row.style.display = 'none';
+        row.classList.add('hidden-row');
+      }
+    });
+  }
+  
+  function filterReactivationContactsMultiple() {
+    const rows = document.querySelectorAll('.reactivation-contact-row');
+    
+    rows.forEach(row => {
+      let shouldShow = false;
+      
+      // Check if row status is in selected filters
+      if (selectedStatusFilters.has(row.dataset.status)) {
+        shouldShow = true;
+      }
+      
+      if (shouldShow) {
+        row.style.display = 'table-row';
+        row.classList.remove('hidden-row');
+      } else {
+        row.style.display = 'none';
+        row.classList.add('hidden-row');
+      }
+    });
+  }
+  
+  function updateStatusCounters() {
+    const rows = document.querySelectorAll('.reactivation-contact-row');
+    
+    const statusCounts = {
+      'all': rows.length,
+      'Poslato': 0,
+      'Zainteresovan': 0,
+      'rezervisao': 0,
+      'stop spam': 0,
+      'neaktivan broj': 0,
+      '': 0
+    };
+    
+    rows.forEach(row => {
+      const status = row.dataset.status || '';
+      if (statusCounts.hasOwnProperty(status)) {
+        statusCounts[status]++;
+      } else {
+        statusCounts['']++;
+      }
+    });
+    
+    // Update counters in UI
+    const allCounter = document.getElementById('allStatusCounter');
+    if (allCounter) allCounter.textContent = `Sve (${statusCounts['all']})`;
+    
+    const poslatoCounter = document.getElementById('poslatoCounter');
+    if (poslatoCounter) poslatoCounter.textContent = `Poslato - ${statusCounts['Poslato']}`;
+    
+    const zainteresovanCounter = document.getElementById('zainteresovanCounter');
+    if (zainteresovanCounter) zainteresovanCounter.textContent = `Zainteresovan - ${statusCounts['Zainteresovan']}`;
+    
+    const rezervisaoCounter = document.getElementById('rezervisaoCounter');
+    if (rezervisaoCounter) rezervisaoCounter.textContent = `Rezervisao - ${statusCounts['rezervisao']}`;
+    
+    const stopspamCounter = document.getElementById('stopspamCounter');
+    if (stopspamCounter) stopspamCounter.textContent = `Stop spam - ${statusCounts['stop spam']}`;
+    
+    const neaktivanbrojCounter = document.getElementById('neaktivanbrojCounter');
+    if (neaktivanbrojCounter) neaktivanbrojCounter.textContent = `Neaktivan broj - ${statusCounts['neaktivan broj']}`;
+    
+    const noStatusCounter = document.getElementById('noStatusCounter');
+    if (noStatusCounter) noStatusCounter.textContent = `Bez statusa - ${statusCounts['']}`;
+  }
+</script>
+
+<!-- Call Modal -->
+<div class="call-modal" id="callModal">
+  <div class="call-modal-content">
+    <button class="close-button" onclick="closeCallModal()">
+      <img src="/static/images/krest.png" alt="Close" width="20" height="20">
+    </button>
+    <div class="client-name" id="callClientName"></div>
+    <div class="last-reservation-date" id="callLastReservation"></div>
+    <div class="client-phone" id="callClientPhone"></div>
+    <div class="call-actions">
+      <button onclick="makeCall()" class="call-button">Pozvati</button>
+      <button onclick="openWhatsApp()" class="whatsapp-button">
+        <svg width="21" height="20" viewBox="0 0 21 20" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <path fill-rule="evenodd" clip-rule="evenodd" d="M1.62049 14.8263L0.21582 19.9537L5.46793 18.577C6.91841 19.3671 8.54362 19.7816 10.1954 19.7825C12.3729 19.7824 14.4895 19.0637 16.217 17.7383C17.9446 16.4127 19.1866 14.5543 19.7505 12.4512C20.3146 10.3479 20.169 8.11744 19.3364 6.10542C18.5038 4.09341 17.0307 2.41225 15.1453 1.3226C13.2601 0.232923 11.0681 -0.204379 8.90905 0.0784678C6.75003 0.361314 4.7446 1.34851 3.20367 2.88703C1.66274 4.42552 0.672397 6.42941 0.386164 8.58799C0.0999319 10.7466 0.533792 12.9394 1.62049 14.8263ZM14.8393 12.017C15.0127 12.0999 15.1301 12.1561 15.1796 12.2402C15.241 12.3425 15.254 12.8318 15.0419 13.4086C14.8298 13.9853 13.8419 14.5137 13.3675 14.5844C12.8477 14.6728 12.3146 14.6389 11.8103 14.4858C11.3312 14.3375 10.8605 14.1636 10.4 13.9649C8.08687 12.9671 6.52309 10.7278 6.222 10.2968C6.20028 10.2657 6.18514 10.2439 6.17675 10.2328L6.17658 10.2326C6.05128 10.0661 5.16652 8.89082 5.16652 7.67465C5.16188 7.29233 5.23634 6.91316 5.38521 6.561C5.53409 6.20881 5.75416 5.89121 6.03163 5.62814C6.11535 5.53242 6.21822 5.4553 6.33357 5.4018C6.44894 5.34827 6.57424 5.31955 6.7014 5.31744C6.75667 5.31744 6.81091 5.31638 6.86442 5.31534C6.9694 5.31328 7.07167 5.31129 7.17396 5.31744C7.19427 5.31867 7.21535 5.31837 7.23714 5.31808C7.38086 5.3161 7.55437 5.31372 7.7321 5.74349C7.7825 5.86537 7.85063 6.03104 7.92559 6.21339C8.15502 6.77136 8.4486 7.48535 8.49487 7.57791C8.53374 7.64288 8.55595 7.71646 8.55952 7.79209C8.56308 7.86771 8.54791 7.94304 8.51535 8.0114C8.45359 8.16046 8.3702 8.29962 8.26791 8.42442C8.2209 8.47843 8.17416 8.53456 8.1275 8.59062C8.05039 8.68319 7.97346 8.77566 7.89582 8.85789C7.89247 8.86142 7.8891 8.86496 7.88576 8.86849C7.76445 8.99687 7.64669 9.12133 7.78791 9.36208C8.15891 9.99817 8.62216 10.5757 9.16282 11.0756C9.74607 11.5956 10.4153 12.0104 11.1405 12.3016C11.3861 12.4263 11.533 12.4058 11.6763 12.2402C11.8196 12.0746 12.2903 11.5184 12.4577 11.2709C12.6251 11.0235 12.7889 11.0625 13.0158 11.1463C13.2428 11.23 14.4577 11.8291 14.7051 11.9518C14.753 11.9757 14.7976 11.9971 14.8393 12.017Z" fill="white"/>
+        </svg>
+      </button>
+    </div>
+  </div>
+</div>
+
+<script>
+  // Проверка ширины экрана
+  function checkScreenSize() {
+    const warning = document.getElementById('screenSizeWarning');
+    const container = document.querySelector('.reactivation-detail-container');
+    
+    if (!warning) return;
+    
+    if (window.innerWidth <= 900) {
+      warning.style.display = 'block';
+      warning.classList.add('show');
+      if (container) container.style.display = 'none';
+    } else {
+      warning.style.display = 'none';
+      warning.classList.remove('show');
+      if (container) container.style.display = '';
+    }
+  }
+  
+  // Проверка при загрузке и изменении размера окна
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', checkScreenSize);
+  } else {
+    // DOM уже загружен
+    checkScreenSize();
+  }
+  window.addEventListener('resize', checkScreenSize);
+</script>
+{% endblock %}
+

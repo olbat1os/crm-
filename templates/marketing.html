@@ -1,0 +1,1620 @@
+{% extends 'dashboard_base.html' %}
+{% block content %}
+<style>
+  /* Переопределяем активный пункт для Marketing */
+  .app-layout { --active-bg: rgba(255, 255, 255, 0.20); --active-top: 320px; }
+  .menu-item.active { background: transparent; }
+  .item-dash { background: transparent; }
+  .item-mark { background: var(--active-bg); }
+</style>
+<style>
+  /* Mobile Header */
+  .mobile-header {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 70px;
+    background: #FFFFFF;
+    display: none;
+    align-items: center;
+    z-index: 1000;
+  }
+
+  .logo-home {
+    position: absolute;
+    width: 181px;
+    height: 40px;
+    top: 25px;
+    left: 30px;
+    z-index: 0;
+    opacity: 1;
+  }
+
+  .mobile-logo {
+    position: absolute;
+    width: 109px;
+    height: 24px;
+    top: 23px;
+    left: 20px;
+  }
+
+  .mobile-search-btn {
+    position: absolute;
+    width: 22px;
+    height: 22px;
+    top: 20px;
+    right: 84px;
+    cursor: pointer;
+  }
+
+  .mobile-notification-btn {
+    position: absolute;
+    width: 22px;
+    height: 22px;
+    top: 20px;
+    right: 52px;
+    cursor: pointer;
+  }
+
+  .mobile-menu-btn {
+    position: absolute;
+    width: 22px;
+    height: 22px;
+    top: 20px;
+    right: 20px;
+    cursor: pointer;
+  }
+
+  .mobile-search-modal {
+    position: fixed;
+    top: 70px;
+    left: 0;
+    right: 0;
+    background: #FFFFFF;
+    border-top: 1px solid #D9D9D9;
+    padding: 20px;
+    z-index: 999;
+    display: none;
+  }
+
+  .mobile-search-input {
+    width: 100%;
+    height: 40px;
+    border: 1px solid #D9D9D9;
+    border-radius: 20px;
+    padding: 0 20px;
+    font-family: 'Manrope', sans-serif;
+    font-size: 16px;
+    outline: none;
+  }
+
+  /* Mobile Sidebar */
+  .mobile-sidebar {
+    position: fixed;
+    top: 0;
+    right: 0;
+    width: 235px;
+    height: 100vh;
+    background: linear-gradient(179.27deg, #2CAB5C 0%, #11998E 100%);
+    border-radius: 1px;
+    transition: transform 0.3s ease;
+    z-index: 2000;
+    overflow-y: auto;
+    transform: translateX(100%);
+  }
+
+  .mobile-sidebar-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.5);
+    z-index: 1500;
+    display: none;
+  }
+
+  .mobile-sidebar-overlay.show {
+    display: block;
+  }
+
+  .mobile-sidebar.open {
+    transform: translateX(0);
+  }
+
+  /* Mobile Sidebar Content */
+  .mobile-sidebar-content {
+    padding: 20px;
+    color: #FFFFFF;
+  }
+
+  .mobile-sidebar-item {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    height: 60px;
+    padding: 0 20px;
+    cursor: pointer;
+    color: #FFFFFF;
+    text-decoration: none;
+    font-family: 'Manrope', sans-serif;
+  }
+
+  .mobile-sidebar-item:hover {
+    background: rgba(255, 255, 255, 0.1);
+  }
+
+  .mobile-sidebar-arrow {
+    width: 7px;
+    height: 14px;
+  }
+
+  .mobile-sidebar-logo {
+    position: absolute;
+    bottom: 20px;
+    left: 20px;
+    width: 136px;
+    height: 30px;
+  }
+
+  /* Стили для поиска */
+  .search-results {
+    background: #ffffff;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+    border-radius: 12px;
+    border: 1px solid #e5e7eb;
+    overflow: hidden;
+    z-index: 1000;
+  }
+
+  .search-results-content {
+    padding: 8px;
+    height: 100%;
+    overflow-y: auto;
+  }
+
+  .search-result-item {
+    display: flex;
+    align-items: center;
+    padding: 12px;
+    border-bottom: 1px solid #f3f4f6;
+    cursor: pointer;
+    transition: background-color 0.2s ease;
+    border-radius: 8px;
+    margin-bottom: 4px;
+  }
+
+  .search-result-item:hover {
+    background-color: #f9fafb;
+  }
+
+  .search-result-item:last-child {
+    border-bottom: none;
+    margin-bottom: 0;
+  }
+
+  .search-result-main {
+    flex: 1;
+  }
+
+  .search-result-name {
+    font-family: 'Manrope', sans-serif;
+    font-weight: 600;
+    font-size: 14px;
+    color: #000000;
+    margin-bottom: 2px;
+  }
+
+  .search-result-phone {
+    font-family: 'Manrope', sans-serif;
+    font-weight: 400;
+    font-size: 12px;
+    color: #6b7280;
+    margin-bottom: 6px;
+  }
+
+  .search-result-last-booking {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .search-result-date {
+    font-family: 'Manrope', sans-serif;
+    font-weight: 400;
+    font-size: 11px;
+    color: #6b7280;
+  }
+
+  .search-result-status {
+    font-family: 'Manrope', sans-serif;
+    font-weight: 600;
+    font-size: 10px;
+    padding: 2px 6px;
+    border-radius: 8px;
+    color: #000000;
+  }
+
+  .search-result-status.dogovoreno { background: #FFF0BF; border: 1px solid #DBC787; }
+  .search-result-status.na-cekaju { background: #E8D8F8; border: 1px solid #9C27B0; }
+  .search-result-status.potvrdjeno { background: #D8F8E4; border: 1px solid #4CAF50; }
+  .search-result-status.otkazano { background: #FFBFBF; border: 1px solid #F44336; }
+  .search-result-status.nisu-dosli { background: #FFD59E; border: 1px solid #FF9800; }
+  .search-result-status.dosli { background: #C7F4FF; border: 1px solid #2196F3; }
+
+  .search-results::-webkit-scrollbar {
+    width: 4px;
+  }
+
+  .search-results::-webkit-scrollbar-track {
+    background: #f1f1f1;
+    border-radius: 2px;
+  }
+
+  .search-results::-webkit-scrollbar-thumb {
+    background: #11998E;
+    border-radius: 2px;
+  }
+
+  .search-results::-webkit-scrollbar-thumb:hover {
+    background: #0d7a6f;
+  }
+
+  /* Белый фон для ПК версии */
+  body {
+    background: #ffffff !important;
+  }
+  
+  .app-layout {
+    background: #ffffff !important;
+  }
+  
+  .main {
+    background: #ffffff !important;
+  }
+
+  /* Стили для таблицы реактиваций (как в clients) */
+  .clients-card { 
+    background: #ffffff; 
+    box-shadow: 0 1px 2px rgba(0,0,0,0.06); 
+    border-radius: 8px; 
+  }
+  .clients-table { 
+    border-collapse: separate; 
+    border-spacing: 0; 
+    width: 100%; 
+    background: #ffffff; 
+    font-family: 'Manrope', sans-serif;
+  }
+  .clients-table thead tr { height: 60px; }
+  .clients-table thead th { 
+    border: none !important; 
+    padding: 0.5rem 1rem; 
+    text-align: left; 
+    background: #ffffff; 
+    color:#000000; 
+    border-bottom: 2px solid #e5e7eb !important; 
+    height: 60px; 
+    vertical-align: middle; 
+    font-family: 'Manrope', sans-serif;
+    font-weight: 600;
+    font-size: 16px;
+  }
+  .clients-table tbody tr { 
+    border: none !important; 
+    height: 85px; 
+    cursor: pointer;
+    transition: background-color 0.2s ease;
+  }
+  
+  .clients-table tbody tr:hover {
+    background-color: #f9fafb !important;
+  }
+  
+  .clients-table tbody tr:not(#no-reactivation-row) {
+    cursor: pointer;
+  }
+  .clients-table tbody td { 
+    border: none !important; 
+    padding: 0.5rem 1rem; 
+    color:#111111; 
+    border-bottom: 2px solid #e5e7eb !important; 
+    font-family: 'Manrope', sans-serif;
+    font-weight: 400;
+    font-size: 14px;
+  }
+  .row-arrow { text-align: right; width: 40px; }
+  .row-arrow img { width: 16px; height: 16px; object-fit: contain; filter: brightness(0) saturate(100%) invert(35%) sepia(0%) saturate(0%) hue-rotate(0deg) brightness(80%) contrast(100%); }
+  /* Кастомный скроллбар */
+  .scroll-track { position: absolute; width: 5px; height: 100%; right: 0px; top: 0px; background: #F7F7F7; border-radius: 20px; }
+  .scroll-thumb { position: absolute; width: 5px; height: 95px; left: 0; top: 0; background: linear-gradient(0deg, #11998E 0%, #2CAB5C 100%); border-radius: 20px; cursor: pointer; }
+  /* Адаптация таблиц - прокрутка как в booking */
+  .scroll-container { 
+    position: relative; 
+    height: calc(100vh - 200px - 30px); 
+    overflow-x: auto;
+    overflow-y: hidden;
+    scrollbar-width: auto;
+    scrollbar-color: #2CAB5C #f1f1f1;
+  }
+  .scroll-container::-webkit-scrollbar {
+    height: 12px !important;
+    display: block !important;
+    -webkit-appearance: none !important;
+    background: #f1f1f1 !important;
+  }
+  .scroll-container::-webkit-scrollbar-track {
+    background: #f1f1f1 !important;
+    border-radius: 6px !important;
+    -webkit-box-shadow: inset 0 0 6px rgba(0,0,0,0.1) !important;
+  }
+  .scroll-container::-webkit-scrollbar-thumb {
+    background: #2CAB5C !important;
+    border-radius: 6px !important;
+    min-width: 50px !important;
+    -webkit-box-shadow: inset 0 0 6px rgba(0,0,0,0.2) !important;
+  }
+  .scroll-container::-webkit-scrollbar-thumb:hover {
+    background: #11998E !important;
+  }
+  .scroll-content { 
+    height: 100%; 
+    overflow-y: auto !important; 
+    overflow-x: visible !important;
+    scrollbar-width: thin; 
+    scrollbar-color: #888 #f1f1f1;
+    width: max-content;
+    min-width: 100%;
+  }
+  .scroll-content::-webkit-scrollbar { 
+    width: 8px !important;
+    display: block !important;
+  }
+  .scroll-content::-webkit-scrollbar-track {
+    background: #f1f1f1 !important;
+    border-radius: 4px !important;
+  }
+  .scroll-content::-webkit-scrollbar-thumb {
+    background: #888 !important;
+    border-radius: 4px !important;
+  }
+  .scroll-content::-webkit-scrollbar-thumb:hover {
+    background: #555 !important;
+  }
+  
+  /* Предупреждение для экранов меньше 900px */
+  .screen-size-warning {
+    display: none !important;
+    position: fixed;
+    top: 120px;
+    left: 120px;
+    right: 25px;
+    z-index: 100;
+    pointer-events: none;
+  }
+  
+  .screen-size-warning.show {
+    display: block !important;
+  }
+  
+  .screen-size-warning-content {
+    background: #FFFFFF;
+    border: 1px solid #E5E7EB;
+    border-radius: 20px;
+    padding: 30px;
+    max-width: 500px;
+    text-align: center;
+    box-shadow: 0 7px 30px rgba(0, 0, 0, 0.1);
+    pointer-events: auto;
+  }
+  
+  .screen-size-warning-content h2 {
+    font-family: 'Manrope', sans-serif;
+    font-size: 24px;
+    font-weight: 700;
+    color: #000000;
+    margin-bottom: 16px;
+  }
+  
+  .screen-size-warning-content p {
+    font-family: 'Manrope', sans-serif;
+    font-size: 16px;
+    color: #6B7280;
+    line-height: 1.5;
+  }
+
+  /* Mobile Responsive Styles */
+  @media (max-width: 768px) {
+    .mobile-header {
+      display: flex;
+    }
+    
+    .sidebar {
+      display: none !important;
+    }
+    
+    .logo-home {
+      display: none !important;
+    }
+    
+    .search-icon {
+      display: none !important;
+    }
+    
+    .notification-icon {
+      display: none !important;
+    }
+    
+    .top-right {
+      display: none !important;
+    }
+
+    /* Mobile search results */
+    #search-results {
+      position: fixed !important;
+      top: 130px !important;
+      left: 20px !important;
+      right: 20px !important;
+      width: auto !important;
+      height: 250px !important;
+    }
+
+    /* Mobile main margin */
+    .main {
+      margin: 0 !important;
+    }
+  }
+</style>
+
+<!-- Mobile Header -->
+<div class="mobile-header">
+  <img src="/static/images/logo home.png" alt="LOVACRM" class="mobile-logo">
+  <img src="/static/images/poisk.png" alt="Search" class="mobile-search-btn" onclick="toggleMobileSearch()">
+  <img src="/static/images/kolokolchik logo.png" alt="Notifications" class="mobile-notification-btn">
+  <img src="/static/images/menu.png" alt="Menu" class="mobile-menu-btn" onclick="toggleMobileSidebar()">
+</div>
+
+<!-- Mobile Search Modal -->
+<div class="mobile-search-modal" id="mobileSearchModal">
+  <input type="text" class="mobile-search-input" placeholder="Search..." id="mobileSearchInput">
+</div>
+
+<!-- Mobile Sidebar Overlay -->
+<div class="mobile-sidebar-overlay" id="mobileSidebarOverlay" onclick="closeMobileSidebar()"></div>
+
+<!-- Mobile Sidebar -->
+<div class="mobile-sidebar" id="mobileSidebar">
+  <div class="mobile-sidebar-content">
+    <a href="/dashboard" class="mobile-sidebar-item">
+      <div style="display: flex; align-items: center;">
+        <img src="/static/images/logo dashbord.png" alt="Dashboard" style="width: 20px; height: 20px; margin-right: 15px;">
+        Dashboard
+      </div>
+      <img src="/static/images/strelka logo.png" alt="Arrow" class="mobile-sidebar-arrow">
+    </a>
+    <a href="/booking" class="mobile-sidebar-item">
+      <div style="display: flex; align-items: center;">
+        <img src="/static/images/booking logo.png" alt="Booking" style="width: 20px; height: 20px; margin-right: 15px;">
+        Booking
+      </div>
+      <img src="/static/images/strelka logo.png" alt="Arrow" class="mobile-sidebar-arrow">
+    </a>
+    <a href="/clients" class="mobile-sidebar-item">
+      <div style="display: flex; align-items: center;">
+        <img src="/static/images/klijenti logo.png" alt="Klijenti" style="width: 20px; height: 20px; margin-right: 15px;">
+        Klijenti
+      </div>
+      <img src="/static/images/strelka logo.png" alt="Arrow" class="mobile-sidebar-arrow">
+    </a>
+    <a href="/map" class="mobile-sidebar-item">
+      <div style="display: flex; align-items: center;">
+        <img src="/static/images/mapa logo.png" alt="Mapa" style="width: 20px; height: 20px; margin-right: 15px;">
+        Mapa
+      </div>
+      <img src="/static/images/strelka logo.png" alt="Arrow" class="mobile-sidebar-arrow">
+    </a>
+    <a href="/marketing" class="mobile-sidebar-item">
+      <div style="display: flex; align-items: center;">
+        <img src="/static/images/marketing logo.png" alt="Marketing" style="width: 20px; height: 20px; margin-right: 15px;">
+        Marketing
+      </div>
+      <img src="/static/images/strelka logo.png" alt="Arrow" class="mobile-sidebar-arrow">
+    </a>
+    <a href="/settings" class="mobile-sidebar-item">
+      <div style="display: flex; align-items: center;">
+        <img src="/static/images/setting logo.png" alt="Podešavanja" style="width: 20px; height: 20px; margin-right: 15px;">
+        Podešavanja
+      </div>
+      <img src="/static/images/strelka logo.png" alt="Arrow" class="mobile-sidebar-arrow">
+    </a>
+  </div>
+  <img src="/static/images/logo_login.svg.png" alt="Logo" class="mobile-sidebar-logo">
+</div>
+
+<!-- Предупреждение о размере экрана -->
+<div class="screen-size-warning" id="screenSizeWarning" style="display: none;">
+  <div class="screen-size-warning-content">
+    <h2>Stranica još nije spremna</h2>
+    <p>Za vaš uređaj stranica još nije spremna. Molimo koristite veći ekran.</p>
+  </div>
+</div>
+
+<!-- Результаты поиска -->
+<div id="search-results" class="search-results" style="position:absolute; right:25px; top:75px; width:290px; height:250px; display:none;">
+  <div class="search-results-content">
+    <!-- Результаты будут добавлены динамически -->
+  </div>
+</div>
+
+<!-- Кнопка Nova akcija -->
+<button onclick="openNewReactivationModal()" style="position:absolute; left:30px; top:95px; width:200px; height:40px; display:flex; align-items:center; justify-content:center; background: linear-gradient(270deg, #11998E 0%, #2CAB5C 100%); border-radius:30px; color:#FFFFFF; font-family:'Manrope', system-ui, sans-serif; font-weight:400; font-size:18px; line-height:25px; text-decoration:none; opacity:1; cursor:pointer; border:none;">+ Nova akcija</button>
+
+<!-- Таблица со списками реактиваций -->
+<div class="clients-card" style="position:absolute; left:30px; top:155px; right:25px;">
+  <div class="scroll-container">
+    <div class="scroll-content">
+      <table class="clients-table text-sm">
+        <thead>
+          <tr class="bg-gray-50 text-left">
+            <th class="px-4 py-2">Ime</th>
+            <th class="px-4 py-2">Sales</th>
+            <th class="px-4 py-2">Kontakata</th>
+            <th class="px-4 py-2">Status</th>
+            <th class="px-4 py-2">Datum akcije</th>
+            <th class="px-4 py-2 row-arrow"></th>
+          </tr>
+        </thead>
+        <tbody id="reactivation-table-body">
+          {% if reactivation_lists_data %}
+            {% for item in reactivation_lists_data %}
+            {% set list = item.list %}
+            <tr class="hover:bg-gray-50" style="cursor: pointer;" onclick="openReactivationDetail({{ list.id }})">
+              <td class="px-4 py-2" style="color:#000000; font-weight:600;">{{ list.name }}</td>
+              <td class="px-4 py-2">{{ list.sales_manager or '-' }}</td>
+              <td class="px-4 py-2" id="contacts-count-{{ list.id }}">{{ item.contacts_count }}</td>
+              <td class="px-4 py-2">
+                {% set rs = list.status or 'Novi' %}
+                <span style="
+                  display:inline-flex;
+                  align-items:center;
+                  justify-content:center;
+                  height: 28px;
+                  padding: 0 12px;
+                  border-radius: 20px;
+                  font-family: 'Manrope', sans-serif;
+                  font-weight: 700;
+                  font-size: 12px;
+                  border: 1px solid #D9D9D9;
+                  color:#000000;
+                  {% if rs == 'Novi' %}background:#E8D8F8;border-color:#9C27B0;{% elif rs == 'U toku' %}background:#FFF0BF;border-color:#DBC787;{% else %}background:#D8F8E4;border-color:#4CAF50;{% endif %}
+                ">
+                  {{ rs }}
+                </span>
+              </td>
+              <td class="px-4 py-2">
+                {% if list.filter_last_visit_from and list.filter_last_visit_to %}
+                  {% if list.filter_last_visit_from == list.filter_last_visit_to %}
+                    {{ list.filter_last_visit_from.strftime('%d.%m.%Y') }}
+                  {% else %}
+                    {{ list.filter_last_visit_from.strftime('%d.%m.%Y') }} - {{ list.filter_last_visit_to.strftime('%d.%m.%Y') }}
+                  {% endif %}
+                {% elif list.filter_last_visit_from %}
+                  Od {{ list.filter_last_visit_from.strftime('%d.%m.%Y') }}
+                {% elif list.filter_last_visit_to %}
+                  Do {{ list.filter_last_visit_to.strftime('%d.%m.%Y') }}
+                {% else %}
+                  -
+                {% endif %}
+              </td>
+              <td class="px-4 py-2 row-arrow">
+                <img src="/static/images/strelka logo.png" alt="" />
+              </td>
+            </tr>
+            {% endfor %}
+          {% else %}
+          <tr id="no-reactivation-row">
+            <td class="px-4 py-6 text-gray-500" colspan="6">Nema akcija još.</td>
+          </tr>
+          {% endif %}
+        </tbody>
+      </table>
+    </div>
+    <div class="scroll-track">
+      <div class="scroll-thumb"></div>
+    </div>
+  </div>
+</div>
+
+<!-- Модальное окно для создания новой акции (реактивации) -->
+<div id="newReactivationModal" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 2000; align-items: center; justify-content: center;">
+  <div style="background: #FFFFFF; border-radius: 16px; padding: 24px; width: 90%; max-width: 400px; position: relative;">
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+      <h3 style="font-family: 'Manrope', sans-serif; font-size: 28px; font-weight: 600; color: #000000; margin: 0;">Nova akcija</h3>
+      <button onclick="closeNewReactivationModal()" style="background: none; border: none; font-size: 24px; color: #6B7280; cursor: pointer;">×</button>
+    </div>
+    
+    <!-- Поля с labels слева и inputs справа -->
+    <div style="display: flex; flex-direction: column; gap: 16px; margin-bottom: 20px;">
+      <!-- Menadžer prodaje -->
+      <div style="display: flex; align-items: center; gap: 20px;">
+        <label style="font-family: 'Manrope', sans-serif; font-size: 14px; font-weight: 500; color: #000000; min-width: 120px;">Menadžer prodaje:</label>
+        <input type="text" id="modalSalesManager" placeholder="..." style="flex: 1; height: 40px; padding: 0 16px; border: 1px solid #D9D9D9; border-radius: 20px; font-family: 'Manrope', sans-serif; font-size: 10px; outline: none;">
+      </div>
+      
+      <!-- Назив акције -->
+      <div style="display: flex; align-items: center; gap: 20px;">
+        <label style="font-family: 'Manrope', sans-serif; font-size: 14px; font-weight: 500; color: #000000; min-width: 120px;">Naziv akcije:</label>
+        <input type="text" id="modalListNameInput" placeholder="..." style="flex: 1; height: 40px; padding: 0 16px; border: 1px solid #D9D9D9; border-radius: 20px; font-family: 'Manrope', sans-serif; font-size: 10px; outline: none;">
+      </div>
+      
+      <!-- Datum akcije -->
+      <div style="display: flex; align-items: center; gap: 20px;">
+        <label style="font-family: 'Manrope', sans-serif; font-size: 14px; font-weight: 500; color: #000000; min-width: 120px;">Datum akcije:</label>
+        <div style="position: relative; flex: 1;">
+          <input type="text" id="modalReservations" placeholder="..." readonly style="width: 100%; height: 40px; padding: 0 16px; padding-right: 50px; border: 1px solid #D9D9D9; border-radius: 20px; font-family: 'Manrope', sans-serif; font-size: 10px; outline: none; background: #FFFFFF; cursor: pointer;" onclick="openReservationsPicker()">
+          <img src="/static/images/kalen.png" alt="Kalendar" style="position: absolute; right: 16px; top: 50%; transform: translateY(-50%); width: 20px; height: 20px; cursor: pointer; pointer-events: none;">
+        </div>
+      </div>
+      
+      <!-- Фильтр (выбор одного из вариантов) -->
+      <div style="display: flex; align-items: center; gap: 20px;">
+        <label style="font-family: 'Manrope', sans-serif; font-size: 14px; font-weight: 500; color: #000000; min-width: 120px;">Filter:</label>
+        <div style="position: relative; flex: 1;">
+          <input type="text" id="modalFilter" placeholder="Izaberi filter..." readonly style="width: 100%; height: 40px; padding: 0 16px; padding-right: 40px; border: 1px solid #D9D9D9; border-radius: 20px; font-family: 'Manrope', sans-serif; font-size: 14px; outline: none; background: #FFFFFF; cursor: pointer;" onclick="toggleFilterDropdown()">
+          <div style="position: absolute; right: 16px; top: 50%; transform: translateY(-50%); width: 0; height: 0; border-left: 5px solid transparent; border-right: 5px solid transparent; border-top: 6px solid #6B7280; pointer-events: none;"></div>
+          <!-- Выпадающий список фильтров -->
+          <div id="filterDropdown" style="display: none; position: absolute; top: 100%; left: 0; right: 0; margin-top: 8px; background: #FFFFFF; border: 1px solid #D9D9D9; border-radius: 12px; box-shadow: 0 4px 12px rgba(0,0,0,0.15); z-index: 1000; overflow: hidden;">
+            <button onclick="selectFilterType('last_visit_days'); event.stopPropagation();" style="width: 100%; height: 50px; padding: 0 16px; border: none; border-bottom: 1px solid #F3F4F6; font-family: 'Manrope', sans-serif; font-size: 14px; font-weight: 500; cursor: pointer; background: #FFFFFF; color: #000000; text-align: left; transition: background-color 0.2s;">Poslednje posete (u danima)</button>
+            <button onclick="selectFilterType('visit_specific_date'); event.stopPropagation();" style="width: 100%; height: 50px; padding: 0 16px; border: none; border-bottom: 1px solid #F3F4F6; font-family: 'Manrope', sans-serif; font-size: 14px; font-weight: 500; cursor: pointer; background: #FFFFFF; color: #000000; text-align: left; transition: background-color 0.2s;">Sa određenim datumom posete u istoriji</button>
+            <button onclick="selectFilterType('visits_count'); event.stopPropagation();" style="width: 100%; height: 50px; padding: 0 16px; border: none; border-bottom: 1px solid #F3F4F6; font-family: 'Manrope', sans-serif; font-size: 14px; font-weight: 500; cursor: pointer; background: #FFFFFF; color: #000000; text-align: left; transition: background-color 0.2s;">Koliko puta je bio ukupno</button>
+            <button onclick="selectFilterType('max_spend'); event.stopPropagation();" style="width: 100%; height: 50px; padding: 0 16px; border: none; border-bottom: 1px solid #F3F4F6; font-family: 'Manrope', sans-serif; font-size: 14px; font-weight: 500; cursor: pointer; background: #FFFFFF; color: #000000; text-align: left; transition: background-color 0.2s;">Koliko maksimalno trošio za sve posete</button>
+            <button onclick="selectFilterType('last_offer'); event.stopPropagation();" style="width: 100%; height: 50px; padding: 0 16px; border: none; font-family: 'Manrope', sans-serif; font-size: 14px; font-weight: 500; cursor: pointer; background: #FFFFFF; color: #000000; text-align: left; transition: background-color 0.2s;">Kada je poslednji put primio akciju iz ovog odeljka</button>
+          </div>
+        </div>
+      </div>
+      
+      <!-- Количество гостей (вручную) -->
+      <div style="display: flex; align-items: center; gap: 20px;">
+        <label style="font-family: 'Manrope', sans-serif; font-size: 14px; font-weight: 500; color: #000000; min-width: 120px;">Broj gostiju:</label>
+        <input type="number" id="modalGuestsCount" placeholder="..." min="0" style="flex: 1; height: 40px; padding: 0 16px; border: 1px solid #D9D9D9; border-radius: 20px; font-family: 'Manrope', sans-serif; font-size: 10px; outline: none;">
+      </div>
+    </div>
+    
+    <!-- Кнопка Update и счетчик клиентов -->
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+      <button onclick="applyFiltersInModal()" style="height: 40px; padding: 0 40px; background: #FFFFFF; border: 2px solid #11998E; border-radius: 20px; color: #000000; font-family: 'Manrope', sans-serif; font-size: 14px; font-weight: 500; cursor: pointer;">Ažuriraj</button>
+      <div style="font-family: 'Manrope', sans-serif; font-size: 14px; color: #000000; font-weight: 700;">
+        Može se dodati: <span id="modalTotalClients">0</span> klijenata
+      </div>
+    </div>
+    
+    <!-- Зеленая кнопка Sačuvati -->
+    <button onclick="createReactivationList()" style="width: 100%; height: 48px; background: linear-gradient(270deg, #11998E 0%, #2CAB5C 100%); border: none; border-radius: 24px; color: #FFFFFF; font-family: 'Manrope', sans-serif; font-size: 16px; font-weight: 500; cursor: pointer;">Sačuvati</button>
+  </div>
+</div>
+
+<!-- Модальное окно для выбора дат резерваций -->
+<div id="reservationsPickerModal" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 2100; align-items: center; justify-content: center;">
+  <div style="background: #FFFFFF; border-radius: 16px; padding: 24px; width: 90%; max-width: 400px; position: relative;">
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+      <h4 style="font-family: 'Manrope', sans-serif; font-size: 18px; font-weight: 600; color: #000000;">Datum akcije</h4>
+      <button onclick="closeReservationsPicker()" style="background: none; border: none; font-size: 24px; color: #6B7280; cursor: pointer;">×</button>
+    </div>
+    <div style="display: flex; flex-direction: column; gap: 12px;">
+      <div>
+        <label style="display: block; font-family: 'Manrope', sans-serif; font-size: 14px; font-weight: 500; color: #000000; margin-bottom: 8px;">Od:</label>
+        <input type="date" id="reservationsFrom" style="width: 100%; height: 40px; padding: 0 16px; border: 1px solid #D9D9D9; border-radius: 20px; font-family: 'Manrope', sans-serif; font-size: 14px; outline: none;">
+      </div>
+      <div>
+        <label style="display: block; font-family: 'Manrope', sans-serif; font-size: 14px; font-weight: 500; color: #000000; margin-bottom: 8px;">Do:</label>
+        <input type="date" id="reservationsTo" style="width: 100%; height: 40px; padding: 0 16px; border: 1px solid #D9D9D9; border-radius: 20px; font-family: 'Manrope', sans-serif; font-size: 14px; outline: none;">
+      </div>
+      <button onclick="saveReservationsDates()" style="width: 100%; height: 40px; background: linear-gradient(270deg, #11998E 0%, #2CAB5C 100%); border: none; border-radius: 20px; color: #FFFFFF; font-family: 'Manrope', sans-serif; font-size: 14px; font-weight: 500; cursor: pointer; margin-top: 8px;">Sačuvaj</button>
+    </div>
+  </div>
+</div>
+
+<!-- Modal: filter by last visit days -->
+<div id="filterLastVisitDaysModal" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 2100; align-items: center; justify-content: center;">
+  <div style="background: #FFFFFF; border-radius: 16px; padding: 24px; width: 90%; max-width: 400px; position: relative;">
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+      <h4 style="font-family: 'Manrope', sans-serif; font-size: 18px; font-weight: 600; color: #000000;">Poslednje posete (u danima)</h4>
+      <button onclick="closeFilterLastVisitDaysModal()" style="background: none; border: none; font-size: 24px; color: #6B7280; cursor: pointer;">×</button>
+    </div>
+    <div style="display: flex; flex-direction: column; gap: 12px;">
+      <div>
+        <label style="display: block; font-family: 'Manrope', sans-serif; font-size: 14px; font-weight: 500; color: #000000; margin-bottom: 8px;">Broj dana:</label>
+        <input type="number" id="filterLastVisitDays" placeholder="..." min="0" style="width: 100%; height: 40px; padding: 0 16px; border: 1px solid #D9D9D9; border-radius: 20px; font-family: 'Manrope', sans-serif; font-size: 14px; outline: none;">
+      </div>
+      <button onclick="saveFilterLastVisitDays()" style="width: 100%; height: 40px; background: linear-gradient(270deg, #11998E 0%, #2CAB5C 100%); border: none; border-radius: 20px; color: #FFFFFF; font-family: 'Manrope', sans-serif; font-size: 14px; font-weight: 500; cursor: pointer; margin-top: 8px;">Sačuvaj</button>
+    </div>
+  </div>
+</div>
+
+<!-- Modal: filter by last offer -->
+<div id="filterLastOfferModal" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 2100; align-items: center; justify-content: center;">
+  <div style="background: #FFFFFF; border-radius: 16px; padding: 24px; width: 90%; max-width: 400px; position: relative;">
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+      <h4 style="font-family: 'Manrope', sans-serif; font-size: 18px; font-weight: 600; color: #000000;">Poslednja akcija</h4>
+      <button onclick="closeFilterLastOfferModal()" style="background: none; border: none; font-size: 24px; color: #6B7280; cursor: pointer;">×</button>
+    </div>
+    <div style="display: flex; flex-direction: column; gap: 12px;">
+      <div>
+        <label style="display: block; font-family: 'Manrope', sans-serif; font-size: 14px; font-weight: 500; color: #000000; margin-bottom: 8px;">Od (dana unazad):</label>
+        <input type="number" id="filterLastOfferFromDays" placeholder="..." min="0" style="width: 100%; height: 40px; padding: 0 16px; border: 1px solid #D9D9D9; border-radius: 20px; font-family: 'Manrope', sans-serif; font-size: 14px; outline: none;">
+      </div>
+      <div>
+        <label style="display: block; font-family: 'Manrope', sans-serif; font-size: 14px; font-weight: 500; color: #000000; margin-bottom: 8px;">Do (dana unazad):</label>
+        <input type="number" id="filterLastOfferToDays" placeholder="..." min="0" style="width: 100%; height: 40px; padding: 0 16px; border: 1px solid #D9D9D9; border-radius: 20px; font-family: 'Manrope', sans-serif; font-size: 14px; outline: none;">
+      </div>
+      <button onclick="saveFilterLastOffer()" style="width: 100%; height: 40px; background: linear-gradient(270deg, #11998E 0%, #2CAB5C 100%); border: none; border-radius: 20px; color: #FFFFFF; font-family: 'Manrope', sans-serif; font-size: 14px; font-weight: 500; cursor: pointer; margin-top: 8px;">Sačuvaj</button>
+    </div>
+  </div>
+</div>
+
+<!-- Modal: filter by specific visit date -->
+<div id="filterVisitDateModal" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 2100; align-items: center; justify-content: center;">
+  <div style="background: #FFFFFF; border-radius: 16px; padding: 24px; width: 90%; max-width: 400px; position: relative;">
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+      <h4 style="font-family: 'Manrope', sans-serif; font-size: 18px; font-weight: 600; color: #000000;">Datum posete</h4>
+      <button onclick="closeFilterVisitDateModal()" style="background: none; border: none; font-size: 24px; color: #6B7280; cursor: pointer;">×</button>
+    </div>
+    <div style="display: flex; flex-direction: column; gap: 12px;">
+      <div>
+        <label style="display: block; font-family: 'Manrope', sans-serif; font-size: 14px; font-weight: 500; color: #000000; margin-bottom: 8px;">Izaberi datum:</label>
+        <input type="date" id="filterVisitDate" style="width: 100%; height: 40px; padding: 0 16px; border: 1px solid #D9D9D9; border-radius: 20px; font-family: 'Manrope', sans-serif; font-size: 14px; outline: none;">
+      </div>
+      <button onclick="saveFilterVisitDate()" style="width: 100%; height: 40px; background: linear-gradient(270deg, #11998E 0%, #2CAB5C 100%); border: none; border-radius: 20px; color: #FFFFFF; font-family: 'Manrope', sans-serif; font-size: 14px; font-weight: 500; cursor: pointer; margin-top: 8px;">Sačuvaj</button>
+    </div>
+  </div>
+</div>
+
+<!-- Modal: filter by total visits count -->
+<div id="filterVisitsCountModal" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 2100; align-items: center; justify-content: center;">
+  <div style="background: #FFFFFF; border-radius: 16px; padding: 24px; width: 90%; max-width: 400px; position: relative;">
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+      <h4 style="font-family: 'Manrope', sans-serif; font-size: 18px; font-weight: 600; color: #000000;">Broj poseta</h4>
+      <button onclick="closeFilterVisitsCountModal()" style="background: none; border: none; font-size: 24px; color: #6B7280; cursor: pointer;">×</button>
+    </div>
+    <div style="display: flex; flex-direction: column; gap: 12px;">
+      <div>
+        <label style="display: block; font-family: 'Manrope', sans-serif; font-size: 14px; font-weight: 500; color: #000000; margin-bottom: 8px;">Od:</label>
+        <input type="number" id="filterVisitsCountMin" placeholder="..." min="0" style="width: 100%; height: 40px; padding: 0 16px; border: 1px solid #D9D9D9; border-radius: 20px; font-family: 'Manrope', sans-serif; font-size: 14px; outline: none;">
+      </div>
+      <div>
+        <label style="display: block; font-family: 'Manrope', sans-serif; font-size: 14px; font-weight: 500; color: #000000; margin-bottom: 8px;">Do:</label>
+        <input type="number" id="filterVisitsCountMax" placeholder="..." min="0" style="width: 100%; height: 40px; padding: 0 16px; border: 1px solid #D9D9D9; border-radius: 20px; font-family: 'Manrope', sans-serif; font-size: 14px; outline: none;">
+      </div>
+      <button onclick="saveFilterVisitsCount()" style="width: 100%; height: 40px; background: linear-gradient(270deg, #11998E 0%, #2CAB5C 100%); border: none; border-radius: 20px; color: #FFFFFF; font-family: 'Manrope', sans-serif; font-size: 14px; font-weight: 500; cursor: pointer; margin-top: 8px;">Sačuvaj</button>
+    </div>
+  </div>
+</div>
+
+<!-- Modal: filter by max spend -->
+<div id="filterMaxSpendModal" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 2100; align-items: center; justify-content: center;">
+  <div style="background: #FFFFFF; border-radius: 16px; padding: 24px; width: 90%; max-width: 400px; position: relative;">
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+      <h4 style="font-family: 'Manrope', sans-serif; font-size: 18px; font-weight: 600; color: #000000;">Maks. potrošnja</h4>
+      <button onclick="closeFilterMaxSpendModal()" style="background: none; border: none; font-size: 24px; color: #6B7280; cursor: pointer;">×</button>
+    </div>
+    <div style="display: flex; flex-direction: column; gap: 12px;">
+      <div>
+        <label style="display: block; font-family: 'Manrope', sans-serif; font-size: 14px; font-weight: 500; color: #000000; margin-bottom: 8px;">Od:</label>
+        <input type="number" id="filterMaxSpendMin" placeholder="..." min="0" step="0.01" style="width: 100%; height: 40px; padding: 0 16px; border: 1px solid #D9D9D9; border-radius: 20px; font-family: 'Manrope', sans-serif; font-size: 14px; outline: none;">
+      </div>
+      <div>
+        <label style="display: block; font-family: 'Manrope', sans-serif; font-size: 14px; font-weight: 500; color: #000000; margin-bottom: 8px;">Do:</label>
+        <input type="number" id="filterMaxSpendMax" placeholder="..." min="0" step="0.01" style="width: 100%; height: 40px; padding: 0 16px; border: 1px solid #D9D9D9; border-radius: 20px; font-family: 'Manrope', sans-serif; font-size: 14px; outline: none;">
+      </div>
+      <button onclick="saveFilterMaxSpend()" style="width: 100%; height: 40px; background: linear-gradient(270deg, #11998E 0%, #2CAB5C 100%); border: none; border-radius: 20px; color: #FFFFFF; font-family: 'Manrope', sans-serif; font-size: 14px; font-weight: 500; cursor: pointer; margin-top: 8px;">Sačuvaj</button>
+    </div>
+  </div>
+</div>
+
+<script>
+  // Mobile sidebar functions
+  function toggleMobileSidebar() {
+    const sidebar = document.getElementById('mobileSidebar');
+    const overlay = document.getElementById('mobileSidebarOverlay');
+    
+    sidebar.classList.toggle('open');
+    overlay.classList.toggle('show');
+  }
+
+  function closeMobileSidebar() {
+    const sidebar = document.getElementById('mobileSidebar');
+    const overlay = document.getElementById('mobileSidebarOverlay');
+    
+    sidebar.classList.remove('open');
+    overlay.classList.remove('show');
+  }
+
+  // Mobile search functions
+  function toggleMobileSearch() {
+    const modal = document.getElementById('mobileSearchModal');
+    const isVisible = modal.style.display === 'block';
+    
+    if (isVisible) {
+      modal.style.display = 'none';
+    } else {
+      modal.style.display = 'block';
+      document.getElementById('mobileSearchInput').focus();
+    }
+  }
+
+  // Close mobile search modal when clicking outside
+  document.addEventListener('click', function(e) {
+    const modal = document.getElementById('mobileSearchModal');
+    const searchBtn = document.querySelector('.mobile-search-btn');
+    const searchResults = document.getElementById('search-results');
+    
+    // Проверяем, что клик не по модальному окну, кнопке поиска или результатам поиска
+    if (modal && modal.style.display === 'block' && 
+        !modal.contains(e.target) && 
+        !searchBtn.contains(e.target) && 
+        !searchResults.contains(e.target)) {
+      modal.style.display = 'none';
+      searchResults.style.display = 'none';
+    }
+  });
+
+  // Search functionality
+  document.addEventListener('DOMContentLoaded', function() {
+    const searchBox = document.querySelector('.search-box');
+    const searchResults = document.getElementById('search-results');
+    
+    // console.log('Marketing search elements:', { searchBox, searchResults });
+    
+    if (!searchBox) {
+      console.error('Search box not found!');
+      return;
+    }
+    
+    if (!searchResults) {
+      console.error('Search results container not found!');
+      return;
+    }
+    
+    // Данные клиентов из сервера
+    const clientsData = [
+        {% for c in contacts %}
+        {
+            id: {{ c.id }},
+            firstName: "{{ c.first_name or '' }}",
+            lastName: "{{ c.last_name or '' }}",
+            phone: "{{ c.phone or '' }}",
+            lastBookingDate: "{{ client_stats[c.id].last_visit_str if c.id in client_stats and client_stats[c.id].last_visit_str else '' }}",
+            lastBookingTime: "",
+            lastBookingStatus: "{{ client_stats[c.id].last_booking_status if c.id in client_stats and client_stats[c.id].last_booking_status else '' }}",
+            visitsCount: {{ client_stats[c.id].visits_confirmed if c.id in client_stats else 0 }},
+            averageSpend: {{ client_stats[c.id].avg_spend if c.id in client_stats and client_stats[c.id].avg_spend is not none else 0 }}
+        }{% if not loop.last %},{% endif %}
+        {% endfor %}
+    ];
+
+
+    function searchClients(query) {
+        if (!query || query.trim().length < 2) {
+            if (searchResults) {
+                searchResults.style.display = 'none';
+            }
+            return;
+        }
+
+        const searchTerm = query.toLowerCase().trim();
+        const results = clientsData.filter(client => {
+            const fullName = `${client.firstName} ${client.lastName}`.toLowerCase();
+            const phone = client.phone.toLowerCase();
+            
+            return fullName.includes(searchTerm) || 
+                   phone.includes(searchTerm) ||
+                   client.firstName.toLowerCase().includes(searchTerm) ||
+                   client.lastName.toLowerCase().includes(searchTerm);
+        });
+
+        displaySearchResults(results);
+    }
+
+    function displaySearchResults(results) {
+        const resultsContent = document.querySelector('.search-results-content');
+        resultsContent.innerHTML = '';
+
+        if (results.length === 0) {
+            resultsContent.innerHTML = '<div style="padding: 20px; text-align: center; color: #6b7280; font-family: \'Manrope\', sans-serif; font-size: 14px;">Nema rezultata pretrage</div>';
+        } else {
+            results.forEach(client => {
+                const resultItem = createSearchResultItem(client);
+                resultsContent.appendChild(resultItem);
+            });
+        }
+
+        if (searchResults) {
+            searchResults.style.display = 'block';
+            
+            // Mobile view
+            if (window.innerWidth <= 768) {
+                // Create mobile search results container
+                let mobileResults = document.getElementById('mobile-search-results');
+                if (!mobileResults) {
+                    mobileResults = document.createElement('div');
+                    mobileResults.id = 'mobile-search-results';
+                    mobileResults.style.position = 'fixed';
+                    mobileResults.style.top = '130px';
+                    mobileResults.style.left = '20px';
+                    mobileResults.style.right = '20px';
+                    mobileResults.style.height = '300px';
+                    mobileResults.style.backgroundColor = 'white';
+                    mobileResults.style.border = '1px solid #e5e7eb';
+                    mobileResults.style.borderRadius = '12px';
+                    mobileResults.style.boxShadow = '0 4px 12px rgba(0,0,0,0.15)';
+                    mobileResults.style.zIndex = '9999';
+                    mobileResults.style.padding = '8px';
+                    mobileResults.style.overflowY = 'auto';
+                    document.body.appendChild(mobileResults);
+                }
+                
+                // Clear and populate mobile results
+                mobileResults.innerHTML = '';
+                if (results.length === 0) {
+                    mobileResults.innerHTML = '<div style="padding: 20px; text-align: center; color: #6b7280; font-family: \'Manrope\', sans-serif; font-size: 14px;">Nema rezultata pretrage</div>';
+                } else {
+                    results.forEach(client => {
+                        const resultItem = createSearchResultItem(client);
+                        mobileResults.appendChild(resultItem);
+                    });
+                }
+                
+                mobileResults.style.display = 'block';
+                
+                // Hide desktop results
+                searchResults.style.display = 'none';
+            } else {
+                // Desktop - hide mobile results if exists
+                const mobileResults = document.getElementById('mobile-search-results');
+                if (mobileResults) {
+                    mobileResults.style.display = 'none';
+                }
+            }
+        }
+    }
+
+    // Функция создания элемента результата
+    function createSearchResultItem(client) {
+        const item = document.createElement('div');
+        item.className = 'search-result-item';
+        item.onclick = () => window.location.href = `/clients/${client.id}`;
+
+        const statusText = getStatusText(client.lastBookingStatus);
+        const statusClass = getStatusClass(client.lastBookingStatus);
+
+        const lastBookingInfo = client.lastBookingDate ? 
+            `<div class="search-result-date">${client.lastBookingDate}</div>
+             ${client.lastBookingStatus ? `<div class="search-result-status ${statusClass}">${statusText}</div>` : ''}` :
+            '<div class="search-result-date" style="color: #9ca3af; font-style: italic;">Nema rezervacije</div>';
+
+        const phoneInfo = client.phone ? 
+            `<div class="search-result-phone">${client.phone}</div>` :
+            '<div class="search-result-phone" style="color: #9ca3af; font-style: italic;">Nema telefona</div>';
+
+        item.innerHTML = `
+            <div class="search-result-main">
+                <div class="search-result-name">${client.firstName} ${client.lastName}</div>
+                ${phoneInfo}
+                <div class="search-result-last-booking">
+                    ${lastBookingInfo}
+                </div>
+            </div>
+        `;
+
+        return item;
+    }
+
+    // Функция получения текста статуса
+    function getStatusText(status) {
+        const statusMap = {
+            'dogovoreno': 'Dogovoreno',
+            'na_cekaju': 'Na čekanju',
+            'nacekanju': 'Na čekanju',
+            'potvrdjeno': 'Potvrđeno',
+            'otkazano': 'Otkazano',
+            'nisu': 'Nisu došli',
+            'dosli': 'Došli'
+        };
+        return statusMap[status] || status;
+    }
+
+    // Функция получения CSS класса статуса
+    function getStatusClass(status) {
+        const classMap = {
+            'dogovoreno': 'dogovoreno',
+            'na_cekaju': 'na-cekaju',
+            'nacekanju': 'na-cekaju',
+            'potvrdjeno': 'potvrdjeno',
+            'otkazano': 'otkazano',
+            'nisu': 'nisu-dosli',
+            'dosli': 'dosli'
+        };
+        return classMap[status] || '';
+    }
+
+    // Desktop search
+    if (searchBox) {
+      searchBox.addEventListener('input', function() {
+        searchClients(this.value);
+      });
+
+      searchBox.addEventListener('blur', function() {
+        if (!this.value.trim()) {
+          setTimeout(() => {
+            if (!this.value.trim()) {
+              searchResults.style.display = 'none';
+            }
+          }, 200);
+        }
+      });
+    }
+
+    // Mobile search
+    const mobileSearchInput = document.getElementById('mobileSearchInput');
+    if (mobileSearchInput) {
+      mobileSearchInput.addEventListener('input', function() {
+        searchClients(this.value);
+      });
+    }
+
+    // Close mobile search modal when clicking outside
+    document.addEventListener('click', function(e) {
+      const modal = document.getElementById('mobileSearchModal');
+      const searchBtn = document.querySelector('.mobile-search-btn');
+      const searchResults = document.getElementById('search-results');
+      const mobileResults = document.getElementById('mobile-search-results');
+      
+      // Проверяем, что клик не по модальному окну, кнопке поиска или результатам поиска
+      if (modal && modal.style.display === 'block' && 
+          !modal.contains(e.target) && 
+          !searchBtn.contains(e.target) && 
+          !searchResults.contains(e.target) &&
+          !(mobileResults && mobileResults.contains(e.target))) {
+        modal.style.display = 'none';
+        searchResults.style.display = 'none';
+        if (mobileResults) {
+          mobileResults.style.display = 'none';
+        }
+      }
+      
+      // Также закрываем мобильные результаты поиска при клике вне их
+      if (mobileResults && mobileResults.style.display === 'block' && 
+          !mobileResults.contains(e.target) && 
+          !searchBtn.contains(e.target) &&
+          !modal.contains(e.target)) {
+        mobileResults.style.display = 'none';
+      }
+    });
+  });
+
+  // Переменные для модального окна
+  let modalFilteredContacts = [];
+  let modalSelectedContactIds = new Set();
+  
+  // Переменные для хранения выбранных фильтров
+  let selectedReservationsFrom = null;
+  let selectedReservationsTo = null;
+  // UI filter types:
+  // - last_visit (kada je poslednji put bio)
+  // - visit_specific_date (tačan datum posete u istoriji)
+  // - visits_count (koliko puta ukupno)
+  // - max_spend (maks. potrošnja)
+  // - last_offer (poslednja akcija)
+  let selectedFilterType = null;
+  let selectedFilterData = {}; // Данные выбранного фильтра
+
+  // Map UI type -> API type (backend expects: visit_date, visits_count, max_spend, last_offer, last_visit_days)
+  const apiFilterTypeMap = {
+    last_visit_days: 'last_visit_days',
+    visit_specific_date: 'visit_date',
+    visits_count: 'visits_count',
+    max_spend: 'max_spend',
+    last_offer: 'last_offer'
+  };
+  
+  // Закрытие выпадающего списка при клике вне его
+  document.addEventListener('click', function(event) {
+    const filterInput = document.getElementById('modalFilter');
+    const filterDropdown = document.getElementById('filterDropdown');
+    if (filterInput && filterDropdown) {
+      const isClickInside = filterInput.contains(event.target) || filterDropdown.contains(event.target);
+      if (!isClickInside && filterDropdown.style.display === 'block') {
+        closeFilterDropdown();
+      }
+    }
+  });
+  
+  // Закрытие выпадающего списка при клике вне его
+  document.addEventListener('click', function(event) {
+    const filterInput = document.getElementById('modalFilter');
+    const filterDropdown = document.getElementById('filterDropdown');
+    if (filterInput && filterDropdown && !filterInput.contains(event.target) && !filterDropdown.contains(event.target)) {
+      closeFilterDropdown();
+    }
+  });
+  
+  // Открыть модальное окно для создания новой акции
+  function openNewReactivationModal() {
+    document.getElementById('newReactivationModal').style.display = 'flex';
+    modalFilteredContacts = [];
+    modalSelectedContactIds.clear();
+    selectedReservationsFrom = null;
+    selectedReservationsTo = null;
+    selectedFilterType = null;
+    selectedFilterData = {};
+    document.getElementById('modalReservations').value = '';
+    document.getElementById('modalFilter').value = '';
+    document.getElementById('modalGuestsCount').value = '';
+    document.getElementById('modalTotalClients').textContent = '0';
+  }
+  
+  // Закрыть модальное окно
+  function closeNewReactivationModal() {
+    document.getElementById('newReactivationModal').style.display = 'none';
+    document.getElementById('modalSalesManager').value = '';
+    document.getElementById('modalListNameInput').value = '';
+    document.getElementById('modalReservations').value = '';
+    document.getElementById('modalFilter').value = '';
+    document.getElementById('modalGuestsCount').value = '';
+    modalFilteredContacts = [];
+    modalSelectedContactIds.clear();
+    selectedFilterType = null;
+    selectedFilterData = {};
+  }
+  
+  // Открыть выбор дат резерваций
+  function openReservationsPicker() {
+    document.getElementById('reservationsPickerModal').style.display = 'flex';
+    if (selectedReservationsFrom) {
+      document.getElementById('reservationsFrom').value = selectedReservationsFrom;
+    }
+    if (selectedReservationsTo) {
+      document.getElementById('reservationsTo').value = selectedReservationsTo;
+    }
+  }
+  
+  // Закрыть выбор дат резерваций
+  function closeReservationsPicker() {
+    document.getElementById('reservationsPickerModal').style.display = 'none';
+  }
+  
+  // Сохранить даты резерваций (дата акции, не фильтр)
+  function saveReservationsDates() {
+    const from = document.getElementById('reservationsFrom').value;
+    const to = document.getElementById('reservationsTo').value;
+    selectedReservationsFrom = from;
+    selectedReservationsTo = to;
+    
+    // В поле modalReservations отображаем "Datum akcije" вместо даты
+    if (from || to) {
+      document.getElementById('modalReservations').value = 'Datum akcije';
+    }
+    
+    closeReservationsPicker();
+    // НЕ применяем фильтр автоматически - это просто дата акции, не фильтр
+  }
+  
+  // Переключить выпадающий список фильтров
+  function toggleFilterDropdown() {
+    const dropdown = document.getElementById('filterDropdown');
+    if (dropdown.style.display === 'none' || dropdown.style.display === '') {
+      dropdown.style.display = 'block';
+    } else {
+      dropdown.style.display = 'none';
+    }
+  }
+  
+  // Закрыть выпадающий список фильтров
+  function closeFilterDropdown() {
+    document.getElementById('filterDropdown').style.display = 'none';
+  }
+  
+  // Выбрать тип фильтра
+  function selectFilterType(type) {
+    selectedFilterType = type;
+    closeFilterDropdown();
+    
+    // Устанавливаем текст в поле фильтра (modalFilter)
+    const filterTexts = {
+      'last_visit_days': 'Poslednje posete (u danima)',
+      'visit_specific_date': 'Sa određenim datumom posete u istoriji',
+      'visits_count': 'Koliko puta je bio ukupno',
+      'max_spend': 'Koliko maksimalno trošio za sve posete',
+      'last_offer': 'Kada je poslednji put primio akciju iz ovog odeljka'
+    };
+    document.getElementById('modalFilter').value = filterTexts[type] || '';
+    
+    // Очищаем данные фильтра для нового выбора
+    selectedFilterData = {};
+
+    // Открываем нужное окно параметров
+    if (type === 'last_visit_days') {
+      document.getElementById('filterLastVisitDaysModal').style.display = 'flex';
+      return;
+    }
+    if (type === 'visit_specific_date') {
+      document.getElementById('filterVisitDateModal').style.display = 'flex';
+      return;
+    }
+    if (type === 'visits_count') {
+      document.getElementById('filterVisitsCountModal').style.display = 'flex';
+      return;
+    }
+    if (type === 'max_spend') {
+      document.getElementById('filterMaxSpendModal').style.display = 'flex';
+      return;
+    }
+    if (type === 'last_offer') {
+      document.getElementById('filterLastOfferModal').style.display = 'flex';
+      return;
+    }
+  }
+  
+  // Закрыть модальное окно фильтра по дате посещения
+  function closeFilterVisitDateModal() {
+    document.getElementById('filterVisitDateModal').style.display = 'none';
+  }
+  
+  // Сохранить фильтр по дате посещения
+  function saveFilterVisitDate() {
+    const date = document.getElementById('filterVisitDate').value;
+    if (!date) {
+      alert('Izaberi datum');
+      return;
+    }
+    selectedFilterData.visit_date = date;
+    const dateObj = new Date(date);
+    const dateStr = dateObj.toLocaleDateString('sr-RS', { day: '2-digit', month: '2-digit', year: 'numeric' });
+    document.getElementById('modalFilter').value = `Datum posete: ${dateStr}`;
+    closeFilterVisitDateModal();
+    applyFiltersInModal();
+  }
+  
+  // Закрыть модальное окно фильтра по количеству посещений
+  function closeFilterVisitsCountModal() {
+    document.getElementById('filterVisitsCountModal').style.display = 'none';
+  }
+  
+  // Сохранить фильтр по количеству посещений
+  function saveFilterVisitsCount() {
+    const min = document.getElementById('filterVisitsCountMin').value ? parseInt(document.getElementById('filterVisitsCountMin').value) : null;
+    const max = document.getElementById('filterVisitsCountMax').value ? parseInt(document.getElementById('filterVisitsCountMax').value) : null;
+    if (min === null && max === null) {
+      alert('Unesi bar jednu vrednost');
+      return;
+    }
+    selectedFilterData.visits_count_min = min;
+    selectedFilterData.visits_count_max = max;
+    let displayText = 'Broj poseta: ';
+    if (min !== null && max !== null) {
+      displayText += `${min} - ${max}`;
+    } else if (min !== null) {
+      displayText += `od ${min}`;
+    } else {
+      displayText += `do ${max}`;
+    }
+    document.getElementById('modalFilter').value = displayText;
+    closeFilterVisitsCountModal();
+    applyFiltersInModal();
+  }
+  
+  // Закрыть модальное окно фильтра по максимальной трате
+  function closeFilterMaxSpendModal() {
+    document.getElementById('filterMaxSpendModal').style.display = 'none';
+  }
+  
+  // Сохранить фильтр по максимальной трате
+  function saveFilterMaxSpend() {
+    const min = document.getElementById('filterMaxSpendMin').value ? parseFloat(document.getElementById('filterMaxSpendMin').value) : null;
+    const max = document.getElementById('filterMaxSpendMax').value ? parseFloat(document.getElementById('filterMaxSpendMax').value) : null;
+    if (min === null && max === null) {
+      alert('Unesi bar jednu vrednost');
+      return;
+    }
+    selectedFilterData.max_spend_min = min;
+    selectedFilterData.max_spend_max = max;
+    let displayText = 'Maks. potrošnja: ';
+    if (min !== null && max !== null) {
+      displayText += `${min} - ${max}`;
+    } else if (min !== null) {
+      displayText += `od ${min}`;
+    } else {
+      displayText += `do ${max}`;
+    }
+    document.getElementById('modalFilter').value = displayText;
+    closeFilterMaxSpendModal();
+    applyFiltersInModal();
+  }
+  
+  // Закрыть модальное окно фильтра по последнему посещению в днях
+  function closeFilterLastVisitDaysModal() {
+    document.getElementById('filterLastVisitDaysModal').style.display = 'none';
+  }
+  
+  // Сохранить фильтр по последнему посещению в днях
+  function saveFilterLastVisitDays() {
+    const days = document.getElementById('filterLastVisitDays').value ? parseInt(document.getElementById('filterLastVisitDays').value) : null;
+    if (days === null || days < 0) {
+      alert('Unesi validan broj dana');
+      return;
+    }
+    selectedFilterData.last_visit_days = days;
+    document.getElementById('modalFilter').value = `Poslednje posete: ${days} dana`;
+    closeFilterLastVisitDaysModal();
+    applyFiltersInModal();
+  }
+  
+  // Закрыть модальное окно фильтра по последней акции
+  function closeFilterLastOfferModal() {
+    document.getElementById('filterLastOfferModal').style.display = 'none';
+  }
+  
+  // Сохранить фильтр по последней акции
+  function saveFilterLastOffer() {
+    const fromDays = document.getElementById('filterLastOfferFromDays').value ? parseInt(document.getElementById('filterLastOfferFromDays').value) : null;
+    const toDays = document.getElementById('filterLastOfferToDays').value ? parseInt(document.getElementById('filterLastOfferToDays').value) : null;
+    if (fromDays === null && toDays === null) {
+      alert('Unesi bar jednu vrednost');
+      return;
+    }
+    selectedFilterData.last_offer_from_days = fromDays;
+    selectedFilterData.last_offer_to_days = toDays;
+    let displayText = 'Poslednja akcija: ';
+    if (fromDays !== null && toDays !== null) {
+      displayText += `${fromDays} - ${toDays} dana unazad`;
+    } else if (fromDays !== null) {
+      displayText += `od ${fromDays} dana unazad`;
+    } else {
+      displayText += `do ${toDays} dana unazad`;
+    }
+    document.getElementById('modalFilter').value = displayText;
+    closeFilterLastOfferModal();
+    applyFiltersInModal();
+  }
+  
+  // Применить фильтры в модальном окне
+  async function applyFiltersInModal() {
+    if (!selectedFilterType) {
+      alert('Izaberi filter');
+      return;
+    }
+
+    // Собираем значения фильтров
+    // ВАЖНО: selectedReservationsFrom/To - это дата акции, НЕ фильтр!
+    // Они не должны использоваться для фильтрации контактов
+    const filters = {
+      filter_type: apiFilterTypeMap[selectedFilterType] || selectedFilterType
+    };
+    
+    // Добавляем данные выбранного фильтра (если есть параметры)
+    if (selectedFilterType === 'last_visit_days') {
+      filters.last_visit_days = selectedFilterData.last_visit_days || null;
+    } else if (selectedFilterType === 'visit_specific_date') {
+      filters.last_visit_date = selectedFilterData.visit_date || null;
+    } else if (selectedFilterType === 'visits_count') {
+      filters.visits_count_min = selectedFilterData.visits_count_min !== undefined ? selectedFilterData.visits_count_min : null;
+      filters.visits_count_max = selectedFilterData.visits_count_max !== undefined ? selectedFilterData.visits_count_max : null;
+    } else if (selectedFilterType === 'max_spend') {
+      filters.max_spend_min = selectedFilterData.max_spend_min !== undefined ? selectedFilterData.max_spend_min : null;
+      filters.max_spend_max = selectedFilterData.max_spend_max !== undefined ? selectedFilterData.max_spend_max : null;
+    } else if (selectedFilterType === 'last_offer') {
+      filters.last_offer_from_days = selectedFilterData.last_offer_from_days !== undefined ? selectedFilterData.last_offer_from_days : null;
+      filters.last_offer_to_days = selectedFilterData.last_offer_to_days !== undefined ? selectedFilterData.last_offer_to_days : null;
+    }
+    
+    try {
+      const response = await fetch('/api/reactivation/filter', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(filters)
+      });
+      
+      const data = await response.json();
+      if (data.success) {
+        // Сохраняем все контакты, которые вернул сервер
+        modalFilteredContacts = data.contacts || [];
+        
+        // Применяем ограничение по количеству гостей, если указано
+        const guestsCount = document.getElementById('modalGuestsCount').value ? parseInt(document.getElementById('modalGuestsCount').value) : null;
+        const totalCount = modalFilteredContacts.length;
+        
+        if (guestsCount !== null && guestsCount > 0) {
+          // Ограничиваем количество контактов до указанного числа гостей
+          document.getElementById('modalTotalClients').textContent = Math.min(totalCount, guestsCount);
+        } else {
+          document.getElementById('modalTotalClients').textContent = totalCount;
+        }
+        
+        console.log('DEBUG: Applied filters, found', totalCount, 'contacts');
+        console.log('DEBUG: modalFilteredContacts length:', modalFilteredContacts.length);
+      } else {
+        alert('Greška: ' + (data.error || 'Nepoznata greška'));
+        modalFilteredContacts = [];
+        document.getElementById('modalTotalClients').textContent = '0';
+      }
+    } catch (error) {
+      console.error('Ошибка фильтрации:', error);
+      alert('Greška pri primeni filtera');
+    }
+  }
+  
+  // Создать список реактивации
+  async function createReactivationList() {
+    const listName = document.getElementById('modalListNameInput').value.trim();
+    const salesManager = document.getElementById('modalSalesManager').value.trim();
+    
+    if (!listName) {
+      alert('Unesi naziv akcije');
+      return;
+    }
+    
+    if (!modalFilteredContacts || modalFilteredContacts.length === 0) {
+      alert('Prvo primeni filtere (klikni Ažuriraj)');
+      console.log('DEBUG: modalFilteredContacts is empty:', modalFilteredContacts);
+      return;
+    }
+    
+    console.log('DEBUG: Creating list with', modalFilteredContacts.length, 'contacts');
+    
+    // Применяем ограничение по количеству гостей, если указано
+    const guestsCount = document.getElementById('modalGuestsCount').value ? parseInt(document.getElementById('modalGuestsCount').value) : null;
+    let contactIds = modalFilteredContacts.map(c => c.id);
+    if (guestsCount !== null && guestsCount > 0 && contactIds.length > guestsCount) {
+      contactIds = contactIds.slice(0, guestsCount);
+    }
+    
+    try {
+      // Собираем фильтры для сохранения
+      const saveFilters = {
+        last_visit_from: selectedReservationsFrom || null,
+        last_visit_to: selectedReservationsTo || null,
+        filter_type: apiFilterTypeMap[selectedFilterType] || selectedFilterType,
+        guests_count: guestsCount
+      };
+      
+      // Добавляем данные выбранного фильтра
+      if (selectedFilterType === 'last_visit_days') {
+        saveFilters.last_visit_days = selectedFilterData.last_visit_days || null;
+      } else if (selectedFilterType === 'visit_specific_date') {
+        saveFilters.last_visit_date = selectedFilterData.visit_date || null;
+      } else if (selectedFilterType === 'visits_count') {
+        saveFilters.visits_count_min = selectedFilterData.visits_count_min;
+        saveFilters.visits_count_max = selectedFilterData.visits_count_max;
+      } else if (selectedFilterType === 'max_spend') {
+        saveFilters.max_spend_min = selectedFilterData.max_spend_min;
+        saveFilters.max_spend_max = selectedFilterData.max_spend_max;
+      } else if (selectedFilterType === 'last_offer') {
+        saveFilters.last_offer_from_days = selectedFilterData.last_offer_from_days;
+        saveFilters.last_offer_to_days = selectedFilterData.last_offer_to_days;
+      }
+      
+      const response = await fetch('/api/reactivation/save-list', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          name: listName,
+          contact_ids: contactIds,
+          filters: saveFilters,
+          sales_manager: salesManager || null
+        })
+      });
+      
+      const data = await response.json();
+      if (data.success) {
+        alert('Akcija je sačuvana');
+        closeNewReactivationModal();
+        window.location.reload();
+      } else {
+        alert('Greška: ' + data.error);
+      }
+    } catch (error) {
+      console.error('Ошибка сохранения списка:', error);
+      alert('Greška pri čuvanju akcije');
+    }
+  }
+  
+  // Открыть детали реактивации
+  function openReactivationDetail(listId) {
+    // Открываем модальное окно с деталями и возможностью работы с контактами
+    window.location.href = `/marketing/reactivation/${listId}`;
+  }
+  
+  // Инициализация скроллбара
+  document.addEventListener('DOMContentLoaded', function() {
+    // Скроллбар для таблицы
+    const track = document.querySelector('.scroll-track');
+    const thumb = document.querySelector('.scroll-thumb');
+    const content = document.querySelector('.scroll-content');
+    
+    if (track && thumb && content) {
+      function updateThumb() {
+        const scrollTop = content.scrollTop;
+        const scrollHeight = content.scrollHeight;
+        const clientHeight = content.clientHeight;
+        const maxScroll = scrollHeight - clientHeight;
+        const thumbHeight = 95;
+        const trackHeight = track.offsetHeight;
+        const maxThumbTop = trackHeight - thumbHeight;
+        const thumbTop = maxScroll > 0 ? (scrollTop / maxScroll) * maxThumbTop : 0;
+        thumb.style.top = thumbTop + 'px';
+      }
+      
+      function onThumbMouseDown(e) {
+        e.preventDefault();
+        const startY = e.clientY;
+        const startTop = parseFloat(thumb.style.top) || 0;
+        const trackHeight = track.offsetHeight;
+        const thumbHeight = 95;
+        const maxThumbTop = trackHeight - thumbHeight;
+        
+        function onMouseMove(e) {
+          const deltaY = e.clientY - startY;
+          let newTop = startTop + deltaY;
+          newTop = Math.max(0, Math.min(maxThumbTop, newTop));
+          thumb.style.top = newTop + 'px';
+          
+          const scrollHeight = content.scrollHeight;
+          const clientHeight = content.clientHeight;
+          const maxScroll = scrollHeight - clientHeight;
+          const scrollTop = (newTop / maxThumbTop) * maxScroll;
+          content.scrollTop = scrollTop;
+        }
+        
+        function onMouseUp() {
+          document.removeEventListener('mousemove', onMouseMove);
+          document.removeEventListener('mouseup', onMouseUp);
+        }
+        
+        document.addEventListener('mousemove', onMouseMove);
+        document.addEventListener('mouseup', onMouseUp);
+      }
+      
+      content.addEventListener('scroll', updateThumb);
+      thumb.addEventListener('mousedown', onThumbMouseDown);
+      updateThumb();
+    }
+  });
+  
+  // Проверка ширины экрана
+  function checkScreenSize() {
+    const warning = document.getElementById('screenSizeWarning');
+    const clientsCard = document.querySelector('.clients-card');
+    const novaAkcijaBtn = document.querySelector('button[onclick="openNewReactivationModal()"]');
+    
+    if (!warning) return;
+    
+    if (window.innerWidth <= 900) {
+      warning.style.display = 'block';
+      warning.classList.add('show');
+      // Скрываем только контент страницы, но оставляем меню
+      if (clientsCard) clientsCard.style.display = 'none';
+      if (novaAkcijaBtn) novaAkcijaBtn.style.display = 'none';
+    } else {
+      warning.style.display = 'none';
+      warning.classList.remove('show');
+      // Показываем контент страницы
+      if (clientsCard) clientsCard.style.display = '';
+      if (novaAkcijaBtn) novaAkcijaBtn.style.display = '';
+    }
+  }
+  
+  // Проверка при загрузке и изменении размера окна
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', checkScreenSize);
+  } else {
+    // DOM уже загружен
+    checkScreenSize();
+  }
+  window.addEventListener('resize', checkScreenSize);
+</script>
+{% endblock %}

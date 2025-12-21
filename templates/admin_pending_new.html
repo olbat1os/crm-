@@ -1,0 +1,273 @@
+{% extends 'admin_base.html' %}
+
+{% block content %}
+<div class="admin-page-header">
+  <h1 class="admin-page-title">Biznisi na čekanju</h1>
+  <p class="admin-page-subtitle">Novi biznisi koji čekaju aktivaciju</p>
+</div>
+
+<!-- Статистика -->
+<div class="admin-stats-grid">
+  <div class="admin-stat-card">
+    <h3 class="admin-stat-number">{{ pending_businesses|length }}</h3>
+    <p class="admin-stat-label">Na čekanju</p>
+  </div>
+  
+  <div class="admin-stat-card">
+    <h3 class="admin-stat-number">{{ pending_businesses|length }}</h3>
+    <p class="admin-stat-label">Novi zahtevi</p>
+  </div>
+</div>
+
+<!-- Таблица ожидающих бизнесов -->
+<div class="admin-table-container">
+  {% if pending_businesses %}
+    <table class="admin-table">
+      <thead>
+        <tr>
+          <th>Naziv</th>
+          <th>Email</th>
+          <th>Telefon</th>
+          <th>Datum registracije</th>
+          <th>Akcije</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for business in pending_businesses %}
+        <tr>
+          <td>
+            <strong>{{ business.business_name }}</strong>
+          </td>
+          <td>{{ business.email }}</td>
+          <td>{{ business.phone or 'N/A' }}</td>
+          <td>{{ business.created_at.strftime('%d.%m.%Y %H:%M') if business.created_at else 'N/A' }}</td>
+          <td>
+            <div style="display: flex; gap: 6px; align-items: center; flex-wrap: nowrap; height: 40px;">
+              <button class="admin-btn admin-btn-primary" onclick="activateBusiness({{ business.id }})" title="Aktiviraj" style="height: 32px; width: 80px; display: flex; align-items: center; justify-content: center;">
+                <i class="fas fa-check"></i> Aktiviraj
+              </button>
+              
+              <a href="/admin/businesses/{{ business.id }}" class="admin-btn admin-btn-secondary" title="Detalji" style="height: 32px; width: 80px; display: flex; align-items: center; justify-content: center;">
+                <i class="fas fa-eye"></i> Detalji
+              </a>
+              
+              <button class="admin-btn admin-btn-danger" onclick="rejectBusiness({{ business.id }})" title="Odbaci" style="height: 32px; width: 80px; display: flex; align-items: center; justify-content: center;">
+                <i class="fas fa-times"></i> Odbaci
+              </button>
+            </div>
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  {% else %}
+    <div style="text-align: center; padding: 60px 20px; color: #6b7280;">
+      <i class="fas fa-check-circle" style="font-size: 48px; margin-bottom: 16px; color: #10b981;"></i>
+      <h3 style="margin: 0 0 8px 0; font-family: 'Manrope', system-ui, sans-serif; font-weight: 600; font-size: 20px;">Nema biznisa na čekanju</h3>
+      <p style="margin: 0; font-family: 'Manrope', system-ui, sans-serif; font-weight: 400; font-size: 16px;">Svi biznisi su obrađeni</p>
+    </div>
+  {% endif %}
+</div>
+
+<!-- Модальное окно для активации -->
+<div id="activateModal" class="admin-modal">
+  <div class="admin-modal-content">
+    <div class="admin-modal-header">
+      <h3 class="admin-modal-title">Aktiviraj biznis</h3>
+    </div>
+    <div class="admin-modal-body">
+      <form id="activateForm">
+        <input type="hidden" id="activateBusinessId" name="business_id">
+        
+        <div class="admin-form-group">
+          <label class="admin-form-label">Rok pristupa (dana)</label>
+          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 12px;">
+            <button type="button" class="admin-btn admin-btn-secondary" onclick="setQuickAccess(7)">7 dana</button>
+            <button type="button" class="admin-btn admin-btn-secondary" onclick="setQuickAccess(30)">30 dana</button>
+            <button type="button" class="admin-btn admin-btn-secondary" onclick="setQuickAccess(90)">90 dana</button>
+            <button type="button" class="admin-btn admin-btn-secondary" onclick="setQuickAccess(365)">1 godina</button>
+          </div>
+          <input type="number" class="admin-form-input" id="accessDays" name="access_days" min="1" max="365" value="30">
+        </div>
+        
+        <div class="admin-form-group">
+          <label class="admin-form-label">Dodatni sati</label>
+          <input type="number" class="admin-form-input" id="accessHours" name="access_hours" min="0" max="23" value="0">
+        </div>
+        
+        <div class="admin-form-group">
+          <label class="admin-form-label">Dodatni minuti</label>
+          <input type="number" class="admin-form-input" id="accessMinutes" name="access_minutes" min="0" max="59" value="0">
+        </div>
+        
+        <div style="background: #f0f9ff; padding: 16px; border-radius: 12px; margin-top: 16px;">
+          <strong>Pregled:</strong> <span id="durationPreview">30 dana</span>
+        </div>
+      </form>
+    </div>
+    <div class="admin-modal-footer">
+      <button type="button" class="admin-btn admin-btn-secondary" onclick="closeActivateModal()">Otkaži</button>
+      <button type="button" class="admin-btn admin-btn-primary" onclick="confirmActivation()">Aktiviraj</button>
+    </div>
+  </div>
+</div>
+
+<!-- Модальное окно для отклонения -->
+<div id="rejectModal" class="admin-modal">
+  <div class="admin-modal-content">
+    <div class="admin-modal-header">
+      <h3 class="admin-modal-title">Odbaci biznis</h3>
+    </div>
+    <div class="admin-modal-body">
+      <form id="rejectForm">
+        <input type="hidden" id="rejectBusinessId" name="business_id">
+        
+        <div class="admin-form-group">
+          <label class="admin-form-label">Razlog odbijanja</label>
+          <textarea class="admin-form-input" id="rejectReason" name="reject_reason" rows="4" placeholder="Unesite razlog odbijanja..."></textarea>
+        </div>
+        
+        <div style="background: #fef2f2; padding: 16px; border-radius: 12px; margin-top: 16px;">
+          <strong>Upozorenje:</strong> Ova akcija će trajno obrisati biznis iz sistema.
+        </div>
+      </form>
+    </div>
+    <div class="admin-modal-footer">
+      <button type="button" class="admin-btn admin-btn-secondary" onclick="closeRejectModal()">Otkaži</button>
+      <button type="button" class="admin-btn admin-btn-danger" onclick="confirmRejection()">Odbaci</button>
+    </div>
+  </div>
+</div>
+
+<script>
+// Функции для активации
+function activateBusiness(businessId) {
+  document.getElementById('activateBusinessId').value = businessId;
+  setQuickAccess(30);
+  document.getElementById('activateModal').classList.add('show');
+}
+
+function setQuickAccess(days) {
+  document.getElementById('accessDays').value = days;
+  document.getElementById('accessHours').value = 0;
+  document.getElementById('accessMinutes').value = 0;
+  updateDurationPreview();
+}
+
+function updateDurationPreview() {
+  const days = parseInt(document.getElementById('accessDays').value) || 0;
+  const hours = parseInt(document.getElementById('accessHours').value) || 0;
+  const minutes = parseInt(document.getElementById('accessMinutes').value) || 0;
+  
+  let preview = '';
+  if (days > 0) preview += `${days} dana`;
+  if (hours > 0) preview += (preview ? ', ' : '') + `${hours} sati`;
+  if (minutes > 0) preview += (preview ? ', ' : '') + `${minutes} minuta`;
+  
+  document.getElementById('durationPreview').textContent = preview || '0 dana';
+}
+
+function confirmActivation() {
+  const form = document.getElementById('activateForm');
+  const formData = new FormData(form);
+  const businessId = document.getElementById('activateBusinessId').value;
+  
+  const days = parseInt(document.getElementById('accessDays').value) || 0;
+  const hours = parseInt(document.getElementById('accessHours').value) || 0;
+  const minutes = parseInt(document.getElementById('accessMinutes').value) || 0;
+  
+  if (days <= 0 && hours <= 0 && minutes <= 0) {
+    alert('Molimo unesite rok pristupa');
+    return;
+  }
+  
+  fetch(`/admin/businesses/${businessId}/activate`, {
+    method: 'POST',
+    body: formData
+  })
+  .then(response => response.json())
+  .then(data => {
+    if (data.success) {
+      location.reload();
+    } else {
+      alert('Greška: ' + data.error);
+    }
+  })
+  .catch(error => {
+    alert('Greška: ' + error);
+  });
+}
+
+function closeActivateModal() {
+  document.getElementById('activateModal').classList.remove('show');
+}
+
+// Функции для отклонения
+function rejectBusiness(businessId) {
+  document.getElementById('rejectBusinessId').value = businessId;
+  document.getElementById('rejectReason').value = '';
+  document.getElementById('rejectModal').classList.add('show');
+}
+
+function confirmRejection() {
+  const businessId = document.getElementById('rejectBusinessId').value;
+  const reason = document.getElementById('rejectReason').value;
+  
+  if (!reason.trim()) {
+    alert('Molimo unesite razlog odbijanja');
+    return;
+  }
+  
+  if (confirm('Da li ste sigurni da želite da odbacite ovaj biznis? Ova akcija se ne može poništiti.')) {
+    fetch(`/admin/businesses/${businessId}/reject`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        reason: reason
+      })
+    })
+    .then(response => response.json())
+    .then(data => {
+      if (data.success) {
+        location.reload();
+      } else {
+        alert('Greška: ' + data.error);
+      }
+    })
+    .catch(error => {
+      alert('Greška: ' + error);
+    });
+  }
+}
+
+function closeRejectModal() {
+  document.getElementById('rejectModal').classList.remove('show');
+}
+
+// Инициализация
+document.addEventListener('DOMContentLoaded', function() {
+  // Обновление предварительного просмотра
+  const accessDays = document.getElementById('accessDays');
+  const accessHours = document.getElementById('accessHours');
+  const accessMinutes = document.getElementById('accessMinutes');
+  
+  if (accessDays) {
+    accessDays.addEventListener('input', updateDurationPreview);
+    accessHours.addEventListener('input', updateDurationPreview);
+    accessMinutes.addEventListener('input', updateDurationPreview);
+  }
+  
+  // Закрытие модальных окон при клике вне их
+  document.addEventListener('click', function(e) {
+    if (e.target.classList.contains('admin-modal')) {
+      e.target.classList.remove('show');
+    }
+  });
+});
+</script>
+
+<!-- Font Awesome для иконок -->
+<link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+{% endblock %}
