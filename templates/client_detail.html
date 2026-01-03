@@ -813,7 +813,17 @@
                 </tr>
                 <tr>
                     <td class="label">Datum rođenja:</td>
-                    <td class="value date-field" contenteditable="true" onfocus="handleFieldFocus(this)" onblur="handleFieldBlur(this, 'birth_date')" oninput="formatDateInput(this)">{{ contact.birth_date or '...' }}</td>
+                    <td class="value date-value-cell">
+                        <input type="date" 
+                               id="birthDateInput" 
+                               class="date-input-field" 
+                               value=""
+                               onchange="handleBirthDateChange(this)">
+                        <img src="/static/images/kalendar.png" 
+                             alt="Calendar" 
+                             class="calendar-icon" 
+                             onclick="openBirthDatePicker()">
+                    </td>
                 </tr>
                 <tr>
                     <td class="label">Pol:</td>
@@ -1456,6 +1466,64 @@
     line-height: 100%;
     letter-spacing: 0%;
     color: #000000;
+}
+
+.details-table .date-value-cell {
+    position: relative;
+    width: 100%;
+    padding: 0;
+}
+
+.details-table .date-input-field {
+    font-family: 'Manrope', sans-serif;
+    font-style: normal;
+    font-weight: 700;
+    font-size: 16px;
+    line-height: 100%;
+    letter-spacing: 0%;
+    color: #000000;
+    border: 1px solid transparent;
+    background: transparent;
+    padding: 2px 35px 2px 2px;
+    border-radius: 4px;
+    width: 100%;
+    box-sizing: border-box;
+    cursor: pointer;
+    outline: none;
+}
+
+.details-table .date-input-field:hover {
+    border: 1px solid #D9D9D9;
+    background: #F9F9F9;
+}
+
+.details-table .date-input-field:focus {
+    border: 1px solid #11998E;
+    background: #FFFFFF;
+}
+
+.details-table .date-input-field::-webkit-calendar-picker-indicator {
+    display: none;
+}
+
+.details-table .date-input-field::-moz-calendar-picker-indicator {
+    display: none;
+}
+
+.details-table .calendar-icon {
+    position: absolute;
+    right: 5px;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 20px;
+    height: 20px;
+    cursor: pointer;
+    z-index: 10;
+    pointer-events: auto;
+}
+
+.details-table .calendar-icon:hover {
+    opacity: 0.7;
 }
 
 .details-table .gender-selector,
@@ -6655,22 +6723,76 @@ document.addEventListener('DOMContentLoaded', function() {
         // console.log('Dropdown menu initialized');
     }
     
-    // Специальная инициализация для поля даты рождения
-    const birthDateField = document.querySelector('.date-field');
-    if (birthDateField) {
-        const currentValue = birthDateField.textContent;
-        const convertedValue = convertDateFromISO(currentValue);
-        birthDateField.textContent = convertedValue;
-
-        // Устанавливаем стили Manrope и жирный шрифт
-        birthDateField.style.fontFamily = 'Manrope, sans-serif';
-        birthDateField.style.fontWeight = '700';
-        birthDateField.style.fontSize = '16px';
-        birthDateField.style.lineHeight = '100%';
-        birthDateField.style.letterSpacing = '0%';
-        birthDateField.style.color = '#000000';
+    // Инициализация календаря для даты рождения
+    const birthDateInput = document.getElementById('birthDateInput');
+    if (birthDateInput) {
+        // Получаем значение из сервера (может быть в формате DD.MM.YYYY или YYYY-MM-DD)
+        const serverValue = '{{ contact.birth_date or "" }}';
+        if (serverValue && serverValue !== '...' && serverValue !== '') {
+            const inputValue = convertDateToInputFormat(serverValue);
+            if (inputValue) {
+                birthDateInput.value = inputValue;
+            }
+        }
     }
 });
+
+// Функция конвертации даты в формат для input type="date" (YYYY-MM-DD)
+function convertDateToInputFormat(dateString) {
+    if (!dateString || dateString === '...' || dateString === '') {
+        return '';
+    }
+    
+    // Если дата уже в формате YYYY-MM-DD
+    if (dateString.includes('-') && dateString.length === 10) {
+        return dateString;
+    }
+    
+    // Если дата в формате DD.MM.YYYY
+    if (dateString.includes('.') && dateString.length === 10) {
+        const parts = dateString.split('.');
+        if (parts.length === 3) {
+            const day = parts[0].padStart(2, '0');
+            const month = parts[1].padStart(2, '0');
+            const year = parts[2];
+            return `${year}-${month}-${day}`;
+        }
+    }
+    
+    return '';
+}
+
+// Функция открытия календаря
+function openBirthDatePicker() {
+    const input = document.getElementById('birthDateInput');
+    if (input) {
+        // Пытаемся использовать showPicker() если доступен (современные браузеры)
+        if (input.showPicker) {
+            input.showPicker();
+        } else {
+            // Fallback для старых браузеров
+            input.focus();
+            input.click();
+        }
+    }
+}
+
+// Обработчик изменения даты рождения
+function handleBirthDateChange(input) {
+    const selectedDate = input.value;
+    if (selectedDate) {
+        // Конвертируем из YYYY-MM-DD в DD.MM.YYYY для сохранения
+        const parts = selectedDate.split('-');
+        if (parts.length === 3) {
+            const formattedDate = `${parts[2]}.${parts[1]}.${parts[0]}`;
+            // Сохраняем дату через API
+            updateField('birth_date', formattedDate, input);
+        }
+    } else {
+        // Если дата очищена, сохраняем пустое значение
+        updateField('birth_date', '', input);
+    }
+}
 
 // Mobile functionality
 function toggleMobileSearch() {

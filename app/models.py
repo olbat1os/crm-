@@ -203,52 +203,48 @@ class MapTable(SQLModel, table=True):
 
 
 class ReactivationList(SQLModel, table=True):
-    """Список реактивации базы клиентов"""
     id: Optional[int] = Field(default=None, primary_key=True)
     created_at: datetime = Field(default_factory=datetime.utcnow, nullable=False)
     updated_at: datetime = Field(default_factory=datetime.utcnow, nullable=False)
-
-    name: str  # Название списка (например "все брони прошлого сезона")
-    sales_manager: Optional[str] = None # Имя sales manager
-    business_id: int = Field(foreign_key="business.id", index=True)
-
-    # Фильтры, которые использовались при создании списка
-    status: Optional[str] = Field(default="Novi")  # Status akcije: Novi, U toku, Gotovo
+    
+    name: str
+    sales_manager: Optional[str] = None
+    status: Optional[str] = Field(default="Novi")  # Novi, U toku, Gotovo
+    
+    # Связь с бизнесом
+    business_id: int = Field(foreign_key="business.id")
+    
+    # Фильтры для создания списка
     filter_last_visit_from: Optional[date] = None
     filter_last_visit_to: Optional[date] = None
-    filter_last_visit_date: Optional[date] = None  # Конкретная дата посещения
-    filter_visits_count_min: Optional[int] = None  # Минимальное количество посещений
-    filter_visits_count_max: Optional[int] = None  # Максимальное количество посещений
-    filter_max_spend_min: Optional[float] = None  # Минимальная максимальная трата
-    filter_max_spend_max: Optional[float] = None  # Максимальная максимальная трата
-    filter_last_offer_from_days: Optional[int] = None  # Когда последний раз получал акцию (от дней назад)
-    filter_last_offer_to_days: Optional[int] = None  # Когда последний раз получал акцию (до дней назад)
-    filter_guests_count: Optional[int] = None  # Количество гостей (вручную)
+    filter_last_visit_date: Optional[date] = None
+    filter_visits_count_min: Optional[int] = None
+    filter_visits_count_max: Optional[int] = None
+    filter_max_spend_min: Optional[float] = None
+    filter_max_spend_max: Optional[float] = None
+    filter_last_offer_from_days: Optional[int] = None
+    filter_last_offer_to_days: Optional[int] = None
+    filter_guests_count: Optional[int] = None
 
 
 class ReactivationListContact(SQLModel, table=True):
-    """Связь между списком реактивации и контактами"""
     id: Optional[int] = Field(default=None, primary_key=True)
     created_at: datetime = Field(default_factory=datetime.utcnow, nullable=False)
-
-    reactivation_list_id: int = Field(foreign_key="reactivationlist.id", index=True)
-    contact_id: int = Field(foreign_key="contact.id", index=True)
-
-    # Уникальность: один контакт может быть только один раз в списке
-    __table_args__ = (UniqueConstraint("reactivation_list_id", "contact_id", name="uq_reactivation_list_contact"),)
+    
+    reactivation_list_id: int = Field(foreign_key="reactivationlist.id")
+    contact_id: int = Field(foreign_key="contact.id")
 
 
 class ReactivationOffer(SQLModel, table=True):
-    """Отметка об отправленном предложении клиенту"""
     id: Optional[int] = Field(default=None, primary_key=True)
     created_at: datetime = Field(default_factory=datetime.utcnow, nullable=False)
-
-    contact_id: int = Field(foreign_key="contact.id", index=True)
-    business_id: int = Field(foreign_key="business.id", index=True)
-
-    offer_name: str  # Название предложения
-    manager_name: str  # Имя ответственного менеджера
-    reactivation_list_id: Optional[int] = Field(default=None, foreign_key="reactivationlist.id")  # Связь со списком, если есть
-    status: Optional[str] = None  # Статус: Poslato, Zainteresovan, rezervisao, stop spam, neaktivan broj
-    comment: Optional[str] = None  # Комментарий менеджера по акции (маркетинг), не связан с резервациями
+    
+    contact_id: int = Field(foreign_key="contact.id")
+    business_id: int = Field(foreign_key="business.id")
+    reactivation_list_id: Optional[int] = Field(default=None, foreign_key="reactivationlist.id")
+    
+    offer_name: str
+    manager_name: Optional[str] = None
+    status: Optional[str] = None  # Poslato, Zainteresovan, rezervisao, stop spam, neaktivan broj
+    comment: Optional[str] = None  # Комментарий для маркетинга
 

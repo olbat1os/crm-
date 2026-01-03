@@ -20,34 +20,53 @@ def verify_password(password: str, hashed_password: str) -> bool:
 
 def create_default_admins(session: Session):
     """Создает дефолтных админов при первом запуске"""
-    # Проверяем, есть ли уже админы
-    existing_admins = session.exec(select(Admin)).all()
-    if existing_admins:
-        return
-    
-    # Создаем супер-админа
-    super_admin = Admin(
-        username=settings.super_admin_username,
-        password_hash=hash_password(settings.super_admin_password),
-        email=settings.super_admin_email,
-        full_name="Super Administrator",
-        role=AdminRole.SUPER_ADMIN,
-        is_active=True
-    )
-    session.add(super_admin)
-    
-    # Создаем обычного админа
-    admin = Admin(
-        username=settings.admin_username,
-        password_hash=hash_password(settings.admin_password),
-        email=settings.admin_email,
-        full_name="Administrator",
-        role=AdminRole.ADMIN,
-        is_active=True
-    )
-    session.add(admin)
-    
-    session.commit()
+    try:
+        # Проверяем, есть ли уже супер-админ с таким email
+        existing_super_admin = session.exec(
+            select(Admin).where(Admin.email == settings.super_admin_email)
+        ).first()
+        
+        # Проверяем, есть ли уже обычный админ с таким email
+        existing_admin = session.exec(
+            select(Admin).where(Admin.email == settings.admin_email)
+        ).first()
+        
+        # Создаем супер-админа, если его нет
+        if not existing_super_admin:
+            super_admin = Admin(
+                username=settings.super_admin_username,
+                password_hash=hash_password(settings.super_admin_password),
+                email=settings.super_admin_email,
+                full_name="Super Administrator",
+                role=AdminRole.SUPER_ADMIN,
+                is_active=True
+            )
+            session.add(super_admin)
+            print(f"[AUTH] Создан супер-админ: {settings.super_admin_username}")
+        else:
+            print(f"[AUTH] Супер-админ уже существует: {settings.super_admin_username}")
+        
+        # Создаем обычного админа, если его нет
+        if not existing_admin:
+            admin = Admin(
+                username=settings.admin_username,
+                password_hash=hash_password(settings.admin_password),
+                email=settings.admin_email,
+                full_name="Administrator",
+                role=AdminRole.ADMIN,
+                is_active=True
+            )
+            session.add(admin)
+            print(f"[AUTH] Создан админ: {settings.admin_username}")
+        else:
+            print(f"[AUTH] Админ уже существует: {settings.admin_username}")
+        
+        session.commit()
+    except Exception as e:
+        # Если произошла ошибка (например, дубликат), просто откатываем транзакцию
+        session.rollback()
+        print(f"[AUTH] Предупреждение при создании админов: {str(e)}")
+        # Не поднимаем исключение, чтобы приложение могло запуститься
 
 
 def authenticate_admin(session: Session, username: str, password: str) -> Optional[Admin]:

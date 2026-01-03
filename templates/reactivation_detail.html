@@ -823,11 +823,101 @@
     transform: translateY(-1px);
   }
 
-  .whatsapp-button svg {
-    width: 20px;
-    height: 20px;
-  }
-</style>
+   .whatsapp-button svg {
+     width: 20px;
+     height: 20px;
+   }
+   
+   /* Active Filters Display */
+   .active-filters-container {
+     display: flex;
+     align-items: center;
+     gap: 10px;
+     flex-wrap: wrap;
+     margin-bottom: 16px;
+     padding: 12px 16px;
+     background: #F9FAFB;
+     border: 1px solid #E5E7EB;
+     border-radius: 12px;
+     min-height: 44px;
+   }
+   
+   .active-filters-label {
+     font-family: 'Manrope', sans-serif;
+     font-size: 14px;
+     font-weight: 600;
+     color: #6B7280;
+     white-space: nowrap;
+   }
+   
+   .active-filter-badge {
+     display: inline-flex;
+     align-items: center;
+     gap: 6px;
+     padding: 6px 12px;
+     border-radius: 20px;
+     font-family: 'Manrope', sans-serif;
+     font-size: 14px;
+     font-weight: 600;
+     cursor: pointer;
+     transition: all 0.2s ease;
+     border: 1px solid;
+   }
+   
+   .active-filter-badge:hover {
+     opacity: 0.8;
+     transform: translateY(-1px);
+   }
+   
+   .active-filter-badge .remove-icon {
+     width: 14px;
+     height: 14px;
+     display: flex;
+     align-items: center;
+     justify-content: center;
+     border-radius: 50%;
+     background: rgba(0, 0, 0, 0.1);
+     font-size: 10px;
+     line-height: 1;
+     padding: 2px;
+   }
+   
+   .active-filter-badge.status-poslato { 
+     background: #E8D8F8; 
+     border-color: #9C27B0; 
+     color: #000000; 
+   }
+   .active-filter-badge.status-zainteresovan { 
+     background: #D8F8E4; 
+     border-color: #4CAF50; 
+     color: #000000; 
+   }
+   .active-filter-badge.status-rezervisao { 
+     background: #FFF0BF; 
+     border-color: #DBC787; 
+     color: #000000; 
+   }
+   .active-filter-badge.status-stop-spam { 
+     background: #FFBFBF; 
+     border-color: #F44336; 
+     color: #000000; 
+   }
+   .active-filter-badge.status-neaktivan-broj { 
+     background: #FFD59E; 
+     border-color: #FF9800; 
+     color: #000000; 
+   }
+   .active-filter-badge.status-no-status { 
+     background: #F9FAFB; 
+     border-color: #D9D9D9; 
+     border-style: dashed;
+     color: #6B7280; 
+   }
+   
+   .active-filters-container:empty {
+     display: none;
+   }
+ </style>
 
 <!-- Предупреждение о размере экрана -->
 <div class="screen-size-warning" id="screenSizeWarning" style="display: none;">
@@ -892,53 +982,53 @@
     </div>
   </div>
   
-  <!-- Фильтры -->
-  {% if filter_data %}
-  <div class="reactivation-filters">
-    {# Rezervacije badge moved to header for nicer look #}
-    
-    {% if filter_data.get('last_visit_date') %}
-    <div class="filter-badge">
-      Datum posete: {{ filter_data.get('last_visit_date').strftime('%d.%m.%Y') }}
-    </div>
-    {% endif %}
-    
-    {% if filter_data.get('visits_count_min') is not none or filter_data.get('visits_count_max') is not none %}
-    <div class="filter-badge">
-      Broj poseta: 
-      {% if filter_data.get('visits_count_min') is not none %}{{ filter_data.get('visits_count_min') }}{% endif %}
-      {% if filter_data.get('visits_count_min') is not none and filter_data.get('visits_count_max') is not none %} - {% endif %}
-      {% if filter_data.get('visits_count_max') is not none %}{{ filter_data.get('visits_count_max') }}{% endif %}
-    </div>
-    {% endif %}
-    
-    {% if filter_data.get('max_spend_min') is not none or filter_data.get('max_spend_max') is not none %}
-    <div class="filter-badge">
-      Maks. potrošnja: 
-      {% if filter_data.get('max_spend_min') is not none %}{{ filter_data.get('max_spend_min') }}{% endif %}
-      {% if filter_data.get('max_spend_min') is not none and filter_data.get('max_spend_max') is not none %} - {% endif %}
-      {% if filter_data.get('max_spend_max') is not none %}{{ filter_data.get('max_spend_max') }}{% endif %}
-    </div>
-    {% endif %}
-    
-    {% if filter_data.get('last_offer_from_days') is not none or filter_data.get('last_offer_to_days') is not none %}
-    <div class="filter-badge">
-      Poslednja akcija: 
-      {% if filter_data.get('last_offer_from_days') is not none %}{{ filter_data.get('last_offer_from_days') }}{% endif %}
-      {% if filter_data.get('last_offer_from_days') is not none and filter_data.get('last_offer_to_days') is not none %} - {% endif %}
-      {% if filter_data.get('last_offer_to_days') is not none %}{{ filter_data.get('last_offer_to_days') }}{% endif %}
-      dana unazad
-    </div>
-    {% endif %}
-  </div>
-  {% endif %}
+   <!-- Фильтры -->
+   {% if filter_data %}
+   <div class="reactivation-filters">
+     {# Rezervacije badge moved to header for nicer look #}
+     
+     {% if filter_data.get('last_visit_date') %}
+     <div class="filter-badge">
+       Datum posete: {{ filter_data.get('last_visit_date').strftime('%d.%m.%Y') }}
+     </div>
+     {% endif %}
+     
+     {% if filter_data.get('visits_count_min') is not none or filter_data.get('visits_count_max') is not none %}
+     <div class="filter-badge">
+       Broj poseta: 
+       {% if filter_data.get('visits_count_min') is not none %}{{ filter_data.get('visits_count_min') }}{% endif %}
+       {% if filter_data.get('visits_count_min') is not none and filter_data.get('visits_count_max') is not none %} - {% endif %}
+       {% if filter_data.get('visits_count_max') is not none %}{{ filter_data.get('visits_count_max') }}{% endif %}
+     </div>
+     {% endif %}
+     
+     {% if filter_data.get('max_spend_min') is not none or filter_data.get('max_spend_max') is not none %}
+     <div class="filter-badge">
+       Maks. potrošnja: 
+       {% if filter_data.get('max_spend_min') is not none %}{{ filter_data.get('max_spend_min') }}{% endif %}
+       {% if filter_data.get('max_spend_min') is not none and filter_data.get('max_spend_max') is not none %} - {% endif %}
+       {% if filter_data.get('max_spend_max') is not none %}{{ filter_data.get('max_spend_max') }}{% endif %}
+     </div>
+     {% endif %}
+     
+     {% if filter_data.get('last_offer_from_days') is not none or filter_data.get('last_offer_to_days') is not none %}
+     <div class="filter-badge">
+       Poslednja akcija: 
+       {% if filter_data.get('last_offer_from_days') is not none %}{{ filter_data.get('last_offer_from_days') }}{% endif %}
+       {% if filter_data.get('last_offer_from_days') is not none and filter_data.get('last_offer_to_days') is not none %} - {% endif %}
+       {% if filter_data.get('last_offer_to_days') is not none %}{{ filter_data.get('last_offer_to_days') }}{% endif %}
+       dana unazad
+     </div>
+     {% endif %}
+   </div>
+   {% endif %}
   
-  <!-- Status Filters -->
-  <div class="status-filters-container">
-    <div class="filter-group" onclick="toggleAllStatusFilter(this.querySelector('.filter-checkbox'))">
-      <div class="filter-checkbox checked"></div>
-      <span class="filter-label" id="allStatusCounter">Sve ({{ contacts_data|length }})</span>
-    </div>
+   <!-- Status Filters -->
+   <div class="status-filters-container">
+     <div class="filter-group" onclick="toggleAllStatusFilter(this.querySelector('.filter-checkbox'))">
+       <div class="filter-checkbox checked"></div>
+       <span class="filter-label" id="allStatusCounter">Sve ({{ contacts_data|length }})</span>
+     </div>
     <div class="filter-group" onclick="toggleStatusFilter(this.querySelector('.filter-checkbox'), 'Poslato')">
       <div class="filter-checkbox"></div>
       <span class="status-badge status-poslato filter-label" id="poslatoCounter">Poslato - {{ contacts_data|selectattr('status', 'equalto', 'Poslato')|list|length }}</span>
@@ -959,13 +1049,19 @@
       <div class="filter-checkbox"></div>
       <span class="status-badge status-neaktivan-broj filter-label" id="neaktivanbrojCounter">Neaktivan broj - {{ contacts_data|selectattr('status', 'equalto', 'neaktivan broj')|list|length }}</span>
     </div>
-    <div class="filter-group" onclick="toggleStatusFilter(this.querySelector('.filter-checkbox'), '')">
-      <div class="filter-checkbox"></div>
-      <span class="filter-label" id="noStatusCounter" style="border: 1px dashed #D9D9D9; padding: 4px 12px; border-radius: 12px; background: #F9FAFB;">Bez statusa - 0</span>
-    </div>
-  </div>
-  
-  <!-- Таблица -->
+     <div class="filter-group" onclick="toggleStatusFilter(this.querySelector('.filter-checkbox'), '')">
+       <div class="filter-checkbox"></div>
+       <span class="filter-label" id="noStatusCounter" style="border: 1px dashed #D9D9D9; padding: 4px 12px; border-radius: 12px; background: #F9FAFB;">Bez statusa - 0</span>
+     </div>
+   </div>
+   
+   <!-- Active Filters Display -->
+   <div class="active-filters-container" id="activeFiltersContainer" style="display: none;">
+     <span class="active-filters-label">Aktivni filteri:</span>
+     <div id="activeFiltersList"></div>
+   </div>
+   
+   <!-- Таблица -->
   <div class="reactivation-table-container">
     <div class="reactivation-table-wrapper">
       <table class="reactivation-table">
@@ -1338,52 +1434,101 @@
   let selectedStatusFilters = new Set();
   let currentStatusFilter = 'all';
   
-  // Initialize status filters on page load
-  document.addEventListener('DOMContentLoaded', function() {
-    updateStatusCounters();
-  });
+   // Initialize status filters on page load
+   document.addEventListener('DOMContentLoaded', function() {
+     updateStatusCounters();
+   });
   
-  function toggleAllStatusFilter(checkbox) {
-    // Снять checked со всех чекбоксов статусов
-    document.querySelectorAll('.status-filters-container .filter-checkbox:not(:first-child)').forEach(cb => {
-      cb.classList.remove('checked');
-    });
-    
-    // Добавить checked к кнопке "Sve"
-    checkbox.classList.add('checked');
-    
-    // Установить фильтр на "all"
-    currentStatusFilter = 'all';
-    selectedStatusFilters.clear();
-    
-    // Применить фильтр
-    filterReactivationContacts('all');
-  }
+   function toggleAllStatusFilter(checkbox) {
+     // Снять checked со всех чекбоксов статусов
+     document.querySelectorAll('.status-filters-container .filter-checkbox:not(:first-child)').forEach(cb => {
+       cb.classList.remove('checked');
+     });
+     
+     // Добавить checked к кнопке "Sve"
+     checkbox.classList.add('checked');
+     
+     // Установить фильтр на "all"
+     currentStatusFilter = 'all';
+     selectedStatusFilters.clear();
+     
+     // Применить фильтр
+     filterReactivationContacts('all');
+   }
   
-  function toggleStatusFilter(checkbox, status) {
-    // Убрать checked с кнопки "Sve"
-    const allCheckbox = document.querySelector('.status-filters-container .filter-group:first-child .filter-checkbox');
-    if (allCheckbox) allCheckbox.classList.remove('checked');
-    
-    // Переключить состояние чекбокса
-    if (checkbox.classList.contains('checked')) {
-      checkbox.classList.remove('checked');
-      selectedStatusFilters.delete(status);
-    } else {
-      checkbox.classList.add('checked');
-      selectedStatusFilters.add(status);
-    }
-    
-    // Если нет выбранных фильтров, показать все
-    if (selectedStatusFilters.size === 0) {
-      currentStatusFilter = 'all';
-      if (allCheckbox) allCheckbox.classList.add('checked');
-      filterReactivationContacts('all');
-    } else {
-      currentStatusFilter = 'multiple';
-      filterReactivationContactsMultiple();
-    }
-  }
+   function toggleStatusFilter(checkbox, status) {
+     // Убрать checked с кнопки "Sve"
+     const allCheckbox = document.querySelector('.status-filters-container .filter-group:first-child .filter-checkbox');
+     if (allCheckbox) allCheckbox.classList.remove('checked');
+     
+     // Переключить состояние чекбокса
+     if (checkbox.classList.contains('checked')) {
+       checkbox.classList.remove('checked');
+       selectedStatusFilters.delete(status);
+     } else {
+       checkbox.classList.add('checked');
+       selectedStatusFilters.add(status);
+     }
+     
+     // Если нет выбранных фильтров, показать все
+     if (selectedStatusFilters.size === 0) {
+       currentStatusFilter = 'all';
+       if (allCheckbox) allCheckbox.classList.add('checked');
+       filterReactivationContacts('all');
+     } else {
+       currentStatusFilter = 'multiple';
+       filterReactivationContactsMultiple();
+     }
+   }
+   
+   // Обновить отображение активных фильтров (пустая функция, так как больше не показываем)
+   function updateActiveFiltersDisplay() {
+     // Ничего не делаем
+   }
+   
+   // Удалить фильтр статуса
+   function removeStatusFilter(status) {
+     // Удалить из Set выбранных фильтров
+     selectedStatusFilters.delete(status);
+     
+     // Найти соответствующий чекбокс и снять его
+     const filterGroups = document.querySelectorAll('.status-filters-container .filter-group');
+     filterGroups.forEach((group, index) => {
+       // Пропустить первую группу (Sve)
+       if (index === 0) return;
+       
+       const checkbox = group.querySelector('.filter-checkbox');
+       const label = group.querySelector('.filter-label');
+       
+       if (label && checkbox) {
+         // Проверить, соответствует ли этот фильтр удаляемому статусу
+         let matches = false;
+         const labelText = label.textContent.trim();
+         
+         if (status === 'Poslato' && labelText.includes('Poslato')) matches = true;
+         else if (status === 'Zainteresovan' && labelText.includes('Zainteresovan')) matches = true;
+         else if (status === 'rezervisao' && labelText.includes('Rezervisao')) matches = true;
+         else if (status === 'stop spam' && labelText.includes('Stop spam')) matches = true;
+         else if (status === 'neaktivan broj' && labelText.includes('Neaktivan broj')) matches = true;
+         else if (status === '' && labelText.includes('Bez statusa')) matches = true;
+         
+         if (matches) {
+           checkbox.classList.remove('checked');
+         }
+       }
+     });
+     
+     // Если нет выбранных фильтров, показать все
+     if (selectedStatusFilters.size === 0) {
+       currentStatusFilter = 'all';
+       const allCheckbox = document.querySelector('.status-filters-container .filter-group:first-child .filter-checkbox');
+       if (allCheckbox) allCheckbox.classList.add('checked');
+       filterReactivationContacts('all');
+     } else {
+       filterReactivationContactsMultiple();
+     }
+     
+   }
   
   function filterReactivationContacts(status) {
     const rows = document.querySelectorAll('.reactivation-contact-row');

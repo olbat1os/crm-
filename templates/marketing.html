@@ -569,7 +569,7 @@
           {% if reactivation_lists_data %}
             {% for item in reactivation_lists_data %}
             {% set list = item.list %}
-            <tr class="hover:bg-gray-50" style="cursor: pointer;" onclick="openReactivationDetail({{ list.id }})">
+            <tr class="hover:bg-gray-50" style="cursor: pointer;" data-list-id="{{ list.id if list.id else '' }}" onclick="openReactivationDetail({{ list.id if list.id else 'null' }})">
               <td class="px-4 py-2" style="color:#000000; font-weight:600;">{{ list.name }}</td>
               <td class="px-4 py-2">{{ list.sales_manager or '-' }}</td>
               <td class="px-4 py-2" id="contacts-count-{{ list.id }}">{{ item.contacts_count }}</td>
@@ -639,13 +639,13 @@
       <!-- Menadžer prodaje -->
       <div style="display: flex; align-items: center; gap: 20px;">
         <label style="font-family: 'Manrope', sans-serif; font-size: 14px; font-weight: 500; color: #000000; min-width: 120px;">Menadžer prodaje:</label>
-        <input type="text" id="modalSalesManager" placeholder="..." style="flex: 1; height: 40px; padding: 0 16px; border: 1px solid #D9D9D9; border-radius: 20px; font-family: 'Manrope', sans-serif; font-size: 10px; outline: none;">
+        <input type="text" id="modalSalesManager" placeholder="..." style="flex: 1; height: 40px; padding: 0 16px; border: 1px solid #D9D9D9; border-radius: 20px; font-family: 'Manrope', sans-serif; font-size: 14px; outline: none;">
       </div>
       
       <!-- Назив акције -->
       <div style="display: flex; align-items: center; gap: 20px;">
         <label style="font-family: 'Manrope', sans-serif; font-size: 14px; font-weight: 500; color: #000000; min-width: 120px;">Naziv akcije:</label>
-        <input type="text" id="modalListNameInput" placeholder="..." style="flex: 1; height: 40px; padding: 0 16px; border: 1px solid #D9D9D9; border-radius: 20px; font-family: 'Manrope', sans-serif; font-size: 10px; outline: none;">
+        <input type="text" id="modalListNameInput" placeholder="..." style="flex: 1; height: 40px; padding: 0 16px; border: 1px solid #D9D9D9; border-radius: 20px; font-family: 'Manrope', sans-serif; font-size: 14px; outline: none;">
       </div>
       
       <!-- Datum akcije -->
@@ -657,27 +657,34 @@
         </div>
       </div>
       
-      <!-- Фильтр (выбор одного из вариантов) -->
-      <div style="display: flex; align-items: center; gap: 20px;">
-        <label style="font-family: 'Manrope', sans-serif; font-size: 14px; font-weight: 500; color: #000000; min-width: 120px;">Filter:</label>
-        <div style="position: relative; flex: 1;">
-          <input type="text" id="modalFilter" placeholder="Izaberi filter..." readonly style="width: 100%; height: 40px; padding: 0 16px; padding-right: 40px; border: 1px solid #D9D9D9; border-radius: 20px; font-family: 'Manrope', sans-serif; font-size: 14px; outline: none; background: #FFFFFF; cursor: pointer;" onclick="toggleFilterDropdown()">
-          <div style="position: absolute; right: 16px; top: 50%; transform: translateY(-50%); width: 0; height: 0; border-left: 5px solid transparent; border-right: 5px solid transparent; border-top: 6px solid #6B7280; pointer-events: none;"></div>
-          <!-- Выпадающий список фильтров -->
-          <div id="filterDropdown" style="display: none; position: absolute; top: 100%; left: 0; right: 0; margin-top: 8px; background: #FFFFFF; border: 1px solid #D9D9D9; border-radius: 12px; box-shadow: 0 4px 12px rgba(0,0,0,0.15); z-index: 1000; overflow: hidden;">
-            <button onclick="selectFilterType('last_visit_days'); event.stopPropagation();" style="width: 100%; height: 50px; padding: 0 16px; border: none; border-bottom: 1px solid #F3F4F6; font-family: 'Manrope', sans-serif; font-size: 14px; font-weight: 500; cursor: pointer; background: #FFFFFF; color: #000000; text-align: left; transition: background-color 0.2s;">Poslednje posete (u danima)</button>
-            <button onclick="selectFilterType('visit_specific_date'); event.stopPropagation();" style="width: 100%; height: 50px; padding: 0 16px; border: none; border-bottom: 1px solid #F3F4F6; font-family: 'Manrope', sans-serif; font-size: 14px; font-weight: 500; cursor: pointer; background: #FFFFFF; color: #000000; text-align: left; transition: background-color 0.2s;">Sa određenim datumom posete u istoriji</button>
-            <button onclick="selectFilterType('visits_count'); event.stopPropagation();" style="width: 100%; height: 50px; padding: 0 16px; border: none; border-bottom: 1px solid #F3F4F6; font-family: 'Manrope', sans-serif; font-size: 14px; font-weight: 500; cursor: pointer; background: #FFFFFF; color: #000000; text-align: left; transition: background-color 0.2s;">Koliko puta je bio ukupno</button>
-            <button onclick="selectFilterType('max_spend'); event.stopPropagation();" style="width: 100%; height: 50px; padding: 0 16px; border: none; border-bottom: 1px solid #F3F4F6; font-family: 'Manrope', sans-serif; font-size: 14px; font-weight: 500; cursor: pointer; background: #FFFFFF; color: #000000; text-align: left; transition: background-color 0.2s;">Koliko maksimalno trošio za sve posete</button>
-            <button onclick="selectFilterType('last_offer'); event.stopPropagation();" style="width: 100%; height: 50px; padding: 0 16px; border: none; font-family: 'Manrope', sans-serif; font-size: 14px; font-weight: 500; cursor: pointer; background: #FFFFFF; color: #000000; text-align: left; transition: background-color 0.2s;">Kada je poslednji put primio akciju iz ovog odeljka</button>
-          </div>
+      <!-- Фильтры (можно добавить несколько) -->
+      <div style="display: flex; flex-direction: column; gap: 12px;">
+        <div style="display: flex; align-items: center; gap: 20px;">
+          <label style="font-family: 'Manrope', sans-serif; font-size: 14px; font-weight: 500; color: #000000; min-width: 120px;">Filteri:</label>
+          <button onclick="addNewFilter()" style="flex: 1; height: 40px; padding: 0 16px; border: 2px dashed #D9D9D9; border-radius: 20px; font-family: 'Manrope', sans-serif; font-size: 14px; font-weight: 500; cursor: pointer; background: #FFFFFF; color: #6B7280; display: flex; align-items: center; justify-content: center; gap: 8px;">
+            <span>+</span>
+            <span>Dodaj filter</span>
+          </button>
         </div>
+        <!-- Контейнер для списка фильтров -->
+        <div id="filtersList" style="display: flex; flex-direction: column; gap: 8px; margin-left: 140px;">
+          <!-- Фильтры будут добавляться динамически -->
+        </div>
+      </div>
+      
+      <!-- Скрытый выпадающий список фильтров (для выбора типа) -->
+      <div id="filterDropdown" style="display: none; position: fixed; background: #FFFFFF; border: 1px solid #D9D9D9; border-radius: 12px; box-shadow: 0 4px 12px rgba(0,0,0,0.15); z-index: 1000; overflow: hidden; min-width: 300px; max-width: 400px;">
+        <button onclick="selectFilterTypeForNew('last_visit_days'); event.stopPropagation();" style="width: 100%; height: 50px; padding: 0 16px; border: none; border-bottom: 1px solid #F3F4F6; font-family: 'Manrope', sans-serif; font-size: 14px; font-weight: 500; cursor: pointer; background: #FFFFFF; color: #000000; text-align: left; transition: background-color 0.2s;">Poslednje posete (u danima)</button>
+        <button onclick="selectFilterTypeForNew('visit_specific_date'); event.stopPropagation();" style="width: 100%; height: 50px; padding: 0 16px; border: none; border-bottom: 1px solid #F3F4F6; font-family: 'Manrope', sans-serif; font-size: 14px; font-weight: 500; cursor: pointer; background: #FFFFFF; color: #000000; text-align: left; transition: background-color 0.2s;">Sa određenim datumom posete u istoriji</button>
+        <button onclick="selectFilterTypeForNew('visits_count'); event.stopPropagation();" style="width: 100%; height: 50px; padding: 0 16px; border: none; border-bottom: 1px solid #F3F4F6; font-family: 'Manrope', sans-serif; font-size: 14px; font-weight: 500; cursor: pointer; background: #FFFFFF; color: #000000; text-align: left; transition: background-color 0.2s;">Koliko puta je bio ukupno</button>
+        <button onclick="selectFilterTypeForNew('max_spend'); event.stopPropagation();" style="width: 100%; height: 50px; padding: 0 16px; border: none; border-bottom: 1px solid #F3F4F6; font-family: 'Manrope', sans-serif; font-size: 14px; font-weight: 500; cursor: pointer; background: #FFFFFF; color: #000000; text-align: left; transition: background-color 0.2s;">Koliko maksimalno trošio za sve posete</button>
+        <button onclick="selectFilterTypeForNew('last_offer'); event.stopPropagation();" style="width: 100%; height: 50px; padding: 0 16px; border: none; font-family: 'Manrope', sans-serif; font-size: 14px; font-weight: 500; cursor: pointer; background: #FFFFFF; color: #000000; text-align: left; transition: background-color 0.2s;">Kada je poslednji put primio akciju iz ovog odeljka</button>
       </div>
       
       <!-- Количество гостей (вручную) -->
       <div style="display: flex; align-items: center; gap: 20px;">
         <label style="font-family: 'Manrope', sans-serif; font-size: 14px; font-weight: 500; color: #000000; min-width: 120px;">Broj gostiju:</label>
-        <input type="number" id="modalGuestsCount" placeholder="..." min="0" style="flex: 1; height: 40px; padding: 0 16px; border: 1px solid #D9D9D9; border-radius: 20px; font-family: 'Manrope', sans-serif; font-size: 10px; outline: none;">
+        <input type="number" id="modalGuestsCount" placeholder="..." min="0" style="flex: 1; height: 40px; padding: 0 16px; border: 1px solid #D9D9D9; border-radius: 20px; font-family: 'Manrope', sans-serif; font-size: 14px; outline: none;">
       </div>
     </div>
     
@@ -716,8 +723,8 @@
 </div>
 
 <!-- Modal: filter by last visit days -->
-<div id="filterLastVisitDaysModal" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 2100; align-items: center; justify-content: center;">
-  <div style="background: #FFFFFF; border-radius: 16px; padding: 24px; width: 90%; max-width: 400px; position: relative;">
+<div id="filterLastVisitDaysModal" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 3000; align-items: center; justify-content: center;" onclick="if(event.target === this) closeFilterLastVisitDaysModal()">
+  <div style="background: #FFFFFF; border-radius: 16px; padding: 24px; width: 90%; max-width: 400px; position: relative;" onclick="event.stopPropagation()">
     <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
       <h4 style="font-family: 'Manrope', sans-serif; font-size: 18px; font-weight: 600; color: #000000;">Poslednje posete (u danima)</h4>
       <button onclick="closeFilterLastVisitDaysModal()" style="background: none; border: none; font-size: 24px; color: #6B7280; cursor: pointer;">×</button>
@@ -725,7 +732,7 @@
     <div style="display: flex; flex-direction: column; gap: 12px;">
       <div>
         <label style="display: block; font-family: 'Manrope', sans-serif; font-size: 14px; font-weight: 500; color: #000000; margin-bottom: 8px;">Broj dana:</label>
-        <input type="number" id="filterLastVisitDays" placeholder="..." min="0" style="width: 100%; height: 40px; padding: 0 16px; border: 1px solid #D9D9D9; border-radius: 20px; font-family: 'Manrope', sans-serif; font-size: 14px; outline: none;">
+        <input type="number" id="filterLastVisitDays" placeholder="..." min="0" style="width: 100%; height: 40px; padding: 0 16px; border: 1px solid #D9D9D9; border-radius: 20px; font-family: 'Manrope', sans-serif; font-size: 14px; outline: none; pointer-events: auto; background: #FFFFFF;">
       </div>
       <button onclick="saveFilterLastVisitDays()" style="width: 100%; height: 40px; background: linear-gradient(270deg, #11998E 0%, #2CAB5C 100%); border: none; border-radius: 20px; color: #FFFFFF; font-family: 'Manrope', sans-serif; font-size: 14px; font-weight: 500; cursor: pointer; margin-top: 8px;">Sačuvaj</button>
     </div>
@@ -733,8 +740,8 @@
 </div>
 
 <!-- Modal: filter by last offer -->
-<div id="filterLastOfferModal" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 2100; align-items: center; justify-content: center;">
-  <div style="background: #FFFFFF; border-radius: 16px; padding: 24px; width: 90%; max-width: 400px; position: relative;">
+<div id="filterLastOfferModal" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 3000; align-items: center; justify-content: center;" onclick="if(event.target === this) closeFilterLastOfferModal()">
+  <div style="background: #FFFFFF; border-radius: 16px; padding: 24px; width: 90%; max-width: 400px; position: relative;" onclick="event.stopPropagation()">
     <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
       <h4 style="font-family: 'Manrope', sans-serif; font-size: 18px; font-weight: 600; color: #000000;">Poslednja akcija</h4>
       <button onclick="closeFilterLastOfferModal()" style="background: none; border: none; font-size: 24px; color: #6B7280; cursor: pointer;">×</button>
@@ -742,11 +749,11 @@
     <div style="display: flex; flex-direction: column; gap: 12px;">
       <div>
         <label style="display: block; font-family: 'Manrope', sans-serif; font-size: 14px; font-weight: 500; color: #000000; margin-bottom: 8px;">Od (dana unazad):</label>
-        <input type="number" id="filterLastOfferFromDays" placeholder="..." min="0" style="width: 100%; height: 40px; padding: 0 16px; border: 1px solid #D9D9D9; border-radius: 20px; font-family: 'Manrope', sans-serif; font-size: 14px; outline: none;">
+        <input type="number" id="filterLastOfferFromDays" placeholder="..." min="0" style="width: 100%; height: 40px; padding: 0 16px; border: 1px solid #D9D9D9; border-radius: 20px; font-family: 'Manrope', sans-serif; font-size: 14px; outline: none; pointer-events: auto; background: #FFFFFF;">
       </div>
       <div>
         <label style="display: block; font-family: 'Manrope', sans-serif; font-size: 14px; font-weight: 500; color: #000000; margin-bottom: 8px;">Do (dana unazad):</label>
-        <input type="number" id="filterLastOfferToDays" placeholder="..." min="0" style="width: 100%; height: 40px; padding: 0 16px; border: 1px solid #D9D9D9; border-radius: 20px; font-family: 'Manrope', sans-serif; font-size: 14px; outline: none;">
+        <input type="number" id="filterLastOfferToDays" placeholder="..." min="0" style="width: 100%; height: 40px; padding: 0 16px; border: 1px solid #D9D9D9; border-radius: 20px; font-family: 'Manrope', sans-serif; font-size: 14px; outline: none; pointer-events: auto; background: #FFFFFF;">
       </div>
       <button onclick="saveFilterLastOffer()" style="width: 100%; height: 40px; background: linear-gradient(270deg, #11998E 0%, #2CAB5C 100%); border: none; border-radius: 20px; color: #FFFFFF; font-family: 'Manrope', sans-serif; font-size: 14px; font-weight: 500; cursor: pointer; margin-top: 8px;">Sačuvaj</button>
     </div>
@@ -754,8 +761,8 @@
 </div>
 
 <!-- Modal: filter by specific visit date -->
-<div id="filterVisitDateModal" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 2100; align-items: center; justify-content: center;">
-  <div style="background: #FFFFFF; border-radius: 16px; padding: 24px; width: 90%; max-width: 400px; position: relative;">
+<div id="filterVisitDateModal" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 3000; align-items: center; justify-content: center;" onclick="if(event.target === this) closeFilterVisitDateModal()">
+  <div style="background: #FFFFFF; border-radius: 16px; padding: 24px; width: 90%; max-width: 400px; position: relative;" onclick="event.stopPropagation()">
     <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
       <h4 style="font-family: 'Manrope', sans-serif; font-size: 18px; font-weight: 600; color: #000000;">Datum posete</h4>
       <button onclick="closeFilterVisitDateModal()" style="background: none; border: none; font-size: 24px; color: #6B7280; cursor: pointer;">×</button>
@@ -763,7 +770,7 @@
     <div style="display: flex; flex-direction: column; gap: 12px;">
       <div>
         <label style="display: block; font-family: 'Manrope', sans-serif; font-size: 14px; font-weight: 500; color: #000000; margin-bottom: 8px;">Izaberi datum:</label>
-        <input type="date" id="filterVisitDate" style="width: 100%; height: 40px; padding: 0 16px; border: 1px solid #D9D9D9; border-radius: 20px; font-family: 'Manrope', sans-serif; font-size: 14px; outline: none;">
+        <input type="date" id="filterVisitDate" style="width: 100%; height: 40px; padding: 0 16px; border: 1px solid #D9D9D9; border-radius: 20px; font-family: 'Manrope', sans-serif; font-size: 14px; outline: none; pointer-events: auto; background: #FFFFFF;">
       </div>
       <button onclick="saveFilterVisitDate()" style="width: 100%; height: 40px; background: linear-gradient(270deg, #11998E 0%, #2CAB5C 100%); border: none; border-radius: 20px; color: #FFFFFF; font-family: 'Manrope', sans-serif; font-size: 14px; font-weight: 500; cursor: pointer; margin-top: 8px;">Sačuvaj</button>
     </div>
@@ -771,8 +778,8 @@
 </div>
 
 <!-- Modal: filter by total visits count -->
-<div id="filterVisitsCountModal" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 2100; align-items: center; justify-content: center;">
-  <div style="background: #FFFFFF; border-radius: 16px; padding: 24px; width: 90%; max-width: 400px; position: relative;">
+<div id="filterVisitsCountModal" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 3000; align-items: center; justify-content: center;" onclick="if(event.target === this) closeFilterVisitsCountModal()">
+  <div style="background: #FFFFFF; border-radius: 16px; padding: 24px; width: 90%; max-width: 400px; position: relative;" onclick="event.stopPropagation()">
     <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
       <h4 style="font-family: 'Manrope', sans-serif; font-size: 18px; font-weight: 600; color: #000000;">Broj poseta</h4>
       <button onclick="closeFilterVisitsCountModal()" style="background: none; border: none; font-size: 24px; color: #6B7280; cursor: pointer;">×</button>
@@ -780,11 +787,11 @@
     <div style="display: flex; flex-direction: column; gap: 12px;">
       <div>
         <label style="display: block; font-family: 'Manrope', sans-serif; font-size: 14px; font-weight: 500; color: #000000; margin-bottom: 8px;">Od:</label>
-        <input type="number" id="filterVisitsCountMin" placeholder="..." min="0" style="width: 100%; height: 40px; padding: 0 16px; border: 1px solid #D9D9D9; border-radius: 20px; font-family: 'Manrope', sans-serif; font-size: 14px; outline: none;">
+        <input type="number" id="filterVisitsCountMin" placeholder="..." min="0" style="width: 100%; height: 40px; padding: 0 16px; border: 1px solid #D9D9D9; border-radius: 20px; font-family: 'Manrope', sans-serif; font-size: 14px; outline: none; pointer-events: auto; background: #FFFFFF;">
       </div>
       <div>
         <label style="display: block; font-family: 'Manrope', sans-serif; font-size: 14px; font-weight: 500; color: #000000; margin-bottom: 8px;">Do:</label>
-        <input type="number" id="filterVisitsCountMax" placeholder="..." min="0" style="width: 100%; height: 40px; padding: 0 16px; border: 1px solid #D9D9D9; border-radius: 20px; font-family: 'Manrope', sans-serif; font-size: 14px; outline: none;">
+        <input type="number" id="filterVisitsCountMax" placeholder="..." min="0" style="width: 100%; height: 40px; padding: 0 16px; border: 1px solid #D9D9D9; border-radius: 20px; font-family: 'Manrope', sans-serif; font-size: 14px; outline: none; pointer-events: auto; background: #FFFFFF;">
       </div>
       <button onclick="saveFilterVisitsCount()" style="width: 100%; height: 40px; background: linear-gradient(270deg, #11998E 0%, #2CAB5C 100%); border: none; border-radius: 20px; color: #FFFFFF; font-family: 'Manrope', sans-serif; font-size: 14px; font-weight: 500; cursor: pointer; margin-top: 8px;">Sačuvaj</button>
     </div>
@@ -792,8 +799,8 @@
 </div>
 
 <!-- Modal: filter by max spend -->
-<div id="filterMaxSpendModal" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 2100; align-items: center; justify-content: center;">
-  <div style="background: #FFFFFF; border-radius: 16px; padding: 24px; width: 90%; max-width: 400px; position: relative;">
+<div id="filterMaxSpendModal" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 3000; align-items: center; justify-content: center;" onclick="if(event.target === this) closeFilterMaxSpendModal()">
+  <div style="background: #FFFFFF; border-radius: 16px; padding: 24px; width: 90%; max-width: 400px; position: relative;" onclick="event.stopPropagation()">
     <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
       <h4 style="font-family: 'Manrope', sans-serif; font-size: 18px; font-weight: 600; color: #000000;">Maks. potrošnja</h4>
       <button onclick="closeFilterMaxSpendModal()" style="background: none; border: none; font-size: 24px; color: #6B7280; cursor: pointer;">×</button>
@@ -801,11 +808,11 @@
     <div style="display: flex; flex-direction: column; gap: 12px;">
       <div>
         <label style="display: block; font-family: 'Manrope', sans-serif; font-size: 14px; font-weight: 500; color: #000000; margin-bottom: 8px;">Od:</label>
-        <input type="number" id="filterMaxSpendMin" placeholder="..." min="0" step="0.01" style="width: 100%; height: 40px; padding: 0 16px; border: 1px solid #D9D9D9; border-radius: 20px; font-family: 'Manrope', sans-serif; font-size: 14px; outline: none;">
+        <input type="number" id="filterMaxSpendMin" placeholder="..." min="0" step="0.01" style="width: 100%; height: 40px; padding: 0 16px; border: 1px solid #D9D9D9; border-radius: 20px; font-family: 'Manrope', sans-serif; font-size: 14px; outline: none; pointer-events: auto; background: #FFFFFF;">
       </div>
       <div>
         <label style="display: block; font-family: 'Manrope', sans-serif; font-size: 14px; font-weight: 500; color: #000000; margin-bottom: 8px;">Do:</label>
-        <input type="number" id="filterMaxSpendMax" placeholder="..." min="0" step="0.01" style="width: 100%; height: 40px; padding: 0 16px; border: 1px solid #D9D9D9; border-radius: 20px; font-family: 'Manrope', sans-serif; font-size: 14px; outline: none;">
+        <input type="number" id="filterMaxSpendMax" placeholder="..." min="0" step="0.01" style="width: 100%; height: 40px; padding: 0 16px; border: 1px solid #D9D9D9; border-radius: 20px; font-family: 'Manrope', sans-serif; font-size: 14px; outline: none; pointer-events: auto; background: #FFFFFF;">
       </div>
       <button onclick="saveFilterMaxSpend()" style="width: 100%; height: 40px; background: linear-gradient(270deg, #11998E 0%, #2CAB5C 100%); border: none; border-radius: 20px; color: #FFFFFF; font-family: 'Manrope', sans-serif; font-size: 14px; font-weight: 500; cursor: pointer; margin-top: 8px;">Sačuvaj</button>
     </div>
@@ -1106,8 +1113,8 @@
   // - visits_count (koliko puta ukupno)
   // - max_spend (maks. potrošnja)
   // - last_offer (poslednja akcija)
-  let selectedFilterType = null;
-  let selectedFilterData = {}; // Данные выбранного фильтра
+  let activeFilters = []; // Массив активных фильтров
+  let currentFilterBeingConfigured = null; // Фильтр, который сейчас настраивается
 
   // Map UI type -> API type (backend expects: visit_date, visits_count, max_spend, last_offer, last_visit_days)
   const apiFilterTypeMap = {
@@ -1120,23 +1127,53 @@
   
   // Закрытие выпадающего списка при клике вне его
   document.addEventListener('click', function(event) {
-    const filterInput = document.getElementById('modalFilter');
     const filterDropdown = document.getElementById('filterDropdown');
-    if (filterInput && filterDropdown) {
-      const isClickInside = filterInput.contains(event.target) || filterDropdown.contains(event.target);
-      if (!isClickInside && filterDropdown.style.display === 'block') {
+    const addFilterButton = document.querySelector('button[onclick="addNewFilter()"]');
+    
+    // Проверяем, не кликнули ли мы внутри какого-либо модального окна фильтра
+    const filterModals = [
+      'filterLastVisitDaysModal',
+      'filterVisitDateModal',
+      'filterVisitsCountModal',
+      'filterMaxSpendModal',
+      'filterLastOfferModal',
+      'reservationsPickerModal',
+      'newReactivationModal'
+    ];
+    
+    const isInsideModal = filterModals.some(modalId => {
+      const modal = document.getElementById(modalId);
+      return modal && modal.style.display !== 'none' && modal.contains(event.target);
+    });
+    
+    if (filterDropdown && filterDropdown.style.display === 'block' && !isInsideModal) {
+      const isClickInside = filterDropdown.contains(event.target) || 
+                           (addFilterButton && addFilterButton.contains(event.target));
+      if (!isClickInside) {
         closeFilterDropdown();
       }
     }
   });
   
-  // Закрытие выпадающего списка при клике вне его
+  // Предотвращаем закрытие модальных окон при клике внутри них
   document.addEventListener('click', function(event) {
-    const filterInput = document.getElementById('modalFilter');
-    const filterDropdown = document.getElementById('filterDropdown');
-    if (filterInput && filterDropdown && !filterInput.contains(event.target) && !filterDropdown.contains(event.target)) {
-      closeFilterDropdown();
-    }
+    const filterModals = [
+      'filterLastVisitDaysModal',
+      'filterVisitDateModal',
+      'filterVisitsCountModal',
+      'filterMaxSpendModal',
+      'filterLastOfferModal'
+    ];
+    
+    filterModals.forEach(modalId => {
+      const modal = document.getElementById(modalId);
+      if (modal && modal.style.display === 'flex') {
+        const modalContent = modal.querySelector('div');
+        if (modalContent && !modalContent.contains(event.target) && event.target !== modal) {
+          // Клик вне контента модального окна - не закрываем, это нормально
+        }
+      }
+    });
   });
   
   // Открыть модальное окно для создания новой акции
@@ -1146,12 +1183,12 @@
     modalSelectedContactIds.clear();
     selectedReservationsFrom = null;
     selectedReservationsTo = null;
-    selectedFilterType = null;
-    selectedFilterData = {};
+    activeFilters = [];
+    currentFilterBeingConfigured = null;
     document.getElementById('modalReservations').value = '';
-    document.getElementById('modalFilter').value = '';
     document.getElementById('modalGuestsCount').value = '';
     document.getElementById('modalTotalClients').textContent = '0';
+    updateFiltersListDisplay();
   }
   
   // Закрыть модальное окно
@@ -1160,12 +1197,12 @@
     document.getElementById('modalSalesManager').value = '';
     document.getElementById('modalListNameInput').value = '';
     document.getElementById('modalReservations').value = '';
-    document.getElementById('modalFilter').value = '';
     document.getElementById('modalGuestsCount').value = '';
     modalFilteredContacts = [];
     modalSelectedContactIds.clear();
-    selectedFilterType = null;
-    selectedFilterData = {};
+    activeFilters = [];
+    currentFilterBeingConfigured = null;
+    updateFiltersListDisplay();
   }
   
   // Открыть выбор дат резерваций
@@ -1200,14 +1237,16 @@
     // НЕ применяем фильтр автоматически - это просто дата акции, не фильтр
   }
   
-  // Переключить выпадающий список фильтров
-  function toggleFilterDropdown() {
+  // Добавить новый фильтр
+  function addNewFilter() {
+    const button = event.target.closest('button');
+    const rect = button.getBoundingClientRect();
     const dropdown = document.getElementById('filterDropdown');
-    if (dropdown.style.display === 'none' || dropdown.style.display === '') {
-      dropdown.style.display = 'block';
-    } else {
-      dropdown.style.display = 'none';
-    }
+    
+    // Позиционируем выпадающий список рядом с кнопкой
+    dropdown.style.display = 'block';
+    dropdown.style.top = (rect.bottom + 8) + 'px';
+    dropdown.style.left = rect.left + 'px';
   }
   
   // Закрыть выпадающий список фильтров
@@ -1215,12 +1254,79 @@
     document.getElementById('filterDropdown').style.display = 'none';
   }
   
-  // Выбрать тип фильтра
-  function selectFilterType(type) {
-    selectedFilterType = type;
+  // Выбрать тип фильтра для нового фильтра
+  function selectFilterTypeForNew(type) {
     closeFilterDropdown();
     
-    // Устанавливаем текст в поле фильтра (modalFilter)
+    // Создаем новый фильтр
+    const newFilter = {
+      id: Date.now(), // Уникальный ID
+      type: type,
+      data: {}
+    };
+    
+    currentFilterBeingConfigured = newFilter;
+    
+    // Открываем нужное окно параметров
+    if (type === 'last_visit_days') {
+      document.getElementById('filterLastVisitDaysModal').style.display = 'flex';
+      // Фокус на поле ввода после небольшой задержки
+      setTimeout(() => {
+        const input = document.getElementById('filterLastVisitDays');
+        if (input) input.focus();
+      }, 100);
+      return;
+    }
+    if (type === 'visit_specific_date') {
+      document.getElementById('filterVisitDateModal').style.display = 'flex';
+      setTimeout(() => {
+        const input = document.getElementById('filterVisitDate');
+        if (input) input.focus();
+      }, 100);
+      return;
+    }
+    if (type === 'visits_count') {
+      document.getElementById('filterVisitsCountModal').style.display = 'flex';
+      setTimeout(() => {
+        const input = document.getElementById('filterVisitsCountMin');
+        if (input) input.focus();
+      }, 100);
+      return;
+    }
+    if (type === 'max_spend') {
+      document.getElementById('filterMaxSpendModal').style.display = 'flex';
+      setTimeout(() => {
+        const input = document.getElementById('filterMaxSpendMin');
+        if (input) input.focus();
+      }, 100);
+      return;
+    }
+    if (type === 'last_offer') {
+      document.getElementById('filterLastOfferModal').style.display = 'flex';
+      setTimeout(() => {
+        const input = document.getElementById('filterLastOfferFromDays');
+        if (input) input.focus();
+      }, 100);
+      return;
+    }
+  }
+  
+  // Обновить отображение списка фильтров
+  function updateFiltersListDisplay() {
+    const filtersList = document.getElementById('filtersList');
+    filtersList.innerHTML = '';
+    
+    activeFilters.forEach(filter => {
+      const filterElement = createFilterElement(filter);
+      filtersList.appendChild(filterElement);
+    });
+  }
+  
+  // Создать элемент фильтра для отображения
+  function createFilterElement(filter) {
+    const div = document.createElement('div');
+    div.style.cssText = 'display: flex; align-items: center; gap: 12px; padding: 8px 16px; background: #F9F9F9; border: 1px solid #D9D9D9; border-radius: 20px;';
+    
     const filterTexts = {
       'last_visit_days': 'Poslednje posete (u danima)',
       'visit_specific_date': 'Sa određenim datumom posete u istoriji',
@@ -1228,31 +1334,63 @@
       'max_spend': 'Koliko maksimalno trošio za sve posete',
       'last_offer': 'Kada je poslednji put primio akciju iz ovog odeljka'
     };
-    document.getElementById('modalFilter').value = filterTexts[type] || '';
     
-    // Очищаем данные фильтра для нового выбора
-    selectedFilterData = {};
-
-    // Открываем нужное окно параметров
-    if (type === 'last_visit_days') {
-      document.getElementById('filterLastVisitDaysModal').style.display = 'flex';
-      return;
+    let displayText = filterTexts[filter.type] || filter.type;
+    
+    // Добавляем детали фильтра
+    if (filter.type === 'last_visit_days' && filter.data.last_visit_days !== undefined) {
+      displayText = `Poslednje posete: ${filter.data.last_visit_days} dana`;
+    } else if (filter.type === 'visit_specific_date' && filter.data.visit_date) {
+      const dateObj = new Date(filter.data.visit_date);
+      const dateStr = dateObj.toLocaleDateString('sr-RS', { day: '2-digit', month: '2-digit', year: 'numeric' });
+      displayText = `Datum posete: ${dateStr}`;
+    } else if (filter.type === 'visits_count') {
+      const min = filter.data.visits_count_min;
+      const max = filter.data.visits_count_max;
+      if (min !== null && max !== null) {
+        displayText = `Broj poseta: ${min} - ${max}`;
+      } else if (min !== null) {
+        displayText = `Broj poseta: od ${min}`;
+      } else if (max !== null) {
+        displayText = `Broj poseta: do ${max}`;
+      }
+    } else if (filter.type === 'max_spend') {
+      const min = filter.data.max_spend_min;
+      const max = filter.data.max_spend_max;
+      if (min !== null && max !== null) {
+        displayText = `Maks. potrošnja: ${min} - ${max}`;
+      } else if (min !== null) {
+        displayText = `Maks. potrošnja: od ${min}`;
+      } else if (max !== null) {
+        displayText = `Maks. potrošnja: do ${max}`;
+      }
+    } else if (filter.type === 'last_offer') {
+      const fromDays = filter.data.last_offer_from_days;
+      const toDays = filter.data.last_offer_to_days;
+      if (fromDays !== null && toDays !== null) {
+        displayText = `Poslednja akcija: ${fromDays} - ${toDays} dana unazad`;
+      } else if (fromDays !== null) {
+        displayText = `Poslednja akcija: od ${fromDays} dana unazad`;
+      } else if (toDays !== null) {
+        displayText = `Poslednja akcija: do ${toDays} dana unazad`;
+      }
     }
-    if (type === 'visit_specific_date') {
-      document.getElementById('filterVisitDateModal').style.display = 'flex';
-      return;
-    }
-    if (type === 'visits_count') {
-      document.getElementById('filterVisitsCountModal').style.display = 'flex';
-      return;
-    }
-    if (type === 'max_spend') {
-      document.getElementById('filterMaxSpendModal').style.display = 'flex';
-      return;
-    }
-    if (type === 'last_offer') {
-      document.getElementById('filterLastOfferModal').style.display = 'flex';
-      return;
+    
+    div.innerHTML = `
+      <span style="flex: 1; font-family: 'Manrope', sans-serif; font-size: 14px; color: #000000;">${displayText}</span>
+      <button onclick="removeFilter(${filter.id})" style="background: none; border: none; color: #EF4444; cursor: pointer; font-size: 18px; padding: 0; width: 24px; height: 24px; display: flex; align-items: center; justify-content: center;">×</button>
+    `;
+    
+    return div;
+  }
+  
+  // Удалить фильтр
+  function removeFilter(filterId) {
+    activeFilters = activeFilters.filter(f => f.id !== filterId);
+    updateFiltersListDisplay();
+    // Пересчитываем результаты, если фильтры уже применялись
+    if (modalFilteredContacts.length > 0) {
+      applyFiltersInModal();
     }
   }
   
@@ -1268,11 +1406,22 @@
       alert('Izaberi datum');
       return;
     }
-    selectedFilterData.visit_date = date;
-    const dateObj = new Date(date);
-    const dateStr = dateObj.toLocaleDateString('sr-RS', { day: '2-digit', month: '2-digit', year: 'numeric' });
-    document.getElementById('modalFilter').value = `Datum posete: ${dateStr}`;
+    
+    if (currentFilterBeingConfigured) {
+      currentFilterBeingConfigured.data.visit_date = date;
+      // Проверяем, не существует ли уже такой фильтр
+      const existingIndex = activeFilters.findIndex(f => f.id === currentFilterBeingConfigured.id);
+      if (existingIndex === -1) {
+        activeFilters.push(currentFilterBeingConfigured);
+      } else {
+        activeFilters[existingIndex] = currentFilterBeingConfigured;
+      }
+      currentFilterBeingConfigured = null;
+    }
+    
+    document.getElementById('filterVisitDate').value = '';
     closeFilterVisitDateModal();
+    updateFiltersListDisplay();
     applyFiltersInModal();
   }
   
@@ -1289,18 +1438,24 @@
       alert('Unesi bar jednu vrednost');
       return;
     }
-    selectedFilterData.visits_count_min = min;
-    selectedFilterData.visits_count_max = max;
-    let displayText = 'Broj poseta: ';
-    if (min !== null && max !== null) {
-      displayText += `${min} - ${max}`;
-    } else if (min !== null) {
-      displayText += `od ${min}`;
-    } else {
-      displayText += `do ${max}`;
+    
+    if (currentFilterBeingConfigured) {
+      currentFilterBeingConfigured.data.visits_count_min = min;
+      currentFilterBeingConfigured.data.visits_count_max = max;
+      // Проверяем, не существует ли уже такой фильтр
+      const existingIndex = activeFilters.findIndex(f => f.id === currentFilterBeingConfigured.id);
+      if (existingIndex === -1) {
+        activeFilters.push(currentFilterBeingConfigured);
+      } else {
+        activeFilters[existingIndex] = currentFilterBeingConfigured;
+      }
+      currentFilterBeingConfigured = null;
     }
-    document.getElementById('modalFilter').value = displayText;
+    
+    document.getElementById('filterVisitsCountMin').value = '';
+    document.getElementById('filterVisitsCountMax').value = '';
     closeFilterVisitsCountModal();
+    updateFiltersListDisplay();
     applyFiltersInModal();
   }
   
@@ -1317,18 +1472,24 @@
       alert('Unesi bar jednu vrednost');
       return;
     }
-    selectedFilterData.max_spend_min = min;
-    selectedFilterData.max_spend_max = max;
-    let displayText = 'Maks. potrošnja: ';
-    if (min !== null && max !== null) {
-      displayText += `${min} - ${max}`;
-    } else if (min !== null) {
-      displayText += `od ${min}`;
-    } else {
-      displayText += `do ${max}`;
+    
+    if (currentFilterBeingConfigured) {
+      currentFilterBeingConfigured.data.max_spend_min = min;
+      currentFilterBeingConfigured.data.max_spend_max = max;
+      // Проверяем, не существует ли уже такой фильтр
+      const existingIndex = activeFilters.findIndex(f => f.id === currentFilterBeingConfigured.id);
+      if (existingIndex === -1) {
+        activeFilters.push(currentFilterBeingConfigured);
+      } else {
+        activeFilters[existingIndex] = currentFilterBeingConfigured;
+      }
+      currentFilterBeingConfigured = null;
     }
-    document.getElementById('modalFilter').value = displayText;
+    
+    document.getElementById('filterMaxSpendMin').value = '';
+    document.getElementById('filterMaxSpendMax').value = '';
     closeFilterMaxSpendModal();
+    updateFiltersListDisplay();
     applyFiltersInModal();
   }
   
@@ -1344,9 +1505,22 @@
       alert('Unesi validan broj dana');
       return;
     }
-    selectedFilterData.last_visit_days = days;
-    document.getElementById('modalFilter').value = `Poslednje posete: ${days} dana`;
+    
+    if (currentFilterBeingConfigured) {
+      currentFilterBeingConfigured.data.last_visit_days = days;
+      // Проверяем, не существует ли уже такой фильтр
+      const existingIndex = activeFilters.findIndex(f => f.id === currentFilterBeingConfigured.id);
+      if (existingIndex === -1) {
+        activeFilters.push(currentFilterBeingConfigured);
+      } else {
+        activeFilters[existingIndex] = currentFilterBeingConfigured;
+      }
+      currentFilterBeingConfigured = null;
+    }
+    
+    document.getElementById('filterLastVisitDays').value = '';
     closeFilterLastVisitDaysModal();
+    updateFiltersListDisplay();
     applyFiltersInModal();
   }
   
@@ -1363,86 +1537,112 @@
       alert('Unesi bar jednu vrednost');
       return;
     }
-    selectedFilterData.last_offer_from_days = fromDays;
-    selectedFilterData.last_offer_to_days = toDays;
-    let displayText = 'Poslednja akcija: ';
-    if (fromDays !== null && toDays !== null) {
-      displayText += `${fromDays} - ${toDays} dana unazad`;
-    } else if (fromDays !== null) {
-      displayText += `od ${fromDays} dana unazad`;
-    } else {
-      displayText += `do ${toDays} dana unazad`;
+    
+    if (currentFilterBeingConfigured) {
+      currentFilterBeingConfigured.data.last_offer_from_days = fromDays;
+      currentFilterBeingConfigured.data.last_offer_to_days = toDays;
+      // Проверяем, не существует ли уже такой фильтр
+      const existingIndex = activeFilters.findIndex(f => f.id === currentFilterBeingConfigured.id);
+      if (existingIndex === -1) {
+        activeFilters.push(currentFilterBeingConfigured);
+      } else {
+        activeFilters[existingIndex] = currentFilterBeingConfigured;
+      }
+      currentFilterBeingConfigured = null;
     }
-    document.getElementById('modalFilter').value = displayText;
+    
+    document.getElementById('filterLastOfferFromDays').value = '';
+    document.getElementById('filterLastOfferToDays').value = '';
     closeFilterLastOfferModal();
+    updateFiltersListDisplay();
     applyFiltersInModal();
   }
   
   // Применить фильтры в модальном окне
   async function applyFiltersInModal() {
-    if (!selectedFilterType) {
-      alert('Izaberi filter');
+    if (activeFilters.length === 0) {
+      alert('Dodaj bar jedan filter');
       return;
     }
 
-    // Собираем значения фильтров
     // ВАЖНО: selectedReservationsFrom/To - это дата акции, НЕ фильтр!
     // Они не должны использоваться для фильтрации контактов
-    const filters = {
-      filter_type: apiFilterTypeMap[selectedFilterType] || selectedFilterType
-    };
-    
-    // Добавляем данные выбранного фильтра (если есть параметры)
-    if (selectedFilterType === 'last_visit_days') {
-      filters.last_visit_days = selectedFilterData.last_visit_days || null;
-    } else if (selectedFilterType === 'visit_specific_date') {
-      filters.last_visit_date = selectedFilterData.visit_date || null;
-    } else if (selectedFilterType === 'visits_count') {
-      filters.visits_count_min = selectedFilterData.visits_count_min !== undefined ? selectedFilterData.visits_count_min : null;
-      filters.visits_count_max = selectedFilterData.visits_count_max !== undefined ? selectedFilterData.visits_count_max : null;
-    } else if (selectedFilterType === 'max_spend') {
-      filters.max_spend_min = selectedFilterData.max_spend_min !== undefined ? selectedFilterData.max_spend_min : null;
-      filters.max_spend_max = selectedFilterData.max_spend_max !== undefined ? selectedFilterData.max_spend_max : null;
-    } else if (selectedFilterType === 'last_offer') {
-      filters.last_offer_from_days = selectedFilterData.last_offer_from_days !== undefined ? selectedFilterData.last_offer_from_days : null;
-      filters.last_offer_to_days = selectedFilterData.last_offer_to_days !== undefined ? selectedFilterData.last_offer_to_days : null;
-    }
     
     try {
-      const response = await fetch('/api/reactivation/filter', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify(filters)
-      });
+      // Применяем фильтры последовательно и находим пересечение (AND логика)
+      let allFilteredContacts = null;
       
-      const data = await response.json();
-      if (data.success) {
-        // Сохраняем все контакты, которые вернул сервер
-        modalFilteredContacts = data.contacts || [];
+      for (const filter of activeFilters) {
+        // Собираем параметры для текущего фильтра
+        const filters = {
+          filter_type: apiFilterTypeMap[filter.type] || filter.type
+        };
         
-        // Применяем ограничение по количеству гостей, если указано
-        const guestsCount = document.getElementById('modalGuestsCount').value ? parseInt(document.getElementById('modalGuestsCount').value) : null;
-        const totalCount = modalFilteredContacts.length;
-        
-        if (guestsCount !== null && guestsCount > 0) {
-          // Ограничиваем количество контактов до указанного числа гостей
-          document.getElementById('modalTotalClients').textContent = Math.min(totalCount, guestsCount);
-        } else {
-          document.getElementById('modalTotalClients').textContent = totalCount;
+        // Добавляем данные фильтра
+        if (filter.type === 'last_visit_days') {
+          filters.last_visit_days = filter.data.last_visit_days || null;
+        } else if (filter.type === 'visit_specific_date') {
+          filters.last_visit_date = filter.data.visit_date || null;
+        } else if (filter.type === 'visits_count') {
+          filters.visits_count_min = filter.data.visits_count_min !== undefined ? filter.data.visits_count_min : null;
+          filters.visits_count_max = filter.data.visits_count_max !== undefined ? filter.data.visits_count_max : null;
+        } else if (filter.type === 'max_spend') {
+          filters.max_spend_min = filter.data.max_spend_min !== undefined ? filter.data.max_spend_min : null;
+          filters.max_spend_max = filter.data.max_spend_max !== undefined ? filter.data.max_spend_max : null;
+        } else if (filter.type === 'last_offer') {
+          filters.last_offer_from_days = filter.data.last_offer_from_days !== undefined ? filter.data.last_offer_from_days : null;
+          filters.last_offer_to_days = filter.data.last_offer_to_days !== undefined ? filter.data.last_offer_to_days : null;
         }
         
-        console.log('DEBUG: Applied filters, found', totalCount, 'contacts');
-        console.log('DEBUG: modalFilteredContacts length:', modalFilteredContacts.length);
-      } else {
-        alert('Greška: ' + (data.error || 'Nepoznata greška'));
-        modalFilteredContacts = [];
-        document.getElementById('modalTotalClients').textContent = '0';
+        const response = await fetch('/api/reactivation/filter', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify(filters)
+        });
+        
+        const data = await response.json();
+        if (!data.success) {
+          alert('Greška: ' + (data.error || 'Nepoznata greška'));
+          modalFilteredContacts = [];
+          document.getElementById('modalTotalClients').textContent = '0';
+          return;
+        }
+        
+        const contacts = data.contacts || [];
+        const contactIds = new Set(contacts.map(c => c.id));
+        
+        if (allFilteredContacts === null) {
+          // Первый фильтр - сохраняем все результаты
+          allFilteredContacts = contacts;
+        } else {
+          // Находим пересечение с предыдущими результатами
+          allFilteredContacts = allFilteredContacts.filter(c => contactIds.has(c.id));
+        }
       }
+      
+      // Сохраняем итоговый результат
+      modalFilteredContacts = allFilteredContacts || [];
+      
+      // Применяем ограничение по количеству гостей, если указано
+      const guestsCount = document.getElementById('modalGuestsCount').value ? parseInt(document.getElementById('modalGuestsCount').value) : null;
+      const totalCount = modalFilteredContacts.length;
+      
+      if (guestsCount !== null && guestsCount > 0) {
+        // Ограничиваем количество контактов до указанного числа гостей
+        document.getElementById('modalTotalClients').textContent = Math.min(totalCount, guestsCount);
+      } else {
+        document.getElementById('modalTotalClients').textContent = totalCount;
+      }
+      
+      console.log('DEBUG: Applied', activeFilters.length, 'filters, found', totalCount, 'contacts');
+      console.log('DEBUG: modalFilteredContacts length:', modalFilteredContacts.length);
     } catch (error) {
       console.error('Ошибка фильтрации:', error);
       alert('Greška pri primeni filtera');
+      modalFilteredContacts = [];
+      document.getElementById('modalTotalClients').textContent = '0';
     }
   }
   
@@ -1476,25 +1676,30 @@
       const saveFilters = {
         last_visit_from: selectedReservationsFrom || null,
         last_visit_to: selectedReservationsTo || null,
-        filter_type: apiFilterTypeMap[selectedFilterType] || selectedFilterType,
-        guests_count: guestsCount
+        guests_count: guestsCount,
+        filters: activeFilters.map(filter => {
+          const filterData = {
+            filter_type: apiFilterTypeMap[filter.type] || filter.type
+          };
+          
+          if (filter.type === 'last_visit_days') {
+            filterData.last_visit_days = filter.data.last_visit_days || null;
+          } else if (filter.type === 'visit_specific_date') {
+            filterData.last_visit_date = filter.data.visit_date || null;
+          } else if (filter.type === 'visits_count') {
+            filterData.visits_count_min = filter.data.visits_count_min;
+            filterData.visits_count_max = filter.data.visits_count_max;
+          } else if (filter.type === 'max_spend') {
+            filterData.max_spend_min = filter.data.max_spend_min;
+            filterData.max_spend_max = filter.data.max_spend_max;
+          } else if (filter.type === 'last_offer') {
+            filterData.last_offer_from_days = filter.data.last_offer_from_days;
+            filterData.last_offer_to_days = filter.data.last_offer_to_days;
+          }
+          
+          return filterData;
+        })
       };
-      
-      // Добавляем данные выбранного фильтра
-      if (selectedFilterType === 'last_visit_days') {
-        saveFilters.last_visit_days = selectedFilterData.last_visit_days || null;
-      } else if (selectedFilterType === 'visit_specific_date') {
-        saveFilters.last_visit_date = selectedFilterData.visit_date || null;
-      } else if (selectedFilterType === 'visits_count') {
-        saveFilters.visits_count_min = selectedFilterData.visits_count_min;
-        saveFilters.visits_count_max = selectedFilterData.visits_count_max;
-      } else if (selectedFilterType === 'max_spend') {
-        saveFilters.max_spend_min = selectedFilterData.max_spend_min;
-        saveFilters.max_spend_max = selectedFilterData.max_spend_max;
-      } else if (selectedFilterType === 'last_offer') {
-        saveFilters.last_offer_from_days = selectedFilterData.last_offer_from_days;
-        saveFilters.last_offer_to_days = selectedFilterData.last_offer_to_days;
-      }
       
       const response = await fetch('/api/reactivation/save-list', {
         method: 'POST',
@@ -1525,8 +1730,23 @@
   
   // Открыть детали реактивации
   function openReactivationDetail(listId) {
+    console.log('openReactivationDetail called with listId:', listId, typeof listId);
+    // Проверяем, что listId определен
+    if (!listId || listId === 'None' || listId === 'null' || listId === null || listId === undefined) {
+      console.error('Invalid listId:', listId);
+      alert('Greška: Neispravan ID akcije');
+      return;
+    }
+    // Преобразуем в число, если это строка
+    const id = typeof listId === 'string' ? parseInt(listId) : listId;
+    if (isNaN(id)) {
+      console.error('listId is not a number:', listId);
+      alert('Greška: Neispravan ID akcije');
+      return;
+    }
+    console.log('Navigating to:', `/marketing/reactivation/${id}`);
     // Открываем модальное окно с деталями и возможностью работы с контактами
-    window.location.href = `/marketing/reactivation/${listId}`;
+    window.location.href = `/marketing/reactivation/${id}`;
   }
   
   // Инициализация скроллбара
@@ -1582,6 +1802,35 @@
       content.addEventListener('scroll', updateThumb);
       thumb.addEventListener('mousedown', onThumbMouseDown);
       updateThumb();
+    }
+    
+    // Обработчик клика на строки таблицы реактивации
+    const reactivationTableBody = document.getElementById('reactivation-table-body');
+    if (reactivationTableBody) {
+      reactivationTableBody.addEventListener('click', function(e) {
+        // Пропускаем клики на кнопки и другие интерактивные элементы
+        if (e.target.tagName === 'BUTTON' || e.target.tagName === 'A' || e.target.closest('button') || e.target.closest('a')) {
+          return;
+        }
+        
+        // Находим ближайшую строку (tr)
+        const row = e.target.closest('tr');
+        if (row && row.id !== 'no-reactivation-row' && !row.classList.contains('no-click')) {
+          // Получаем listId из атрибута data-list-id
+          const listId = row.getAttribute('data-list-id');
+          
+          if (listId && listId !== 'null' && listId !== 'None' && listId !== '') {
+            e.preventDefault();
+            e.stopPropagation();
+            const id = parseInt(listId);
+            if (!isNaN(id)) {
+              openReactivationDetail(id);
+            } else {
+              console.error('Invalid listId:', listId);
+            }
+          }
+        }
+      }, true); // Используем capture phase для приоритета
     }
   });
   

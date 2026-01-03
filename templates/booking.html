@@ -1167,6 +1167,18 @@
     font-weight: 700;
   }
   
+  .guest-name-link {
+    color: #000000;
+    text-decoration: none;
+    cursor: pointer;
+    transition: color 0.2s ease;
+  }
+  
+  .guest-name-link:hover {
+    color: #11998E;
+    text-decoration: underline;
+  }
+  
   .action-buttons {
     display: flex;
     gap: 10px;
@@ -4039,7 +4051,11 @@
             </span>
           </td>
           <td>
-            <span class="guest-name">{{ c.first_name if c else '—' }}{% if c and c.last_name %} {{ c.last_name }}{% endif %}</span>
+            {% if c and c.id %}
+              <a href="/clients/{{ c.id }}" class="guest-name guest-name-link">{{ c.first_name if c else '—' }}{% if c and c.last_name %} {{ c.last_name }}{% endif %}</a>
+            {% else %}
+              <span class="guest-name">{{ c.first_name if c else '—' }}{% if c and c.last_name %} {{ c.last_name }}{% endif %}</span>
+            {% endif %}
           </td>
           <td>
             {{ c.phone if c else '' }}

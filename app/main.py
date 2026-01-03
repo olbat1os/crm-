@@ -76,19 +76,19 @@ async def check_expired_businesses_task():
             frozen_count = check_and_freeze_expired_businesses(session)
             
             if frozen_count > 0:
-                print(f"🔄 Pozadinska provera: zamrznuto {frozen_count} biznisa")
+                print(f"[BACKGROUND] Pozadinska provera: zamrznuto {frozen_count} biznisa")
             else:
-                print("🔄 Pozadinska provera: nema isteklih rokova")
+                print("[BACKGROUND] Pozadinska provera: nema isteklih rokova")
                 
         except Exception as e:
-            print(f"❌ Ошибка в фоновой задаче проверки сроков: {str(e)}")
+            print(f"[ERROR] Ошибка в фоновой задаче проверки сроков: {str(e)}")
         finally:
             # ВАЖНО: Закрываем сессию базы данных
             if session:
                 try:
                     session.close()
                 except Exception as e:
-                    print(f"❌ Ошибка при закрытии сессии: {e}")
+                    print(f"[ERROR] Ошибка при закрытии сессии: {e}")
         
         # Ждем 5 минут перед следующей проверкой (для тестирования)
         # Для продакшена изменить на 3600 (1 час) или 1800 (30 минут)
@@ -98,17 +98,17 @@ async def check_expired_businesses_task():
 @app.on_event("startup")
 async def startup_event():
     """Запуск фоновых задач при старте приложения"""
-    print("🚀 Pokretanje sistema provere isteka rokova...")
+    print("[STARTUP] Pokretanje sistema provere isteka rokova...")
     asyncio.create_task(check_expired_businesses_task())
-    print("✅ Sistem provere isteka rokova je pokrenut")
+    print("[STARTUP] Sistem provere isteka rokova je pokrenut")
     create_db_and_tables()
 
 def get_current_user(request: Request):
     user = request.session.get("user")
     if not user:
-        print(f"❌ No user in session. Session keys: {list(request.session.keys())}")
+        print(f"[ERROR] No user in session. Session keys: {list(request.session.keys())}")
     else:
-        print(f"✅ User found: {user}")
+        print(f"[OK] User found: {user}")
     return user
 
 def extend_admin_session(request: Request):
@@ -118,7 +118,7 @@ def extend_admin_session(request: Request):
         # Обновляем время последней активности
         admin["last_activity"] = time.time()
         request.session["admin"] = admin
-        print(f"🔄 Сессия админа {admin.get('username', 'unknown')} продлена")
+        print(f"[SESSION] Сессия админа {admin.get('username', 'unknown')} продлена")
 
 def admin_activity_required(func):
     """Декоратор для продления сессии админа при активности"""
@@ -1458,7 +1458,12 @@ async def reactivation_detail_page(list_id: int, request: Request, session: Sess
     
     # Получаем список реактивации
     reactivation_list = session.get(ReactivationList, list_id)
+    print(f"🔍 Reactivation detail page - list_id: {list_id}, business_id: {business_id}")
+    print(f"🔍 Reactivation list found: {reactivation_list is not None}")
+    if reactivation_list:
+        print(f"🔍 Reactivation list business_id: {reactivation_list.business_id}, name: {reactivation_list.name}")
     if not reactivation_list or reactivation_list.business_id != business_id:
+        print(f"⚠️ Redirecting to /marketing - list not found or business_id mismatch")
         return RedirectResponse(url="/marketing", status_code=302)
     
     # Подготавливаем данные фильтров для шаблона (безопасный доступ к полям)
@@ -1629,8 +1634,28 @@ async def filter_reactivation_contacts(
                 )
                 .distinct()
             )
-            contact_ids_with_date = [row[0] for row in session.exec(visit_date_subquery).all()]
+            # Правильно извлекаем ID контактов
+            contact_ids_with_date = []
+            results = session.exec(visit_date_subquery).all()
+            for row in results:
+                # row может быть int, tuple, или Row объектом
+                if isinstance(row, int):
+                    contact_ids_with_date.append(row)
+                elif isinstance(row, tuple):
+                    contact_ids_with_date.append(row[0])
+                else:
+                    # Если это Row объект или что-то еще, пробуем получить первый элемент
+                    try:
+                        contact_id = row[0] if hasattr(row, '__getitem__') else row
+                        contact_ids_with_date.append(int(contact_id))
+                    except (TypeError, IndexError, ValueError):
+                        # Если не получается извлечь, пропускаем
+                        continue
+            
+            print(f"[FILTER] Фильтр по дате {visit_date}: найдено контактов с этой датой: {len(contact_ids_with_date)}, IDs: {contact_ids_with_date}")
+            
             if contact_ids_with_date:
+                # Применяем фильтр - ТОЛЬКО контакты с этой датой
                 query = query.where(Contact.id.in_(contact_ids_with_date))
             else:
                 # Если никого нет с этой датой, возвращаем пустой результат
@@ -1777,10 +1802,35 @@ async def filter_reactivation_contacts(
                 )
         
         contacts = session.exec(query).all()
+        print(f"[FILTER] После применения всех фильтров найдено контактов: {len(contacts)}")
         
         # Определяем тип сортировки на основе фильтра (если указан filter_type в запросе)
         # Это нужно для показа топ контактов по выбранному критерию
         filter_type = request_data.filter_type if hasattr(request_data, 'filter_type') else None
+        
+        # Дополнительная проверка для фильтра по дате: убеждаемся, что контакт действительно имеет бронирование с этой датой
+        if request_data.last_visit_date:
+            visit_date = datetime.strptime(request_data.last_visit_date, "%Y-%m-%d").date()
+            # Фильтруем контакты - оставляем только те, у которых есть бронирование с этой датой
+            valid_contacts = []
+            for contact in contacts:
+                # Проверяем, есть ли у контакта бронирование с этой датой
+                booking_with_date = session.exec(
+                    select(Booking)
+                    .where(
+                        Booking.contact_id == contact.id,
+                        Booking.date == visit_date
+                    )
+                    .limit(1)
+                ).first()
+                
+                if booking_with_date:
+                    valid_contacts.append(contact)
+                else:
+                    print(f"[FILTER] Контакт {contact.id} ({contact.first_name} {contact.last_name}) не имеет бронирования на {visit_date}, исключаем")
+            
+            contacts = valid_contacts
+            print(f"[FILTER] После дополнительной проверки по дате осталось контактов: {len(contacts)}")
         
         # Формируем ответ с дополнительной информацией
         contact_stats = []

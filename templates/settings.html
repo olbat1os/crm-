@@ -2657,18 +2657,12 @@ window.saveBusinessSettings = async function saveBusinessSettings() {
         // Получаем все lead sources для фильтрации
         const allLeadSources = [];
         if (window.currentBusinessSettings && window.currentBusinessSettings.lead_sources) {
-            const leadSources = window.currentBusinessSettings.lead_sources;
-            // Убеждаемся, что lead_sources - это массив
-            if (Array.isArray(leadSources)) {
-                leadSources.forEach(source => {
-                    const name = typeof source === 'string' ? source : source.name;
-                    if (name) {
-                        allLeadSources.push(name.toLowerCase().trim());
-                    }
-                });
-            } else {
-                console.warn('lead_sources is not an array:', leadSources);
-            }
+            window.currentBusinessSettings.lead_sources.forEach(source => {
+                const name = typeof source === 'string' ? source : source.name;
+                if (name) {
+                    allLeadSources.push(name.toLowerCase().trim());
+                }
+            });
         }
         // Добавляем дефолтные lead sources
         defaultLeadSources.forEach(source => allLeadSources.push(source));
@@ -2704,13 +2698,7 @@ window.saveBusinessSettings = async function saveBusinessSettings() {
         
         // Если не нашли в DOM, используем сохраненные данные
         if (leadSources.length === 0 && window.currentBusinessSettings && window.currentBusinessSettings.lead_sources) {
-            const savedLeadSources = window.currentBusinessSettings.lead_sources;
-            // Убеждаемся, что lead_sources - это массив
-            if (Array.isArray(savedLeadSources)) {
-                leadSources.push(...savedLeadSources);
-            } else {
-                console.warn('savedLeadSources is not an array:', savedLeadSources);
-            }
+            leadSources.push(...window.currentBusinessSettings.lead_sources);
         }
         
         console.log('Collected lead sources:', leadSources);
@@ -3058,41 +3046,6 @@ window.loadBusinessSettings = async function loadBusinessSettings() {
             
             if (data.success) {
                 const settings = data.settings;
-                
-                // Обрабатываем lead_sources - может быть массивом или строкой JSON
-                let leadSources = settings.lead_sources || [];
-                if (typeof leadSources === 'string') {
-                    try {
-                        leadSources = JSON.parse(leadSources);
-                    } catch (e) {
-                        console.error('Error parsing lead_sources:', e);
-                        leadSources = [];
-                    }
-                }
-                // Убеждаемся, что это массив
-                if (!Array.isArray(leadSources)) {
-                    console.warn('lead_sources is not an array:', leadSources);
-                    leadSources = [];
-                }
-                settings.lead_sources = leadSources;
-                
-                // Обрабатываем table_types - может быть массивом или строкой JSON
-                let tableTypes = settings.table_types || [];
-                if (typeof tableTypes === 'string') {
-                    try {
-                        tableTypes = JSON.parse(tableTypes);
-                    } catch (e) {
-                        console.error('Error parsing table_types:', e);
-                        tableTypes = [];
-                    }
-                }
-                // Убеждаемся, что это массив
-                if (!Array.isArray(tableTypes)) {
-                    console.warn('table_types is not an array:', tableTypes);
-                    tableTypes = [];
-                }
-                settings.table_types = tableTypes;
-                
                 // Сохраняем настройки для использования в модальном окне
                 window.currentBusinessSettings = settings;
                 
@@ -3113,7 +3066,7 @@ window.loadBusinessSettings = async function loadBusinessSettings() {
                 if (emailField) {
                     emailField.textContent = settings.email || '...';
                 }
-        
+                
         // Load capacity
         const capacityField = document.getElementById('capacity');
         if (capacityField) {
@@ -3133,7 +3086,7 @@ window.loadBusinessSettings = async function loadBusinessSettings() {
         }
         
         // Load table types
-        renderTableTypes(tableTypes);
+        renderTableTypes(settings.table_types || []);
         
                 // Load working schedule
                 if (settings.working_schedule) {
@@ -3610,13 +3563,7 @@ function openTableTypesModal() {
             window.loadBusinessSettings().then(() => {
                 const settings = window.currentBusinessSettings;
                 if (settings && settings.table_types) {
-                    let tableTypes = settings.table_types;
-                    // Убеждаемся, что table_types - это массив
-                    if (!Array.isArray(tableTypes)) {
-                        console.warn('table_types is not an array, converting:', tableTypes);
-                        tableTypes = [];
-                    }
-                    renderTableTypes(tableTypes);
+                    renderTableTypes(settings.table_types);
                 } else {
                     renderTableTypes([]);
                 }
@@ -3649,30 +3596,18 @@ function renderTableTypes(tableTypes) {
     
     listContainer.innerHTML = '';
     
-    // Убеждаемся, что tableTypes - это массив
-    if (!Array.isArray(tableTypes)) {
-        console.error('renderTableTypes: tableTypes is not an array:', tableTypes);
-        tableTypes = [];
-    }
-    
     // Фильтруем все lead sources из типов столов
     const defaultLeadSources = ['whatsapp', 'phone', 'email', 'instagram'];
     const allLeadSources = new Set(defaultLeadSources);
     
     // Добавляем кастомные lead sources
     if (window.currentBusinessSettings && window.currentBusinessSettings.lead_sources) {
-        const leadSources = window.currentBusinessSettings.lead_sources;
-        // Убеждаемся, что lead_sources - это массив
-        if (Array.isArray(leadSources)) {
-            leadSources.forEach(source => {
-                const name = typeof source === 'string' ? source : source.name;
-                if (name) {
-                    allLeadSources.add(name.toLowerCase().trim());
-                }
-            });
-        } else {
-            console.warn('renderTableTypes: lead_sources is not an array:', leadSources);
-        }
+        window.currentBusinessSettings.lead_sources.forEach(source => {
+            const name = typeof source === 'string' ? source : source.name;
+            if (name) {
+                allLeadSources.add(name.toLowerCase().trim());
+            }
+        });
     }
     
     const filteredTableTypes = (tableTypes || []).filter(type => {
@@ -3798,14 +3733,8 @@ function openLeadSourcesModal() {
                 const settings = window.currentBusinessSettings;
                 console.log('Loading lead sources from settings:', settings);
                 if (settings && settings.lead_sources) {
-                    let leadSources = settings.lead_sources;
-                    // Убеждаемся, что lead_sources - это массив
-                    if (!Array.isArray(leadSources)) {
-                        console.warn('lead_sources is not an array, converting:', leadSources);
-                        leadSources = [];
-                    }
-                    console.log('Rendering lead sources:', leadSources);
-                    renderLeadSources(leadSources);
+                    console.log('Rendering lead sources:', settings.lead_sources);
+                    renderLeadSources(settings.lead_sources);
                 } else {
                     console.log('No lead sources found, rendering empty list');
                     renderLeadSources([]);
@@ -3853,12 +3782,6 @@ function renderLeadSources(leadSources) {
     if (!listContainer) {
         console.error('leadSourcesList container not found');
         return;
-    }
-    
-    // Убеждаемся, что leadSources - это массив
-    if (!Array.isArray(leadSources)) {
-        console.error('renderLeadSources: leadSources is not an array:', leadSources);
-        leadSources = [];
     }
     
     console.log('Rendering lead sources:', leadSources);
