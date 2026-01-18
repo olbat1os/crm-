@@ -5161,10 +5161,10 @@ async def create_contact(
         
         # Извлекаем данные
         first_name = data.get("first_name", "").strip()
-        phone = data.get("phone", "").strip()
+        phone = data.get("phone", "").strip() if data.get("phone") else None
         
-        if not first_name or not phone:
-            return {"success": False, "message": "First name and phone are required"}
+        if not first_name:
+            return {"success": False, "message": "First name is required"}
         
         # Создаем нового клиента
         contact = Contact(

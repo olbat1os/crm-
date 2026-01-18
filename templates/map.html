@@ -1,13 +1,56 @@
-{% extends 'dashboard_base.html' %}
+{% extends 'map_base.html' %}
 {% block content %}
 <style>
-  /* Переопределяем активный пункт для Map */
-  .app-layout { --active-bg: rgba(255, 255, 255, 0.20); --active-top: 240px; }
-  .menu-item.active { background: transparent; }
-  .item-dash { background: transparent; }
-  .item-mapa { background: var(--active-bg); }
-</style>
-<style>
+  .main-inner {
+    margin: 0 !important;
+    padding: 0 30px !important;
+    max-width: none !important;
+    width: 100% !important;
+  }
+  .map-wrap { display:flex; gap:20px; margin-top:95px; position:relative; height:calc(100vh - 95px); width:100%; align-items:stretch; }
+  .panel { width:300px; flex-shrink:0; max-height:calc(100vh - 140px); overflow-y:auto; background:#fff; border:1px solid #e5e7eb; border-radius:16px; padding:16px; }
+  .panel h3 { font-family:'Manrope',sans-serif; font-size:22px; font-weight:700; margin:0 0 12px; }
+  .panel-section { border-top:1px solid #eee; padding:16px 0; }
+  .panel-grid { display:grid; grid-template-columns:repeat(3, 1fr); gap:12px; }
+  .tool-grid { display:grid; grid-template-columns:repeat(4, 1fr); gap:16px; }
+  .tool-cell { display:flex; flex-direction:column; align-items:center; gap:8px; text-align:center; }
+  .tool-cell .tool-label { font:12px 'Manrope',sans-serif; color:#6b7280; }
+  .tool-cell .pill { width:100%; }
+  .pill { display:inline-flex; align-items:center; justify-content:center; height:44px; border-radius:12px; background:#fff; font-family:'Manrope',sans-serif; font-weight:600; cursor:pointer; border:none; padding:0; transition:box-shadow 0.15s ease, border-color 0.15s ease, background-color 0.15s ease, color 0.15s ease; }
+  .pill:hover { outline:2px solid #11998E; }
+  .pill.active { background:#ECFDF3; border:1px solid #16A34A; box-shadow:0 0 0 1px rgba(22,163,74,0.3); }
+  .panel-section-header { display:flex; flex-direction:column; gap:4px; }
+  .section-title { font:700 16px 'Manrope',sans-serif; color:#111827; }
+  .section-subtitle { font:12px 'Manrope',sans-serif; color:#6b7280; }
+  .table-cards { display:flex; flex-direction:column; gap:12px; margin-top:14px; }
+  .table-card { display:flex; align-items:center; justify-content:space-between; width:100%; border:1px solid #e5e7eb; border-radius:16px; background:#fff; padding:12px 16px; cursor:pointer; transition:border-color 0.2s ease, box-shadow 0.2s ease; font-family:'Manrope',sans-serif; font-size:14px; -webkit-appearance:none; appearance:none; }
+  .table-card:hover { border-color:#1EA276; box-shadow:0 8px 20px rgba(17,153,142,0.12); }
+  .table-card:focus { outline:none; border-color:#1EA276; box-shadow:0 0 0 3px rgba(30,162,118,0.18); }
+  .table-card .card-icon { flex-shrink:0; width:48px; height:48px; border-radius:18px; background:rgba(30,162,118,0.08); display:flex; align-items:center; justify-content:center; }
+  .table-card .card-content { flex:1; padding:0 16px; text-align:left; }
+  .table-card .card-title { font-weight:700; font-size:15px; color:#111827; display:block; }
+  .table-card .card-meta { margin-top:4px; font-size:12px; color:#6b7280; display:block; }
+  .table-card .card-action { font-weight:600; font-size:13px; color:#1EA276; }
+  .table-card svg { display:block; }
+  .hint { margin-top:10px; font:12px 'Manrope',sans-serif; color:#6b7280; line-height:1.4; }
+
+  .board { flex:1; min-width:0; background:#fff; border:1px solid #e5e7eb; border-radius:16px; padding:24px; position:relative; margin-bottom:40px; display:flex; flex-direction:column; overflow:hidden; height:calc(100% - 40px); }
+  .tabs { display:flex; gap:24px; align-items:center; padding:0 8px 12px; border-bottom:1px solid #e5e7eb; }
+  .tab { font-family:'Manrope',sans-serif; font-weight:700; color:#9ca3af; cursor:pointer; transition:color 0.2s ease; }
+  .tab.active { color:#11998E; border-bottom:3px solid #11998E; padding-bottom:8px; }
+  .tab:hover:not(.active) { color:#6b7280; }
+  #addTabButton { font-size:20px; font-weight:700; transition:color 0.2s ease; }
+  #addTabButton:hover { color:#11998E; }
+
+  .canvas-wrap { position:relative; flex:1; min-height:0; margin-top:16px; border:2px solid #11998E; border-radius:8px; overflow:hidden; }
+  #mapCanvas { background:#fff; }
+
+  .tools-row { display:flex; gap:8px; flex-wrap:wrap; margin-top:10px; }
+  .tool { padding:6px 10px; border:1px solid #e5e7eb; border-radius:8px; background:#fff; cursor:pointer; font-family:'Manrope',sans-serif; font-size:12px; }
+  .tool.active { border-color:#11998E; color:#11998E; font-weight:700; }
+
+  .zoom { position:absolute; bottom:12px; left:50%; transform:translateX(-50%); display:flex; gap:12px; align-items:center; border:1px solid #d9d9d9; border-radius:20px; padding:6px 12px; background:#fff; color:#666; font-family:'Manrope',sans-serif; font-weight:700; }
+
   /* Mobile Header */
   .mobile-header {
     position: absolute;
@@ -19,16 +62,6 @@
     display: none;
     align-items: center;
     z-index: 1000;
-  }
-
-  .logo-home {
-    position: absolute;
-    width: 181px;
-    height: 40px;
-    top: 25px;
-    left: 30px;
-    z-index: 0;
-    opacity: 1;
   }
 
   .mobile-logo {
@@ -104,6 +137,10 @@
     transform: translateX(100%);
   }
 
+  .mobile-sidebar.open {
+    transform: translateX(0);
+  }
+
   .mobile-sidebar-overlay {
     position: fixed;
     top: 0;
@@ -111,16 +148,12 @@
     width: 100%;
     height: 100%;
     background: rgba(0, 0, 0, 0.5);
-    z-index: 1500;
+    z-index: 1999;
     display: none;
   }
 
   .mobile-sidebar-overlay.show {
     display: block;
-  }
-
-  .mobile-sidebar.open {
-    transform: translateX(0);
   }
 
   /* Mobile Sidebar Content */
@@ -145,141 +178,31 @@
     background: rgba(255, 255, 255, 0.1);
   }
 
+  .mobile-sidebar-logo {
+    position: absolute;
+    left: 20px;
+    bottom: 20px;
+    width: 136px;
+    height: 30px;
+  }
+
   .mobile-sidebar-arrow {
     width: 7px;
     height: 14px;
   }
 
-  .mobile-sidebar-logo {
-    position: absolute;
-    bottom: 20px;
-    left: 20px;
-    width: 136px;
-    height: 30px;
+  /* Mobile Unavailable Warning */
+  .mobile-unavailable-warning {
+    display: none;
   }
 
-  /* Стили для поиска */
-  .search-results {
-    background: #ffffff;
-    box-shadow: 0 4px 12px rgba(0,0,0,0.15);
-    border-radius: 12px;
-    border: 1px solid #e5e7eb;
-    overflow: hidden;
-    z-index: 1000;
-  }
-
-  .search-results-content {
-    padding: 8px;
-    height: 100%;
-    overflow-y: auto;
-  }
-
-  .search-result-item {
-    display: flex;
-    align-items: center;
-    padding: 12px;
-    border-bottom: 1px solid #f3f4f6;
-    cursor: pointer;
-    transition: background-color 0.2s ease;
-    border-radius: 8px;
-    margin-bottom: 4px;
-  }
-
-  .search-result-item:hover {
-    background-color: #f9fafb;
-  }
-
-  .search-result-item:last-child {
-    border-bottom: none;
-    margin-bottom: 0;
-  }
-
-  .search-result-main {
-    flex: 1;
-  }
-
-  .search-result-name {
-    font-family: 'Manrope', sans-serif;
-    font-weight: 600;
-    font-size: 14px;
-    color: #000000;
-    margin-bottom: 2px;
-  }
-
-  .search-result-phone {
-    font-family: 'Manrope', sans-serif;
-    font-weight: 400;
-    font-size: 12px;
-    color: #6b7280;
-    margin-bottom: 6px;
-  }
-
-  .search-result-last-booking {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-  }
-
-  .search-result-date {
-    font-family: 'Manrope', sans-serif;
-    font-weight: 400;
-    font-size: 11px;
-    color: #6b7280;
-  }
-
-  .search-result-status {
-    font-family: 'Manrope', sans-serif;
-    font-weight: 600;
-    font-size: 10px;
-    padding: 2px 6px;
-    border-radius: 8px;
-    color: #000000;
-  }
-
-  .search-result-status.dogovoreno { background: #FFF0BF; border: 1px solid #DBC787; }
-  .search-result-status.na-cekaju { background: #E8D8F8; border: 1px solid #9C27B0; }
-  .search-result-status.potvrdjeno { background: #D8F8E4; border: 1px solid #4CAF50; }
-  .search-result-status.otkazano { background: #FFBFBF; border: 1px solid #F44336; }
-  .search-result-status.nisu-dosli { background: #FFD59E; border: 1px solid #FF9800; }
-  .search-result-status.dosli { background: #C7F4FF; border: 1px solid #2196F3; }
-
-  .search-results::-webkit-scrollbar {
-    width: 4px;
-  }
-
-  .search-results::-webkit-scrollbar-track {
-    background: #f1f1f1;
-    border-radius: 2px;
-  }
-
-  .search-results::-webkit-scrollbar-thumb {
-    background: #11998E;
-    border-radius: 2px;
-  }
-
-  .search-results::-webkit-scrollbar-thumb:hover {
-    background: #0d7a6f;
-  }
-
-  /* Белый фон для ПК версии */
-  body {
-    background: #ffffff !important;
-  }
-  
-  .app-layout {
-    background: #ffffff !important;
-  }
-  
-  .main {
-    background: #ffffff !important;
-  }
-
-  /* Mobile Responsive Styles */
   @media (max-width: 768px) {
+    /* Show mobile elements */
     .mobile-header {
-      display: flex;
+      display: flex !important;
     }
     
+    /* Hide desktop elements */
     .sidebar {
       display: none !important;
     }
@@ -288,31 +211,78 @@
       display: none !important;
     }
     
-    .search-icon {
-      display: none !important;
-    }
-    
-    .notification-icon {
-      display: none !important;
-    }
-    
     .top-right {
       display: none !important;
     }
 
-    /* Mobile search results */
-    #search-results {
-      position: fixed !important;
-      top: 130px !important;
-      left: 20px !important;
-      right: 20px !important;
-      width: auto !important;
-      height: 250px !important;
-    }
-
-    /* Mobile main margin */
     .main {
-      margin: 0 !important;
+      margin-left: 0 !important;
+      width: 100% !important;
+    }
+    
+    .main-inner {
+      padding: 0 !important;
+    }
+    
+    /* Hide map content on mobile */
+    .map-wrap {
+      display: none !important;
+    }
+    
+    /* Show mobile unavailable warning */
+    .mobile-unavailable-warning {
+      display: flex !important;
+      position: fixed;
+      top: 70px;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      width: 100%;
+      height: calc(100vh - 70px);
+      background: #f3f4f6;
+      align-items: center;
+      justify-content: center;
+      z-index: 500;
+      padding: 20px;
+      box-sizing: border-box;
+    }
+    
+    .mobile-unavailable-content {
+      background: #FFFFFF;
+      border-radius: 16px;
+      padding: 40px 24px;
+      max-width: 400px;
+      width: 100%;
+      text-align: center;
+      box-shadow: 0px 4px 20px rgba(0, 0, 0, 0.1);
+    }
+    
+    .mobile-unavailable-icon {
+      width: 64px;
+      height: 64px;
+      margin: 0 auto 24px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: linear-gradient(179.27deg, #2CAB5C 0%, #11998E 100%);
+      border-radius: 50%;
+    }
+    
+    .mobile-unavailable-title {
+      font-family: 'Manrope', sans-serif;
+      font-size: 24px;
+      font-weight: 700;
+      color: #111827;
+      margin: 0 0 16px;
+    }
+    
+    .mobile-unavailable-message {
+      font-family: 'Manrope', sans-serif;
+      font-size: 16px;
+      font-weight: 400;
+      color: #6b7280;
+      line-height: 1.5;
+      margin: 0;
     }
   }
 </style>
@@ -382,26 +352,2872 @@
   <img src="/static/images/logo_login.svg.png" alt="Logo" class="mobile-sidebar-logo">
 </div>
 
-<!-- Результаты поиска -->
-<div id="search-results" class="search-results" style="position:absolute; right:25px; top:75px; width:290px; height:250px; display:none;">
-  <div class="search-results-content">
-    <!-- Результаты будут добавлены динамически -->
+<!-- Mobile Unavailable Warning -->
+<div class="mobile-unavailable-warning">
+  <div class="mobile-unavailable-content">
+    <div class="mobile-unavailable-icon">
+      <svg width="32" height="32" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-2h2v2zm0-4h-2V7h2v6z" fill="white"/>
+      </svg>
+    </div>
+    <h2 class="mobile-unavailable-title">Stranica privremeno nedostupna</h2>
+    <p class="mobile-unavailable-message">Ova stranica je privremeno nedostupna za mobilne uređaje. Molimo vas koristite desktop verziju.</p>
   </div>
 </div>
 
-<div class="bg-white shadow rounded p-6" style="margin-top: 95px;">
-  <h1 class="text-2xl font-semibold mb-4">Mapa</h1>
-  <p class="text-gray-600">Stranica za prikaz mape klijenata.</p>
+<div class="map-wrap">
+  <div class="panel">
+    <h3>Инструменты</h3>
+    <div class="panel-section" style="padding-top:0;">
+      <div class="tool-grid">
+        <div class="tool-cell">
+          <div class="pill" data-tool="cursor" title="Курсор">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <g clip-path="url(#cursor_icon_clip)">
+                <path d="M15.008 24C14.4538 24.0009 13.91 23.8485 13.4369 23.5598C12.9638 23.2711 12.5797 22.8573 12.327 22.364L9.2 15.66L5.658 18.753C5.51338 18.8794 5.33542 18.9614 5.14541 18.9894C4.95539 19.0173 4.76135 18.9899 4.58649 18.9105C4.41162 18.8311 4.26332 18.703 4.15932 18.5415C4.05531 18.3801 4 18.1921 4 18V2.98C3.99997 2.40212 4.16685 1.83652 4.48058 1.35121C4.7943 0.865893 5.24152 0.481518 5.76847 0.244291C6.29542 0.00706293 6.87967 -0.0729213 7.45099 0.0139532C8.02231 0.100828 8.55638 0.350863 8.989 0.734002L19.689 10.972C19.8278 11.1046 19.9256 11.2744 19.9705 11.4611C20.0154 11.6477 20.0057 11.8434 19.9424 12.0247C19.8791 12.2059 19.765 12.3652 19.6137 12.4833C19.4624 12.6015 19.2802 12.6736 19.089 12.691L14.621 13.098L17.686 19.667C17.9125 20.1237 18.0189 20.6305 17.9952 21.1397C17.9714 21.6489 17.8183 22.1436 17.5504 22.5772C17.2824 23.0108 16.9083 23.369 16.4635 23.618C16.0187 23.8669 15.5177 23.9984 15.008 24Z" fill="black"/>
+              </g>
+              <defs>
+                <clipPath id="cursor_icon_clip">
+                  <rect width="24" height="24" fill="white"/>
+                </clipPath>
+              </defs>
+            </svg>
+      </div>
+          <div class="tool-label">Курсор</div>
+        </div>
+        <div class="tool-cell">
+          <div class="pill" data-tool="walls" title="Стены">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <g clip-path="url(#walls_icon_clip)">
+                <path d="M23.7074 8.70688L21.4144 10.9999L13.0004 2.58588L15.2934 0.292884C15.6844 -0.0981162 16.3164 -0.0981162 16.7074 0.292884L23.7074 7.29288C24.0984 7.68388 24.0984 8.31588 23.7074 8.70688ZM11.1904 3.60388L6.58538 5.30688C5.09738 5.85788 3.94838 7.09788 3.51238 8.62388L0.111381 20.5449C-0.0686193 21.1569 -0.0226193 21.7989 0.220381 22.3659L8.06838 14.5179C8.02438 14.3529 8.00038 14.1789 8.00038 13.9999C8.00038 12.8949 8.89538 11.9999 10.0004 11.9999C11.1054 11.9999 12.0004 12.8949 12.0004 13.9999C12.0004 15.1049 11.1054 15.9999 10.0004 15.9999C9.82138 15.9999 9.64738 15.9759 9.48238 15.9319L1.63438 23.7799C1.96938 23.9239 2.33038 23.9989 2.69538 23.9989C2.94638 23.9989 3.19938 23.9639 3.44638 23.8909L15.3304 20.5139C16.8514 20.0819 18.0904 18.9399 18.6454 17.4599L20.3914 12.8049L11.1904 3.60388Z" fill="black"/>
+              </g>
+              <defs>
+                <clipPath id="walls_icon_clip">
+                  <rect width="24" height="24" fill="white"/>
+                </clipPath>
+              </defs>
+            </svg>
+          </div>
+          <div class="tool-label">Стены</div>
+        </div>
+        <div class="tool-cell">
+          <div class="pill" data-tool="text" title="Текст">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <g clip-path="url(#text_icon_clip)">
+                <path d="M19 0H5C3.67441 0.00158786 2.40356 0.528882 1.46622 1.46622C0.528882 2.40356 0.00158786 3.67441 0 5L0 19C0.00158786 20.3256 0.528882 21.5964 1.46622 22.5338C2.40356 23.4711 3.67441 23.9984 5 24H19C20.3256 23.9984 21.5964 23.4711 22.5338 22.5338C23.4711 21.5964 23.9984 20.3256 24 19V5C23.9984 3.67441 23.4711 2.40356 22.5338 1.46622C21.5964 0.528882 20.3256 0.00158786 19 0ZM17 10C16.7348 10 16.4804 9.89464 16.2929 9.70711C16.1054 9.51957 16 9.26522 16 9C16 8.73478 15.8946 8.48043 15.7071 8.29289C15.5196 8.10536 15.2652 8 15 8H13V16H14C14.2652 16 14.5196 16.1054 14.7071 16.2929C14.8946 16.4804 15 16.7348 15 17C15 17.2652 14.8946 17.5196 14.7071 17.7071C14.5196 17.8946 14.2652 18 14 18H10C9.73478 18 9.48043 17.8946 9.29289 17.7071C9.10536 17.5196 9 17.2652 9 17C9 16.7348 9.10536 16.4804 9.29289 16.2929C9.48043 16.1054 9.73478 16 10 16H11V8H9C8.73478 8 8.48043 8.10536 8.29289 8.29289C8.10536 8.48043 8 8.73478 8 9C8 9.26522 7.89464 9.51957 7.70711 9.70711C7.51957 9.89464 7.26522 10 7 10C6.73478 10 6.48043 9.89464 6.29289 9.70711C6.10536 9.51957 6 9.26522 6 9C6 8.20435 6.31607 7.44129 6.87868 6.87868C7.44129 6.31607 8.20435 6 9 6H15C15.7956 6 16.5587 6.31607 17.1213 6.87868C17.6839 7.44129 18 8.20435 18 9C18 9.26522 17.8946 9.51957 17.7071 9.70711C17.5196 9.89464 17.2652 10 17 10Z" fill="black"/>
+              </g>
+              <defs>
+                <clipPath id="text_icon_clip">
+                  <rect width="24" height="24" fill="white"/>
+                </clipPath>
+              </defs>
+            </svg>
+          </div>
+          <div class="tool-label">Текст</div>
+        </div>
+        <div class="tool-cell" id="deleteToolCell" style="display:none;">
+          <button type="button" class="pill" id="deleteSelectionButton" title="Удалить">
+             <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <path d="M9 3V4H4V6H5V20C5 20.5304 5.21071 21.0391 5.58579 21.4142C5.96086 21.7893 6.46957 22 7 22H17C17.5304 22 18.0391 21.7893 18.4142 21.4142C18.7893 21.0391 19 20.5304 19 20V6H20V4H15V3H9ZM7 6H17V20H7V6ZM9 8V18H11V8H9ZM13 8V18H15V8H13Z" fill="black"/>
+             </svg>
+           </button>
+          <div class="tool-label">Удалить</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="panel-section">
+      <div class="panel-section-header">
+        <div class="section-title">Столы</div>
+        <div class="section-subtitle">Добавьте новый стол — номер назначится автоматически</div>
+      </div>
+      <div class="table-cards">
+        <button type="button" class="table-card" data-add="table-square">
+          <span class="card-icon">
+            <svg width="40" height="40" viewBox="0 0 40 40" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <rect x="0.5" y="0.5" width="39" height="39" rx="7.5" fill="white" stroke="#1EA276"/>
+              <path d="M12.0653 20V8.48H14.0173L19.3613 16.6V8.48H21.3133V20H19.3613L14.0173 11.88V20H12.0653ZM25.3693 14C24.8413 14 24.3586 13.872 23.9213 13.616C23.484 13.3547 23.1346 13.008 22.8733 12.576C22.6173 12.1387 22.4893 11.6533 22.4893 11.12C22.4893 10.5973 22.6226 10.1173 22.8893 9.68C23.156 9.24267 23.508 8.89333 23.9453 8.632C24.3826 8.37067 24.8573 8.24 25.3693 8.24C25.8973 8.24 26.3773 8.37067 26.8093 8.632C27.2466 8.888 27.596 9.23467 27.8573 9.672C28.1186 10.104 28.2493 10.5867 28.2493 11.12C28.2493 11.6533 28.1186 12.1387 27.8573 12.576C27.596 13.008 27.2466 13.3547 26.8093 13.616C26.3773 13.872 25.8973 14 25.3693 14ZM25.3693 12.352C25.5933 12.352 25.7986 12.296 25.9853 12.184C26.172 12.072 26.3213 11.9227 26.4333 11.736C26.5453 11.5493 26.6013 11.344 26.6013 11.12C26.6013 10.896 26.5453 10.6907 26.4333 10.504C26.3213 10.3173 26.172 10.168 25.9853 10.056C25.7986 9.944 25.5933 9.888 25.3693 9.888C25.1453 9.888 24.94 9.944 24.7533 10.056C24.5666 10.168 24.4173 10.3173 24.3053 10.504C24.1933 10.6907 24.1373 10.896 24.1373 11.12C24.1373 11.344 24.1933 11.5493 24.3053 11.736C24.4173 11.9227 24.5666 12.072 24.7533 12.184C24.94 12.296 25.1453 12.352 25.3693 12.352ZM22.9693 16.216V14.704H27.7693V16.216H22.9693Z" fill="black"/>
+              </svg>
+          </span>
+          <span class="card-content">
+            <span class="card-title">Квадратный стол</span>
+            <span class="card-meta">Размер 80×80 см · Автонумерация</span>
+          </span>
+          <span class="card-action">+ Добавить</span>
+        </button>
+        <button type="button" class="table-card" data-add="table-circle">
+          <span class="card-icon">
+            <svg width="40" height="40" viewBox="0 0 40 40" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <rect x="0.5" y="0.5" width="39" height="39" rx="19.5" fill="white" stroke="#1EA276"/>
+              <path d="M12.0653 20V8.48H14.0173L19.3613 16.6V8.48H21.3133V20H19.3613L14.0173 11.88V20H12.0653ZM25.3693 14C24.8413 14 24.3586 13.872 23.9213 13.616C23.484 13.3547 23.1346 13.008 22.8733 12.576C22.6173 12.1387 22.4893 11.6533 22.4893 11.12C22.4893 10.5973 22.6226 10.1173 22.8893 9.68C23.156 9.24267 23.508 8.89333 23.9453 8.632C24.3826 8.37067 24.8573 8.24 25.3693 8.24C25.8973 8.24 26.3773 8.37067 26.8093 8.632C27.2466 8.888 27.596 9.23467 27.8573 9.672C28.1186 10.104 28.2493 10.5867 28.2493 11.12C28.2493 11.6533 28.1186 12.1387 27.8573 12.576C27.596 13.008 27.2466 13.3547 26.8093 13.616C26.3773 13.872 25.8973 14 25.3693 14ZM25.3693 12.352C25.5933 12.352 25.7986 12.296 25.9853 12.184C26.172 12.072 26.3213 11.9227 26.4333 11.736C26.5453 11.5493 26.6013 11.344 26.6013 11.12C26.6013 10.896 26.5453 10.6907 26.4333 10.504C26.3213 10.3173 26.172 10.168 25.9853 10.056C25.7986 9.944 25.5933 9.888 25.3693 9.888C25.1453 9.888 24.94 9.944 24.7533 10.056C24.5666 10.168 24.4173 10.3173 24.3053 10.504C24.1933 10.6907 24.1373 10.896 24.1373 11.12C24.1373 11.344 24.1933 11.5493 24.3053 11.736C24.4173 11.9227 24.5666 12.072 24.7533 12.184C24.94 12.296 25.1453 12.352 25.3693 12.352ZM22.9693 16.216V14.704H27.7693V16.216H22.9693Z" fill="black"/>
+              </svg>
+          </span>
+          <span class="card-content">
+            <span class="card-title">Круглый стол</span>
+            <span class="card-meta">Диаметр 80 см · Автонумерация</span>
+          </span>
+          <span class="card-action">+ Добавить</span>
+        </button>
+      </div>
+    </div>
+
+    <div class="panel-section">
+      <div class="panel-section-header">
+        <div class="section-title">Стулья</div>
+        <div class="section-subtitle">Разместите дополнительные места вокруг столов</div>
+      </div>
+      <div class="table-cards">
+        <button type="button" class="table-card" data-add="chair-decor">
+          <span class="card-icon">
+            <svg width="24" height="24" viewBox="0 0 12 12" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <rect width="12" height="12" rx="6" fill="#1EA276"/>
+            </svg>
+          </span>
+          <span class="card-content">
+            <span class="card-title">Obična stolica</span>
+            <span class="card-meta">Декор без нумерации</span>
+          </span>
+          <span class="card-action">+ Добавить</span>
+        </button>
+        <button type="button" class="table-card" data-add="chair-numbered">
+          <span class="card-icon">
+            <svg width="32" height="32" viewBox="0 0 22 22" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <rect width="22" height="22" rx="11" fill="#1EA276"/>
+              <path d="M7.65215 15V9.115L6.30215 9.94V8.61L7.65215 7.8H8.88215V15H7.65215ZM13.2769 15.15C12.8069 15.15 12.3836 15.04 12.0069 14.82C11.6336 14.5967 11.3369 14.2883 11.1169 13.895C10.8969 13.5017 10.7869 13.05 10.7869 12.54V10.35C10.7869 9.80333 10.8952 9.32833 11.1119 8.925C11.3319 8.52167 11.6386 8.21 12.0319 7.99C12.4286 7.77 12.8886 7.66 13.4119 7.66C13.7752 7.66 14.1202 7.72167 14.4469 7.845C14.7736 7.965 15.0636 8.15833 15.3169 8.425L14.4469 9.27C14.3202 9.12 14.1652 9.00167 13.9819 8.915C13.8019 8.82833 13.6119 8.785 13.4119 8.785C13.1319 8.785 12.8869 8.85167 12.6769 8.985C12.4669 9.115 12.3036 9.28667 12.1869 9.5C12.0736 9.71333 12.0169 9.94167 12.0169 10.185V11.38L11.7969 11.14C12.0036 10.9 12.2519 10.7133 12.5419 10.58C12.8319 10.4433 13.1352 10.375 13.4519 10.375C13.9052 10.375 14.3052 10.4783 14.6519 10.685C14.9986 10.8883 15.2719 11.1683 15.4719 11.525C15.6719 11.8783 15.7719 12.2817 15.7719 12.735C15.7719 13.185 15.6569 13.5933 15.4269 13.96C15.2002 14.3233 14.8986 14.6133 14.5219 14.83C14.1452 15.0433 13.7302 15.15 13.2769 15.15ZM13.2769 13.995C13.5102 13.995 13.7236 13.94 13.9169 13.83C14.1102 13.7167 14.2636 13.565 14.3769 13.375C14.4936 13.1817 14.5519 12.9683 14.5519 12.735C14.5519 12.5017 14.4952 12.2883 14.3819 12.095C14.2686 11.9017 14.1152 11.7483 13.9219 11.635C13.7319 11.5183 13.5202 11.46 13.2869 11.46C13.0536 11.46 12.8402 11.5183 12.6469 11.635C12.4536 11.7483 12.3002 11.9017 12.1869 12.095C12.0736 12.2883 12.0169 12.5017 12.0169 12.735C12.0169 12.9617 12.0719 13.1717 12.1819 13.365C12.2952 13.555 12.4469 13.7083 12.6369 13.825C12.8302 13.9383 13.0436 13.995 13.2769 13.995Z" fill="white"/>
+            </svg>
+          </span>
+          <span class="card-content">
+            <span class="card-title">Stolica sa brojem</span>
+            <span class="card-meta">Учитывается как стол, занимает номер</span>
+          </span>
+          <span class="card-action">+ Добавить</span>
+        </button>
+      </div>
+    </div>
+
+    <div class="panel-section">
+      <div class="panel-section-header">
+        <div class="section-title">Диваны</div>
+        <div class="section-subtitle">Соберите посадку в VIP-зонах и lounge-углах</div>
+      </div>
+      <div class="table-cards">
+        <button type="button" class="table-card" data-add="sofa-straight">
+          <span class="card-icon" style="width:54px; height:54px; border-radius:18px; background:rgba(30,162,118,0.08); display:flex; align-items:center; justify-content:center;">
+            <svg width="18" height="60" viewBox="0 0 18 60" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <path d="M13.2 0C15.851 0 18 2.14903 18 4.8V55.2C18 57.851 15.851 60 13.2 60H4.8C2.14903 60 0 57.851 0 55.2V4.8C0 2.14903 2.14903 0 4.8 0H13.2Z" fill="#1EA276"/>
+            </svg>
+          </span>
+          <span class="card-content">
+            <span class="card-title">Прямой диван</span>
+            <span class="card-meta">4–6 мест · быстрое размещение</span>
+          </span>
+          <span class="card-action">+ Добавить</span>
+        </button>
+        <button type="button" class="table-card" data-add="sofa-corner">
+          <span class="card-icon" style="width:54px; height:54px; border-radius:18px; background:rgba(30,162,118,0.08); display:flex; align-items:center; justify-content:center;">
+            <svg width="60" height="60" viewBox="0 0 60 60" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <path d="M0 4.8C0 2.14903 2.14903 0 4.8 0H55.2C57.851 0 60 2.14903 60 4.8V13.2C60 15.851 57.851 18 55.2 18H22.8C20.149 18 18 20.149 18 22.8V55.2C18 57.851 15.851 60 13.2 60H4.8C2.14903 60 0 57.851 0 55.2V4.8Z" fill="#1EA276"/>
+            </svg>
+          </span>
+          <span class="card-content">
+            <span class="card-title">Угловой диван</span>
+            <span class="card-meta">L-формат · максимум гостей</span>
+          </span>
+          <span class="card-action">+ Добавить</span>
+        </button>
+        <button type="button" class="table-card" data-add="sofa-double">
+          <span class="card-icon" style="width:54px; height:54px; border-radius:18px; background:rgba(30,162,118,0.08);">
+            <svg width="52" height="40" viewBox="110 28 150 90" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <path d="M120 36.328C120 33.677 122.133 31.528 124.764 31.528H246.236C248.867 31.528 251 33.677 251 36.328V86.728C251 89.379 248.867 91.528 246.236 91.528H237.9C235.269 91.528 233.136 89.379 233.136 86.728V54.328C233.136 51.677 231.004 49.528 228.373 49.528H142.627C139.996 49.528 137.864 51.677 137.864 54.328V86.728C137.864 89.379 135.731 91.528 133.1 91.528H124.764C122.133 91.528 120 89.379 120 86.728V36.328Z" fill="#1EA276"/>
+              <path d="M50 36.328C50 33.677 52.149 31.528 54.8 31.528H105.2C107.851 31.528 110 33.677 110 36.328V44.728C110 47.379 107.851 49.528 105.2 49.528H72.8C70.149 49.528 68 51.677 68 54.328V86.728C68 89.379 65.851 91.528 63.2 91.528H54.8C52.149 91.528 50 89.379 50 86.728V36.328Z" fill="#1EA276"/>
+              <path d="M13.2 31.528C15.851 31.528 18 33.677 18 36.328V86.728C18 89.379 15.851 91.528 13.2 91.528H4.8C2.14903 91.528 0 89.379 0 86.728V36.328C0 33.677 2.14903 31.528 4.8 31.528H13.2Z" fill="#1EA276"/>
+            </svg>
+          </span>
+          <span class="card-content">
+            <span class="card-title">Комбо диванов</span>
+            <span class="card-meta">Сцена · резервы на большую компанию</span>
+          </span>
+          <span class="card-action">+ Добавить</span>
+        </button>
+      </div>
+    </div>
+
+    <div class="panel-section">
+      <div class="panel-section-header">
+        <div class="section-title">Зоны</div>
+        <div class="section-subtitle">Обозначьте VIP-зону, танцпол или бар</div>
+      </div>
+      <div class="table-cards">
+        <button type="button" class="table-card" style="justify-content:flex-start;" data-add="zone">
+          <span class="card-icon" style="width:48px; height:48px; border-radius:16px; background:rgba(17,153,142,0.12);">
+            <svg width="36" height="36" viewBox="0 0 200 100" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <rect x="4" y="4" width="192" height="92" rx="20" fill="rgba(17,153,142,0.18)" stroke="#11998E" stroke-width="8"/>
+            </svg>
+          </span>
+          <span class="card-content">
+            <span class="card-title">Зона / текст</span>
+            <span class="card-meta">Двойной клик — редактирование подписи</span>
+          </span>
+          <span class="card-action">+ Добавить</span>
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <div class="board">
+    <div class="tabs">
+      <div class="tab active">Sprat 1</div>
+      <div style="margin-left:auto; color:#bbb; cursor:pointer;" id="addTabButton" title="Добавить этаж">+</div>
+    </div>
+
+    <div class="canvas-wrap">
+      <canvas id="mapCanvas"></canvas>
+      <div class="zoom" id="zoomBox">🔍 <span id="zoomLabel">100%</span> ✚</div>
+    </div>
+  </div>
 </div>
 
+<script src="https://cdn.jsdelivr.net/npm/fabric@5.3.0/dist/fabric.min.js"></script>
 <script>
-  // Mobile sidebar functions
+  document.addEventListener('DOMContentLoaded', () => {
+    const container = document.querySelector('.canvas-wrap');
+    if (!container) {
+      console.error('Контейнер .canvas-wrap не найден!');
+      return;
+    }
+    const canvas = new fabric.Canvas('mapCanvas', {
+      backgroundColor: '#ffffff',
+      selection: true,
+      preserveObjectStacking: true
+    });
+    if (!canvas) {
+      console.error('Не удалось создать canvas!');
+      return;
+    }
+
+    // Управление вкладками этажей
+    const tabsContainer = document.querySelector('.tabs');
+    let currentFloor = 'Sprat 1'; // Текущий активный этаж
+    
+    // Формы, которые специфичны для каждого этажа (включая столики и текстовые подписи)
+    // НО нумерация столиков общая для всех этажей
+    const FLOOR_SPECIFIC_SHAPES = ['square', 'circle', 'chair-numbered', 'wall', 'zone', 'sofa-double', 'sofa-straight', 'sofa-corner', 'chair-decor', 'text'];
+    
+    // Формы, которые имеют общую нумерацию (столики)
+    const NUMBERED_SHAPES = ['square', 'circle', 'chair-numbered'];
+    
+    // Ключ для localStorage
+    const FLOORS_STORAGE_KEY = 'map_floors_list';
+    
+    // Сохранение списка этажей в localStorage
+    const saveFloorsList = () => {
+      const floors = Array.from(document.querySelectorAll('.tab'))
+        .map(tab => tab.textContent.trim())
+        .filter(name => name); // Убираем пустые
+      localStorage.setItem(FLOORS_STORAGE_KEY, JSON.stringify(floors));
+    };
+    
+    // Загрузка списка этажей из localStorage
+    const loadFloorsList = () => {
+      try {
+        const saved = localStorage.getItem(FLOORS_STORAGE_KEY);
+        if (saved) {
+          const floors = JSON.parse(saved);
+          if (Array.isArray(floors) && floors.length > 0) {
+            // Удаляем все существующие вкладки кроме первой (Sprat 1)
+            const existingTabs = Array.from(document.querySelectorAll('.tab'));
+            existingTabs.forEach((tab, index) => {
+              if (index > 0) {
+                tab.remove();
+              }
+            });
+            
+            // Добавляем сохраненные этажи
+            floors.forEach((floorName, index) => {
+              if (index === 0) {
+                // Первый этаж уже есть, просто обновляем текст если нужно
+                const firstTab = document.querySelector('.tab');
+                if (firstTab) {
+                  firstTab.textContent = floorName;
+                  if (index === 0) {
+                    firstTab.classList.add('active');
+                  }
+                }
+              } else {
+                // Создаем новую вкладку
+                const newTab = document.createElement('div');
+                newTab.className = 'tab';
+                newTab.textContent = floorName;
+                const addButton = document.getElementById('addTabButton');
+                if (addButton && tabsContainer) {
+                  tabsContainer.insertBefore(newTab, addButton);
+                }
+              }
+            });
+            
+            // Устанавливаем активный этаж
+            const activeTab = document.querySelector('.tab.active');
+            if (activeTab) {
+              currentFloor = activeTab.textContent.trim();
+            }
+          }
+        }
+      } catch (e) {
+        console.error('Ошибка загрузки списка этажей:', e);
+      }
+    };
+    
+    // Функция для получения следующего номера этажа
+    const getNextTabNumber = () => {
+      const existingTabs = document.querySelectorAll('.tab');
+      const numbers = Array.from(existingTabs)
+        .map(tab => {
+          const text = tab.textContent.trim();
+          const match = text.match(/Sprat\s+(\d+)/i);
+          return match ? parseInt(match[1], 10) : 0;
+        })
+        .filter(num => num > 0);
+      return numbers.length > 0 ? Math.max(...numbers) + 1 : 2;
+    };
+    
+    // Сохранение состояния текущего этажа
+    const saveCurrentFloorState = () => {
+      if (!canvas) return;
+      
+      const floorElements = [];
+      canvas.getObjects().forEach(obj => {
+        const meta = obj.mapTableMeta;
+        if (meta && FLOOR_SPECIFIC_SHAPES.includes(meta.shape)) {
+          // Сохраняем только этаже-специфичные элементы
+          floorElements.push({
+            id: meta.id,
+            shape: meta.shape,
+            x: obj.left,
+            y: obj.top,
+            angle: obj.angle || 0,
+            width: obj.getScaledWidth(),
+            height: obj.getScaledHeight(),
+            radius: obj.radius,
+            metadata: meta.metadata || {}
+          });
+        }
+      });
+      
+      // Сохраняем в localStorage
+      localStorage.setItem(`floor_${currentFloor}`, JSON.stringify(floorElements));
+    };
+    
+    // Загрузка состояния этажа
+    const loadFloorState = async (floorName) => {
+      if (!canvas) return;
+      
+      // Сохраняем текущее состояние перед переключением
+      if (currentFloor !== floorName) {
+        saveCurrentFloorState();
+      }
+      
+      // Удаляем все этаже-специфичные элементы с canvas
+      const objectsToRemove = [];
+      canvas.getObjects().forEach(obj => {
+        const meta = obj.mapTableMeta;
+        if (meta && FLOOR_SPECIFIC_SHAPES.includes(meta.shape)) {
+          objectsToRemove.push(obj);
+        }
+      });
+      objectsToRemove.forEach(obj => {
+        // Скрываем handles перед удалением
+        if (obj.mapTableMeta && obj.mapTableMeta.shape === 'wall') {
+          hideWallHandles(obj);
+        }
+        canvas.remove(obj);
+        if (obj.mapTableMeta && obj.mapTableMeta.id) {
+          mapTableObjects.delete(obj.mapTableMeta.id);
+        }
+      });
+      
+      // Очищаем activeWall если он был удален
+      if (activeWall && !canvas.getObjects().includes(activeWall)) {
+        activeWall = null;
+      }
+      
+      // Загружаем элементы нового этажа из базы данных
+      currentFloor = floorName;
+      await loadMapTables();
+      
+      // Загружаем сохраненное состояние из localStorage (если есть)
+      const savedState = localStorage.getItem(`floor_${floorName}`);
+      if (savedState) {
+        try {
+          const floorElements = JSON.parse(savedState);
+          // Восстанавливаем элементы из сохраненного состояния
+          // (это можно использовать для временного хранения, но основное - из БД)
+        } catch (e) {
+          console.error('Ошибка загрузки состояния этажа:', e);
+        }
+      }
+      
+      canvas.requestRenderAll();
+    };
+    
+    // Обработчик клика на вкладку
+    document.addEventListener('click', async (e) => {
+      if (e.target.classList.contains('tab')) {
+        const floorName = e.target.textContent.trim();
+        
+        // Убираем активный класс со всех вкладок
+        document.querySelectorAll('.tab').forEach(tab => {
+          tab.classList.remove('active');
+        });
+        // Добавляем активный класс к выбранной вкладке
+        e.target.classList.add('active');
+        
+        // Сохраняем список этажей (на случай изменений)
+        saveFloorsList();
+        
+        // Загружаем состояние выбранного этажа
+        await loadFloorState(floorName);
+      }
+    });
+
+    // Обработчик добавления новой вкладки
+    const addTabButton = document.getElementById('addTabButton');
+    if (addTabButton) {
+      addTabButton.addEventListener('click', () => {
+        const nextNumber = getNextTabNumber();
+        const tabName = prompt('Введите название этажа:', `Sprat ${nextNumber}`);
+        if (tabName && tabName.trim()) {
+          const newTab = document.createElement('div');
+          newTab.className = 'tab';
+          newTab.textContent = tabName.trim();
+          // Вставляем новую вкладку перед кнопкой "+"
+          tabsContainer.insertBefore(newTab, addTabButton);
+          // Делаем новую вкладку активной
+          document.querySelectorAll('.tab').forEach(tab => {
+            tab.classList.remove('active');
+          });
+          newTab.classList.add('active');
+          
+          // Сохраняем список этажей
+          saveFloorsList();
+          
+          // Переключаемся на новый этаж
+          loadFloorState(tabName.trim());
+        }
+      });
+    }
+    
+    // Загружаем сохраненные этажи при инициализации (будет вызвано позже, после инициализации canvas)
+
+    const mapTableObjects = new Map();
+    // ========== НОВАЯ СИСТЕМА ДИВАНОВ НА ОСНОВЕ СЕТКИ ==========
+    
+    // Константы сетки
+    const GRID_STEP = 10; // шаг сетки в см (g)
+    const SOFA_MIN_LENGTH = 1; // минимальная длина в ячейках
+    const SOFA_MAX_LENGTH = 50; // максимальная длина в ячейках
+    const SOFA_DEPTH = 3; // глубина дивана в ячейках (w) = 30px (как в SVG)
+    
+    // Ориентации (в градусах)
+    const ORIENTATIONS = [0, 90, 180, 270];
+    
+    let tempSofaId = -1;
+    const deleteToolCell = document.getElementById('deleteToolCell');
+    const deleteSelectionButton = document.getElementById('deleteSelectionButton');
+    let isDeleteButtonVisible = false;
+    let canvasClipboard = null;
+    const TABLE_DEFAULTS = {
+      square: { width: 80, height: 80 },
+      circle: { radius: 40, width: 80, height: 80 },
+      "chair-numbered": { radius: 11, width: 22, height: 22 },
+      "chair-decor": { radius: 6, width: 12, height: 12 },
+      "zone": { width: 200, height: 100 }
+    };
+    const TABLE_COLORS = {
+      fill: '#ffffff',
+      stroke: '#11998E',
+      strokeWidth: 2,
+      text: '#111827'
+    };
+
+    const maintainLabelSize = (group) => {
+      if (!group || !group.mapTableMeta) return;
+      const labels = [];
+      if (group.numberLabel) labels.push(group.numberLabel);
+      if (group.capacityLabel) labels.push(group.capacityLabel);
+      if (group.zoneLabel) labels.push(group.zoneLabel);
+      if (!labels.length) {
+        const fallback = group._objects?.filter(o => o.type === 'text' || o.type === 'textbox') || [];
+        labels.push(...fallback);
+      }
+
+      const scaleX = group.scaleX || 1;
+      const scaleY = group.scaleY || 1;
+      if (group.mapTableMeta.shape === 'zone' && group.zoneLabel) {
+        const targetWidth = (group.getScaledWidth() || group.zoneLabel.width) - 40;
+        group.zoneLabel.set({ width: Math.max(targetWidth, 40) });
+      }
+
+      labels.forEach((lbl) => {
+        const baseScaleX = lbl.mapBaseScaleX || 1;
+        const baseScaleY = lbl.mapBaseScaleY || 1;
+        lbl.set({
+          scaleX: baseScaleX / scaleX,
+          scaleY: baseScaleY / scaleY
+        });
+        lbl.setCoords();
+      });
+
+      group.dirty = true;
+      group.setCoords();
+    };
+
+    const getMapGroup = (obj) => {
+      if (!obj) return null;
+      if (obj.mapTableMeta) return obj;
+      if (obj.group && obj.group.mapTableMeta) return obj.group;
+      return null;
+    };
+
+    // ========== НОВАЯ СИСТЕМА ДИВАНОВ НА ОСНОВЕ СЕТКИ ==========
+    
+    // Утилиты для работы с сеткой
+    const snapToGrid = (value) => Math.round(value / GRID_STEP) * GRID_STEP;
+    const toGridCells = (value) => Math.round(value / GRID_STEP);
+    const fromGridCells = (cells) => cells * GRID_STEP;
+    
+    // Класс для части дивана
+    class SofaPart {
+      constructor(id, x, y, orientation, length, width = null) {
+        this.id = id;
+        this.x = snapToGrid(x);
+        this.y = snapToGrid(y);
+        this.orientation = orientation; // 0, 90, 180, 270
+        // length хранится в пикселях, но проверяем границы в ячейках
+        const lengthCells = toGridCells(length);
+        const minLengthPx = fromGridCells(SOFA_MIN_LENGTH);
+        const maxLengthPx = fromGridCells(SOFA_MAX_LENGTH);
+        this.length = Math.max(minLengthPx, Math.min(maxLengthPx, snapToGrid(length)));
+        // width может быть передан в пикселях или ячейках, нормализуем к ячейкам
+        if (width === null) {
+          this.width = SOFA_DEPTH; // уже в ячейках
+        } else if (width < 10) {
+          // Если меньше 10, считаем что это ячейки
+          this.width = width;
+        } else {
+          // Иначе считаем что это пиксели
+          this.width = toGridCells(width);
+        }
+      }
+      
+      // Получить длину в ячейках
+      getLengthCells() {
+        return toGridCells(this.length);
+      }
+      
+      // Получить bounding box части
+      getBoundingBox() {
+        const lengthPx = this.length; // длина в пикселях
+        const widthPx = fromGridCells(this.width); // ширина в пикселях (глубина дивана)
+        let x1, y1, x2, y2;
+        
+        // this.x, this.y - это точка начала части (левый верхний угол для ориентации 0)
+        if (this.orientation === 0) {
+          // Горизонтально вправо: длина по X, ширина по Y
+          x1 = this.x;
+          y1 = this.y;
+          x2 = this.x + lengthPx;
+          y2 = this.y + widthPx;
+        } else if (this.orientation === 90) {
+          // Вертикально вниз: ширина по X, длина по Y
+          x1 = this.x;
+          y1 = this.y;
+          x2 = this.x + widthPx;
+          y2 = this.y + lengthPx;
+        } else if (this.orientation === 180) {
+          // Горизонтально влево: this.x,this.y - правый верхний угол
+          x1 = this.x - lengthPx;
+          y1 = this.y;
+          x2 = this.x;
+          y2 = this.y + widthPx;
+        } else if (this.orientation === 270) {
+          // Вертикально вверх: this.x,this.y - левый нижний угол
+          x1 = this.x;
+          y1 = this.y - lengthPx;
+          x2 = this.x + widthPx;
+          y2 = this.y;
+        }
+        
+        return {
+          x: Math.min(x1, x2),
+          y: Math.min(y1, y2),
+          width: Math.abs(x2 - x1),
+          height: Math.abs(y2 - y1)
+        };
+      }
+      
+      // Проверка пересечения с препятствием
+      intersects(obstacle) {
+        const bbox = this.getBoundingBox();
+        return !(bbox.x + bbox.width < obstacle.x ||
+                obstacle.x + obstacle.w < bbox.x ||
+                bbox.y + bbox.height < obstacle.y ||
+                obstacle.y + obstacle.h < bbox.y);
+      }
+    }
+    
+    // Базовый класс для дивана
+    class SofaBase {
+      constructor(type, parts, pivotPoint = null) {
+        this.type = type; // 'RECT', 'L', 'P'
+        this.parts = parts; // массив SofaPart
+        this.pivotPoint = pivotPoint || this.calculatePivotPoint();
+      }
+      
+      calculatePivotPoint() {
+        // По умолчанию - левый верхний угол первой части
+        if (this.parts.length > 0) {
+          return { x: this.parts[0].x, y: this.parts[0].y };
+        }
+        return { x: 0, y: 0 };
+      }
+      
+      // Проверка коллизий со всеми препятствиями
+      checkCollisions(obstacles) {
+        for (const part of this.parts) {
+          for (const obstacle of obstacles) {
+            if (part.intersects(obstacle)) {
+              return true;
+            }
+          }
+        }
+        return false;
+      }
+      
+      // Растяжение части
+      stretchPart(partId, direction, deltaCells, obstacles = []) {
+        const part = this.parts.find(p => p.id === partId);
+        if (!part) return { status: 'error', message: 'Part not found' };
+        
+        const currentLengthCells = part.getLengthCells();
+        const newLengthCells = direction === 'positive' 
+          ? currentLengthCells + deltaCells 
+          : currentLengthCells - deltaCells;
+        
+        // Проверка границ
+        if (newLengthCells < SOFA_MIN_LENGTH) {
+          return { status: 'blocked', appliedDelta: 0 };
+        }
+        if (newLengthCells > SOFA_MAX_LENGTH) {
+          return { status: 'blocked', appliedDelta: 0 };
+        }
+        
+        const newLengthPx = fromGridCells(newLengthCells);
+        
+        // Создаем временную часть для проверки коллизий
+        const tempPart = new SofaPart(part.id, part.x, part.y, part.orientation, newLengthPx, fromGridCells(part.width));
+        
+        // Проверяем коллизии
+        for (const obstacle of obstacles) {
+          if (tempPart.intersects(obstacle)) {
+            // Пытаемся найти максимально допустимое изменение
+            let maxDelta = deltaCells;
+            let testLengthCells = newLengthCells;
+            while (maxDelta > 0 && tempPart.intersects(obstacle)) {
+              maxDelta--;
+              testLengthCells = direction === 'positive' ? currentLengthCells + maxDelta : currentLengthCells - maxDelta;
+              if (testLengthCells < SOFA_MIN_LENGTH) {
+                return { status: 'blocked', appliedDelta: 0 };
+              }
+              tempPart.length = fromGridCells(testLengthCells);
+            }
+            if (maxDelta === 0) {
+              return { status: 'blocked', appliedDelta: 0 };
+            }
+            part.length = fromGridCells(testLengthCells);
+            return { status: 'partial', appliedDelta: maxDelta };
+          }
+        }
+        
+        // Нет коллизий - применяем изменение
+        part.length = newLengthPx;
+        return { status: 'ok', appliedDelta: deltaCells };
+      }
+      
+      // Поворот вокруг опорной точки
+      rotate(targetOrientation) {
+        // Реализация поворота будет зависеть от типа дивана
+        // Пока базовая реализация
+        const angleDiff = (targetOrientation - this.parts[0].orientation + 360) % 360;
+        
+        for (const part of this.parts) {
+          part.orientation = (part.orientation + angleDiff) % 360;
+          // Пересчитываем координаты относительно опорной точки
+          // (упрощенная версия, полная реализация потребует больше логики)
+        }
+      }
+    }
+    
+    // RECT диван (обычный)
+    class RectSofa extends SofaBase {
+      constructor(x, y, orientation, length) {
+        // length уже в пикселях
+        const part = new SofaPart('A', x, y, orientation, length);
+        super('RECT', [part], { x, y });
+      }
+    }
+    
+    // Угловой диван (L-образный) - простая реализация
+    const createCornerSofa = (x, y, lengthA, lengthB) => {
+      // Используем правильную форму углового дивана
+      // Базовый path уже нормализован относительно (0,0)
+      const basePath = "M0 4.8C0 2.14903 2.14903 0 4.8 0H55.2C57.851 0 60 2.14903 60 4.8V13.2C60 15.851 57.851 18 55.2 18H22.8C20.149 18 18 20.149 18 22.8V55.2C18 57.851 15.851 60 13.2 60H4.8C2.14903 60 0 57.851 0 55.2V4.8Z";
+      
+      // Масштабируем под нужные размеры (базовый размер 60x60)
+      // Используем единый коэффициент для сохранения пропорций
+      const baseSize = 60;
+      const targetWidth = lengthA;
+      const targetHeight = lengthB;
+      const scale = Math.min(targetWidth / baseSize, targetHeight / baseSize);
+      
+      // Масштабируем все координаты в path с единым коэффициентом (path будет нормализован в createSofaFabricObject)
+      const pathData = basePath.replace(/([MLHVCSQTAZ])\s*([-\d.]+(?:\s+[-\d.]+)*)/g, (match, cmd, coords) => {
+        if (cmd === 'Z' || cmd === 'z') return match;
+        if (cmd === 'H') {
+          // Горизонтальная линия - только X координата
+          const nums = coords.trim().split(/\s+/).map(n => {
+            return (parseFloat(n) * scale).toFixed(3);
+          });
+          return cmd + ' ' + nums.join(' ');
+        }
+        if (cmd === 'V') {
+          // Вертикальная линия - только Y координата
+          const nums = coords.trim().split(/\s+/).map(n => {
+            return (parseFloat(n) * scale).toFixed(3);
+          });
+          return cmd + ' ' + nums.join(' ');
+        }
+        // Остальные команды - пары координат
+        const nums = coords.trim().split(/\s+/).map((n) => {
+          const val = parseFloat(n);
+          return (val * scale).toFixed(3);
+        });
+        return cmd + ' ' + nums.join(' ');
+      });
+      
+      return {
+        type: 'L',
+        pathData: pathData,
+        x: x,
+        y: y,
+        lengthA: lengthA,
+        lengthB: lengthB
+      };
+    };
+    
+    // П-образный диван (комбо) - используем правильную форму
+    const createPSofa = (x, y, lengthA, lengthB, lengthC) => {
+      // Используем правильную форму комбо дивана
+      // Исходный path: M120 36.328... (из viewBox "110 28 150 90")
+      // Нормализуем к началу координат: вычитаем 120 из X и 36.328 из Y
+      const basePath = "M120 36.328C120 33.677 122.133 31.528 124.764 31.528H246.236C248.867 31.528 251 33.677 251 36.328V86.728C251 89.379 248.867 91.528 246.236 91.528H237.9C235.269 91.528 233.136 89.379 233.136 86.728V54.328C233.136 51.677 231.004 49.528 228.373 49.528H142.627C139.996 49.528 137.864 51.677 137.864 54.328V86.728C137.864 89.379 135.731 91.528 133.1 91.528H124.764C122.133 91.528 120 89.379 120 86.728V36.328Z";
+      
+      // Нормализуем path относительно (0,0) - вычитаем начальные координаты
+      const offsetX = 120;
+      const offsetY = 36.328;
+      const normalizedPath = basePath.replace(/([MLHVCSQTAZ])\s*([-\d.]+(?:\s+[-\d.]+)*)/g, (match, cmd, coords) => {
+        if (cmd === 'Z' || cmd === 'z') return match;
+        if (cmd === 'H') {
+          // Горизонтальная линия - только X координата
+          const nums = coords.trim().split(/\s+/).map(n => {
+            return (parseFloat(n) - offsetX).toFixed(3);
+          });
+          return cmd + ' ' + nums.join(' ');
+        }
+        if (cmd === 'V') {
+          // Вертикальная линия - только Y координата
+          const nums = coords.trim().split(/\s+/).map(n => {
+            return (parseFloat(n) - offsetY).toFixed(3);
+          });
+          return cmd + ' ' + nums.join(' ');
+        }
+        // Остальные команды - пары координат
+        const nums = coords.trim().split(/\s+/).map((n, idx) => {
+          const val = parseFloat(n);
+          return idx % 2 === 0 ? (val - offsetX).toFixed(3) : (val - offsetY).toFixed(3);
+        });
+        return cmd + ' ' + nums.join(' ');
+      });
+      
+      // Масштабируем под нужные размеры
+      // Базовые размеры из исходного path: ширина ~131 (251-120), высота ~55.2 (91.528-36.328)
+      // Используем единый коэффициент для сохранения пропорций
+      const baseWidth = 131;
+      const baseHeight = 55.2;
+      const targetWidth = lengthB;
+      const targetHeight = lengthA + lengthC;
+      const scale = Math.min(targetWidth / baseWidth, targetHeight / baseHeight);
+      
+      // Масштабируем координаты с единым коэффициентом (path будет нормализован в createSofaFabricObject)
+      const pathData = normalizedPath.replace(/([MLHVCSQTAZ])\s*([-\d.]+(?:\s+[-\d.]+)*)/g, (match, cmd, coords) => {
+        if (cmd === 'Z' || cmd === 'z') return match;
+        if (cmd === 'H') {
+          // Горизонтальная линия
+          const nums = coords.trim().split(/\s+/).map(n => {
+            return (parseFloat(n) * scale).toFixed(3);
+          });
+          return cmd + ' ' + nums.join(' ');
+        }
+        if (cmd === 'V') {
+          // Вертикальная линия
+          const nums = coords.trim().split(/\s+/).map(n => {
+            return (parseFloat(n) * scale).toFixed(3);
+          });
+          return cmd + ' ' + nums.join(' ');
+        }
+        // Остальные команды - пары координат
+        const nums = coords.trim().split(/\s+/).map((n) => {
+          const val = parseFloat(n);
+          return (val * scale).toFixed(3);
+        });
+        return cmd + ' ' + nums.join(' ');
+      });
+      
+      return {
+        type: 'P',
+        pathData: pathData,
+        x: x,
+        y: y,
+        lengthA: lengthA,
+        lengthB: lengthB,
+        lengthC: lengthC
+      };
+    };
+    
+    // Создание Fabric.js объекта из модели дивана
+    const createSofaFabricObject = (sofaData, tableId) => {
+      const radius = 8;
+      let pathData;
+      let x, y;
+      
+      if (sofaData.type === 'RECT') {
+        // Прямой диван - простой прямоугольник
+        const part = sofaData.parts[0];
+        x = part.x;
+        y = part.y;
+        const w = part.length;
+        const h = fromGridCells(SOFA_DEPTH);
+        pathData = `M ${radius} 0 L ${w - radius} 0 Q ${w} 0 ${w} ${radius} L ${w} ${h - radius} Q ${w} ${h} ${w - radius} ${h} L ${radius} ${h} Q 0 ${h} 0 ${h - radius} L 0 ${radius} Q 0 0 ${radius} 0 Z`;
+      } else if (sofaData.type === 'L') {
+        // Угловой диван - нормализуем Path относительно начала координат
+        x = sofaData.x;
+        y = sofaData.y;
+        // Нормализуем все координаты в Path (обрабатываем M, L, C, H, V команды)
+        pathData = sofaData.pathData.replace(/([MLHVCSQTAZ])\s*([-\d.]+(?:\s+[-\d.]+)*)/g, (match, cmd, coords) => {
+          if (cmd === 'Z' || cmd === 'z') return match;
+          if (cmd === 'H') {
+            // Горизонтальная линия - только X координата
+            const nums = coords.trim().split(/\s+/).map(n => {
+              return (parseFloat(n) - x).toFixed(3);
+            });
+            return cmd + ' ' + nums.join(' ');
+          }
+          if (cmd === 'V') {
+            // Вертикальная линия - только Y координата
+            const nums = coords.trim().split(/\s+/).map(n => {
+              return (parseFloat(n) - y).toFixed(3);
+            });
+            return cmd + ' ' + nums.join(' ');
+          }
+          // Остальные команды - пары координат (M, L, C, Q, T, A)
+          const nums = coords.trim().split(/\s+/).map((n, idx) => {
+            const val = parseFloat(n);
+            return idx % 2 === 0 ? (val - x).toFixed(3) : (val - y).toFixed(3);
+          });
+          return cmd + ' ' + nums.join(' ');
+        });
+      } else if (sofaData.type === 'P') {
+        // П-образный диван - нормализуем Path относительно начала координат
+        x = sofaData.x;
+        y = sofaData.y;
+        // Нормализуем все координаты в Path (обрабатываем M, L, C, H, V команды)
+        pathData = sofaData.pathData.replace(/([MLHVCSQTAZ])\s*([-\d.]+(?:\s+[-\d.]+)*)/g, (match, cmd, coords) => {
+          if (cmd === 'Z' || cmd === 'z') return match;
+          if (cmd === 'H') {
+            // Горизонтальная линия - только X координата
+            const nums = coords.trim().split(/\s+/).map(n => {
+              return (parseFloat(n) - x).toFixed(3);
+            });
+            return cmd + ' ' + nums.join(' ');
+          }
+          if (cmd === 'V') {
+            // Вертикальная линия - только Y координата
+            const nums = coords.trim().split(/\s+/).map(n => {
+              return (parseFloat(n) - y).toFixed(3);
+            });
+            return cmd + ' ' + nums.join(' ');
+          }
+          // Остальные команды - пары координат (M, L, C, Q, T, A)
+          const nums = coords.trim().split(/\s+/).map((n, idx) => {
+            const val = parseFloat(n);
+            return idx % 2 === 0 ? (val - x).toFixed(3) : (val - y).toFixed(3);
+          });
+          return cmd + ' ' + nums.join(' ');
+        });
+      }
+      
+      // Создаем единый Path объект
+      const path = new fabric.Path(pathData, {
+        left: x,
+        top: y,
+        fill: '#1EA276',
+        stroke: 'none',
+        selectable: true,
+        evented: true,
+        hasBorders: false,
+        hasControls: true,
+        lockScalingFlip: true
+      });
+      
+      path.sofaData = sofaData;
+      path.mapTableMeta = {
+        id: tableId,
+        shape: sofaData.type === 'RECT' ? 'sofa-straight' : 
+               sofaData.type === 'L' ? 'sofa-corner' : 'sofa-double',
+        metadata: {
+          type: sofaData.type,
+          ...(sofaData.type === 'L' ? { lengthA: sofaData.lengthA, lengthB: sofaData.lengthB } : {}),
+          ...(sofaData.type === 'P' ? { lengthA: sofaData.lengthA, lengthB: sofaData.lengthB, lengthC: sofaData.lengthC } : {})
+        }
+      };
+      
+      return path;
+    }
+
+    const getDeletableSelection = () => {
+      if (!canvas.getActiveObjects) return [];
+      const selected = canvas.getActiveObjects();
+      if (!selected || selected.length === 0) return [];
+      const unique = new Set();
+      const deletable = [];
+      selected.forEach((obj) => {
+        const candidate = getMapGroup(obj) || (obj.mapTableMeta ? obj : null);
+        if (candidate && !unique.has(candidate)) {
+          unique.add(candidate);
+          deletable.push(candidate);
+        }
+      });
+      return deletable;
+    };
+
+    const updateDeleteButtonVisibility = () => {
+      if (!deleteToolCell) return;
+      const shouldShow = activeTool === 'cursor' && getDeletableSelection().length > 0;
+      if (shouldShow && !isDeleteButtonVisible) {
+        deleteToolCell.style.display = 'flex';
+        isDeleteButtonVisible = true;
+      } else if (!shouldShow && isDeleteButtonVisible) {
+        deleteToolCell.style.display = 'none';
+        isDeleteButtonVisible = false;
+      }
+    };
+
+    const formatCapacityText = (capacity) => {
+      if (capacity === undefined || capacity === null || capacity === '') return '';
+      return `do ${capacity}`;
+    };
+
+    const applyCapacityToGroup = (group, capacity) => {
+      if (!group) return;
+      const shape = group.mapTableMeta?.shape;
+      if (shape === 'chair-numbered') {
+        if (group.capacityLabel) {
+          group.capacityLabel.set({ text: '', visible: false });
+        }
+        if (group.numberLabel) {
+          group.numberLabel.set({ top: 0 });
+          group.numberLabel.mapBaseScaleX = 1;
+          group.numberLabel.mapBaseScaleY = 1;
+        }
+        if (group.mapTableMeta.metadata && 'capacity' in group.mapTableMeta.metadata) {
+          delete group.mapTableMeta.metadata.capacity;
+        }
+        maintainLabelSize(group);
+        if (group.canvas) {
+          group.canvas.requestRenderAll();
+        }
+        return;
+      }
+
+      const text = formatCapacityText(capacity);
+      const hasCapacity = text !== '';
+      if (group.capacityLabel) {
+        group.capacityLabel.set({
+          text,
+          visible: hasCapacity,
+          top: shape === 'chair-numbered' ? 12 : 16
+        });
+        group.capacityLabel.mapBaseScaleX = 1;
+        group.capacityLabel.mapBaseScaleY = 1;
+      }
+      if (group.numberLabel) {
+        const topValue = hasCapacity ? -10 : 0;
+        group.numberLabel.set({ top: topValue });
+        group.numberLabel.mapBaseScaleX = 1;
+        group.numberLabel.mapBaseScaleY = 1;
+      }
+      if (!group.mapTableMeta.metadata) {
+        group.mapTableMeta.metadata = {};
+      }
+      if (!hasCapacity) {
+        delete group.mapTableMeta.metadata.capacity;
+      } else {
+        group.mapTableMeta.metadata.capacity = capacity;
+      }
+      maintainLabelSize(group);
+      if (group.canvas) {
+        group.canvas.requestRenderAll();
+      }
+    };
+
+    const deleteMapElement = async (obj) => {
+       if (!obj) return;
+       const target = obj.wall ? obj.wall : obj;
+       const mapObj = getMapGroup(target);
+       if (mapObj) {
+         if (!mapObj.mapTableMeta) {
+           canvas.remove(mapObj);
+           canvas.requestRenderAll();
+           updateDeleteButtonVisibility();
+           return;
+         }
+        if (mapObj.mapTableMeta.shape === 'wall') {
+          hideWallHandles(mapObj);
+        }
+         const meta = mapObj.mapTableMeta;
+        if (meta?.id && meta.id > 0) {
+           try {
+             const response = await fetch(`/api/map/tables/${meta.id}`, {
+               method: 'DELETE'
+             });
+             if (response.status === 404) {
+               console.warn(`Элемент ${meta.id} отсутствует в БД, удаляю только на клиенте.`);
+             } else if (!response.ok) {
+               const data = await response.json().catch(() => ({}));
+               throw new Error(data.error || 'Не удалось удалить элемент');
+             }
+           } catch (error) {
+             console.error('Ошибка удаления элемента схемы:', error);
+             alert(error.message || 'Не удалось удалить элемент');
+             return;
+           }
+         }
+        if (meta?.id) {
+          mapTableObjects.delete(meta.id);
+        }
+        // Старая логика для диванов удалена
+         canvas.remove(mapObj);
+         canvas.requestRenderAll();
+         updateDeleteButtonVisibility();
+       } else {
+         canvas.remove(target);
+         canvas.requestRenderAll();
+         updateDeleteButtonVisibility();
+       }
+     };
+
+    const createTableGroup = (table) => {
+      const shapeType = table.shape || 'square';
+      if (!['square', 'circle', 'chair-numbered'].includes(shapeType)) {
+        return null;
+      }
+      const shapeDefaults = TABLE_DEFAULTS[shapeType] || TABLE_DEFAULTS.square;
+      const width = table.width || shapeDefaults.width || (shapeDefaults.radius ? shapeDefaults.radius * 2 : TABLE_DEFAULTS.square.width);
+      const height = table.height || shapeDefaults.height || (shapeDefaults.radius ? shapeDefaults.radius * 2 : TABLE_DEFAULTS.square.height);
+      const radius = table.radius || shapeDefaults.radius || Math.max(width, height) / 2;
+
+      let baseShape;
+      if (shapeType === 'circle' || shapeType === 'chair-numbered') {
+        const effectiveRadius = radius;
+        const fillColor = shapeType === 'chair-numbered' ? '#1EA276' : TABLE_COLORS.fill;
+        const strokeColor = shapeType === 'chair-numbered' ? '#1EA276' : TABLE_COLORS.stroke;
+        const strokeWidth = shapeType === 'chair-numbered' ? 0 : TABLE_COLORS.strokeWidth;
+        baseShape = new fabric.Circle({
+          radius: effectiveRadius,
+          fill: fillColor,
+          stroke: strokeColor,
+          strokeWidth,
+          originX: 'center',
+          originY: 'center',
+          selectable: false,
+          evented: false
+        });
+      } else {
+        baseShape = new fabric.Rect({
+          width,
+          height,
+          fill: TABLE_COLORS.fill,
+          stroke: TABLE_COLORS.stroke,
+          strokeWidth: TABLE_COLORS.strokeWidth,
+          rx: 8,
+          ry: 8,
+          originX: 'center',
+          originY: 'center',
+          selectable: false,
+          evented: false
+        });
+      }
+
+      const numberLabel = new fabric.Text(String(table.number), {
+        fontFamily: 'Manrope, sans-serif',
+        fontSize: shapeType === 'chair-numbered' ? 16 : 28,
+        fontWeight: '700',
+        fill: shapeType === 'chair-numbered' ? '#ffffff' : TABLE_COLORS.text,
+        originX: 'center',
+        originY: 'center',
+        selectable: false,
+        evented: false,
+        top: 0
+      });
+      numberLabel.mapBaseScaleX = 1;
+      numberLabel.mapBaseScaleY = 1;
+
+      const capacityValue = table.metadata?.capacity ?? null;
+      const capacityLabel = shapeType === 'chair-numbered'
+        ? null
+        : new fabric.Text(formatCapacityText(capacityValue), {
+            fontFamily: 'Manrope, sans-serif',
+            fontSize: 16,
+            fontWeight: '400',
+            fill: TABLE_COLORS.text,
+            originX: 'center',
+            originY: 'center',
+            selectable: false,
+            evented: false,
+            top: 16,
+            visible: formatCapacityText(capacityValue) !== ''
+          });
+
+      const objects = [baseShape, numberLabel];
+      if (capacityLabel) {
+        objects.push(capacityLabel);
+      }
+
+      const group = new fabric.Group(objects, {
+        left: table.x,
+        top: table.y,
+        originX: 'center',
+        originY: 'center',
+        angle: table.angle || 0,
+        subTargetCheck: false,
+        padding: shapeType === 'chair-numbered' ? 4 : 6
+      });
+
+      group.mapTableMeta = {
+        id: table.id,
+        shape: shapeType,
+        metadata: table.metadata || {}
+      };
+      group.numberLabel = numberLabel;
+      group.capacityLabel = capacityLabel;
+      group.lockScalingFlip = true;
+      if (shapeType === 'circle' || shapeType === 'chair-numbered') {
+        group.lockScalingUniform = true;
+      }
+      group.perPixelTargetFind = true;
+
+      applyCapacityToGroup(group, capacityValue);
+
+      mapTableObjects.set(table.id, group);
+      return group;
+    };
+
+    const createDecorChair = (table) => {
+      const shapeDefaults = TABLE_DEFAULTS["chair-decor"];
+      const radius = table.radius || shapeDefaults.radius;
+      const circle = new fabric.Circle({
+        radius,
+        fill: '#1EA276',
+        originX: 'center',
+        originY: 'center',
+        selectable: true,
+        evented: true
+      });
+      circle.set({
+        left: table.x,
+        top: table.y,
+        angle: table.angle || 0
+      });
+      circle.lockScalingFlip = true;
+      circle.lockScalingUniform = true;
+      circle.mapTableMeta = {
+        id: table.id,
+        shape: 'chair-decor',
+        metadata: table.metadata || {}
+      };
+      mapTableObjects.set(table.id, circle);
+      return circle;
+    };
+
+    const createZoneGroup = (table) => {
+      const shapeDefaults = TABLE_DEFAULTS.zone;
+      const width = table.width || shapeDefaults.width;
+      const height = table.height || shapeDefaults.height;
+      const labelText = (table.metadata && table.metadata.label) ? table.metadata.label : 'Zone';
+      const rect = new fabric.Rect({
+        width,
+        height,
+        fill: '#E5E7EB',
+        stroke: null,
+        strokeWidth: 0,
+        rx: 8,
+        ry: 8,
+        originX: 'center',
+        originY: 'center',
+        selectable: false,
+        evented: false
+      });
+      const label = new fabric.Textbox(labelText, {
+        fontFamily: 'Manrope, sans-serif',
+        fontSize: 18,
+        fontWeight: '700',
+        fill: '#111827',
+        width: Math.max(width - 40, 40),
+        textAlign: 'center',
+        originX: 'center',
+        originY: 'center',
+        editable: true,
+        splitByGrapheme: true
+      });
+      label.mapBaseScaleX = 1;
+      label.mapBaseScaleY = 1;
+      const group = new fabric.Group([rect, label], {
+        left: table.x,
+        top: table.y,
+        originX: 'center',
+        originY: 'center',
+        angle: table.angle || 0,
+        subTargetCheck: false,
+        padding: 6
+      });
+      group.mapTableMeta = {
+        id: table.id,
+        shape: 'zone',
+        metadata: table.metadata || { label: labelText }
+      };
+      group.zoneLabel = label;
+      label.on('editing:exited', () => {
+        const text = label.text || '';
+        group.mapTableMeta.metadata = { ...(group.mapTableMeta.metadata || {}), label: text };
+        syncTableUpdate(group, { metadata: { label: text } });
+      });
+      mapTableObjects.set(table.id, group);
+      maintainLabelSize(group);
+      return group;
+    };
+
+    const createWallObject = (table) => {
+      // Точки стены всегда храним в БД в абсолютных координатах канваса
+      const rawPoints = (table.metadata && table.metadata.points) || [];
+      if (!rawPoints || rawPoints.length < 2) {
+        console.warn('Стена не может быть создана: недостаточно точек', table);
+        return null;
+      }
+      const absPoints = rawPoints.map(p => ({ x: p.x, y: p.y }));
+      const minX = Math.min(...absPoints.map(p => p.x));
+      const minY = Math.min(...absPoints.map(p => p.y));
+      // Переводим в локальные координаты относительно левого верхнего угла
+      const localPoints = absPoints.map(p => ({
+        x: p.x - minX,
+        y: p.y - minY
+      }));
+
+      const polyline = new fabric.Polyline(localPoints, {
+        left: minX,
+        top: minY,
+        originX: 'left',
+        originY: 'top',
+        stroke: '#1EA276',
+        strokeWidth: 3,
+        strokeUniform: true,
+        fill: null,
+        selectable: true,
+        evented: true,
+        objectCaching: false,
+        noScaleCache: true,
+        perPixelTargetFind: true,
+        hasBorders: true,
+        lockScalingFlip: true,
+        // Разрешаем масштабирование и перемещение существующих стен
+        lockScalingX: false,
+        lockScalingY: false,
+        lockRotation: true
+      });
+      polyline.mapTableMeta = {
+        id: table.id,
+        shape: 'wall',
+        metadata: table.metadata || { points: absPoints }
+      };
+      mapTableObjects.set(table.id, polyline);
+      polyline.setCoords();
+      updateWallMetadata(polyline);
+      return polyline;
+    };
+
+    const addTableToCanvas = (table) => {
+      let obj = null;
+      if (table.shape === 'zone') {
+        obj = createZoneGroup(table);
+      } else if (table.shape === 'chair-decor') {
+        obj = createDecorChair(table);
+      } else if (table.shape === 'wall') {
+        obj = createWallObject(table);
+      } else if (table.shape === 'text') {
+        const textValue = (table.metadata && table.metadata.text) || '';
+        if (!textValue) {
+          return null;
+        }
+        const fontSize = (table.metadata && table.metadata.fontSize) || 18;
+        const width = table.width || 240;
+        const charSpacing = table.metadata?.charSpacing || 0;
+        
+        obj = new fabric.Textbox(textValue, {
+          left: table.x,
+          top: table.y,
+          angle: table.angle || 0,
+          originX: 'center',
+          originY: 'center',
+          width: width,
+          fontFamily: 'Manrope, sans-serif',
+          fontSize: fontSize,
+          fill: '#6b7280',
+          textAlign: 'left',
+          charSpacing: charSpacing,
+          lockScalingFlip: true,
+          lockScalingX: false,
+          lockScalingY: false
+        });
+        
+        // Сохраняем базовые значения для масштабирования
+        obj._baseWidth = width;
+        obj._baseFontSize = fontSize;
+        
+        obj.mapTableMeta = {
+          id: table.id,
+          shape: 'text',
+          metadata: table.metadata || { text: textValue }
+        };
+        mapTableObjects.set(table.id, obj);
+        // При изменении текста сохраняем новое значение в metadata и на сервере
+        obj.on('editing:exited', () => {
+          const text = obj.text || '';
+          obj.mapTableMeta.metadata = {
+            ...(obj.mapTableMeta.metadata || {}),
+            text
+          };
+          syncTableUpdate(obj, { metadata: { text } });
+        });
+      } else if (table.shape === 'sofa-straight' || table.shape === 'sofa-corner' || table.shape === 'sofa-double') {
+        // Новая система диванов на основе сетки
+        const sofaType = table.metadata?.type || 
+          (table.shape === 'sofa-straight' ? 'RECT' : 
+           table.shape === 'sofa-corner' ? 'L' : 'P');
+        
+        let sofaModel;
+        if (sofaType === 'RECT') {
+          const part = table.metadata?.parts?.[0] || {
+            x: table.x,
+            y: table.y,
+            orientation: table.angle || 0,
+            length: toGridCells(table.width || 160),
+            width: SOFA_DEPTH
+          };
+          // length в метаданных хранится в ячейках, преобразуем в пиксели
+          const lengthPx = typeof part.length === 'number' ? fromGridCells(part.length) : (table.width || 160);
+          sofaModel = new RectSofa(part.x, part.y, part.orientation, lengthPx);
+        } else if (sofaType === 'L') {
+          const parts = table.metadata?.parts || [];
+          if (parts.length >= 2) {
+            const partA = parts[0];
+            const partB = parts[1];
+            // length в метаданных хранится в ячейках
+            const lengthAPx = typeof partA.length === 'number' ? fromGridCells(partA.length) : 160;
+            const lengthBPx = typeof partB.length === 'number' ? fromGridCells(partB.length) : 120;
+            sofaModel = createCornerSofa(partA.x, partA.y, lengthAPx, lengthBPx);
+          } else {
+            // Fallback для старых данных
+            sofaModel = createCornerSofa(table.x, table.y, 160, 120);
+          }
+        } else if (sofaType === 'P') {
+          const parts = table.metadata?.parts || [];
+          if (parts.length >= 3) {
+            const partA = parts[0];
+            const partB = parts[1];
+            const partC = parts[2];
+            // length в метаданных хранится в ячейках
+            const lengthAPx = typeof partA.length === 'number' ? fromGridCells(partA.length) : 120;
+            const lengthBPx = typeof partB.length === 'number' ? fromGridCells(partB.length) : 200;
+            const lengthCPx = typeof partC.length === 'number' ? fromGridCells(partC.length) : 120;
+            // Используем координаты части A как базовые
+            sofaModel = createPSofa(partA.x, partA.y, lengthAPx, lengthBPx, lengthCPx);
+          } else {
+            // Fallback для старых данных
+            sofaModel = createPSofa(table.x, table.y, 120, 200, 120);
+          }
+        }
+        
+        if (sofaModel) {
+          obj = createSofaFabricObject(sofaModel, table.id);
+          // Устанавливаем координаты из базы данных
+          if (table.x != null && table.y != null) {
+            obj.set({
+              left: table.x,
+              top: table.y,
+              angle: table.angle || 0
+            });
+          } else {
+            // Если координаты отсутствуют, используем центр canvas
+            const center = canvas.getCenter();
+            obj.set({
+              left: center.left,
+              top: center.top,
+              angle: table.angle || 0
+            });
+          }
+          mapTableObjects.set(table.id, obj);
+        }
+      } else {
+        obj = createTableGroup(table);
+      }
+      if (!obj) {
+        return null;
+      }
+      canvas.add(obj);
+      // Для стен устанавливаем координаты и обновляем метаданные
+      if (table.shape === 'wall') {
+        obj.setCoords();
+        updateWallMetadata(obj);
+      } else {
+        obj.setCoords();
+        // Для обычных столов/зон поддерживаем стабильный размер надписей,
+        // но для текста ничего не пересчитываем, чтобы не ломать его окно.
+        if (table.shape !== 'text') {
+          maintainLabelSize(obj);
+        }
+      }
+      canvas.requestRenderAll();
+      return obj;
+    };
+
+    const loadMapTables = async () => {
+      try {
+        if (!canvas) {
+          console.error('Canvas не инициализирован, невозможно загрузить элементы');
+          return;
+        }
+        const response = await fetch('/api/map/tables');
+        if (!response.ok) {
+          throw new Error('Не удалось загрузить столики');
+        }
+        const data = await response.json();
+        if (data.success && Array.isArray(data.tables)) {
+          console.log('Загружено элементов:', data.tables.length);
+          data.tables.forEach((table) => {
+            try {
+              // Все элементы теперь этаже-специфичные
+              // Загружаем только элементы текущего этажа
+              const tableFloor = table.metadata?.floor || 'Sprat 1';
+              if (tableFloor === currentFloor) {
+                addTableToCanvas(table);
+              }
+            } catch (err) {
+              console.error('Ошибка добавления элемента на canvas:', err, table);
+            }
+          });
+          canvas.requestRenderAll();
+        } else {
+          console.warn('Неверный формат данных:', data);
+        }
+      } catch (error) {
+        console.error('Ошибка загрузки столиков:', error);
+      }
+    };
+
+    const postMapElement = async (payload, { setActive = true } = {}) => {
+      try {
+        // Добавляем информацию об этаже для всех элементов (включая столики)
+        // Нумерация столиков остается общей для всех этажей (обрабатывается на backend)
+        if (FLOOR_SPECIFIC_SHAPES.includes(payload.shape)) {
+          if (!payload.metadata) {
+            payload.metadata = {};
+          }
+          payload.metadata.floor = currentFloor;
+        }
+        
+        const response = await fetch('/api/map/tables', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload)
+        });
+        const data = await response.json();
+        if (!response.ok || !data.success) {
+          throw new Error(data.error || 'Не удалось создать элемент');
+        }
+        const obj = addTableToCanvas(data.table);
+        if (obj && obj.mapTableMeta) {
+          // Убеждаемся, что ID правильно установлен после создания
+          if (obj.mapTableMeta.id !== data.table.id) {
+            const oldId = obj.mapTableMeta.id;
+            obj.mapTableMeta.id = data.table.id;
+            if (oldId) {
+              mapTableObjects.delete(oldId);
+            }
+            mapTableObjects.set(data.table.id, obj);
+          }
+          if (setActive && data.table.shape !== 'wall') {
+            canvas.setActiveObject(obj);
+          }
+          canvas.requestRenderAll();
+        }
+        return data.table;
+      } catch (error) {
+        console.error('Ошибка создания элемента:', error);
+        alert(error.message || 'Не удалось создать элемент');
+        throw error;
+      }
+    };
+
+    const createTableOnServer = async (type) => {
+      const shapeMap = {
+        'table-circle': 'circle',
+        'table-square': 'square',
+        'chair-numbered': 'chair-numbered'
+      };
+      const shape = shapeMap[type] || 'square';
+      const center = canvas.getCenter();
+      const defaultsConfig = TABLE_DEFAULTS[shape] || TABLE_DEFAULTS.square;
+      const defaults = {
+        width: defaultsConfig.width || (defaultsConfig.radius ? defaultsConfig.radius * 2 : TABLE_DEFAULTS.square.width),
+        height: defaultsConfig.height || (defaultsConfig.radius ? defaultsConfig.radius * 2 : TABLE_DEFAULTS.square.height),
+        radius: defaultsConfig.radius || null
+      };
+
+      const payload = {
+        shape,
+        x: center.left,
+        y: center.top,
+        angle: 0,
+        width: defaults.width,
+        height: defaults.height,
+        radius: shape === 'circle' || shape === 'chair-numbered' ? defaults.radius : null,
+        metadata: { colors: TABLE_COLORS }
+      };
+      if (shape === 'chair-numbered') {
+        payload.metadata.type = 'chair-numbered';
+      }
+
+      return postMapElement(payload);
+    };
+
+    const addDecorChair = () => {
+      const center = canvas.getCenter();
+      const defaults = TABLE_DEFAULTS['chair-decor'];
+      const payload = {
+        shape: 'chair-decor',
+        x: center.left,
+        y: center.top,
+        angle: 0,
+        radius: defaults.radius,
+        width: defaults.width,
+        height: defaults.height,
+        metadata: {}
+      };
+      postMapElement(payload);
+    };
+
+    const syncTableUpdate = async (obj, extra = {}) => {
+      const meta = obj?.mapTableMeta;
+      if (!meta) return Promise.resolve();
+      const { id, shape } = meta;
+      if (!id || id <= 0) {
+        // Для новых объектов (без ID) не сохраняем
+        return Promise.resolve();
+      }
+ 
+       const payload = {
+        x: obj.left,
+        y: obj.top,
+        angle: obj.angle || 0
+      };
+ 
+      if (shape === 'square' || shape === 'circle' || shape === 'chair-numbered') {
+         payload.width = obj.getScaledWidth();
+         payload.height = obj.getScaledHeight();
+       }
+       if (shape === 'circle' || shape === 'chair-numbered') {
+         payload.radius = Math.max(obj.getScaledWidth(), obj.getScaledHeight()) / 2;
+       }
+       if (shape === 'chair-decor') {
+         payload.width = obj.getScaledWidth();
+         payload.height = obj.getScaledHeight();
+         payload.radius = obj.getScaledWidth() / 2;
+       }
+      if (shape === 'zone') {
+        payload.width = obj.getScaledWidth();
+        payload.height = obj.getScaledHeight();
+      }
+      if (shape === 'text') {
+        // Нормализуем масштаб текста в реальный fontSize и width
+        const scaleX = obj.scaleX || 1;
+        const scaleY = obj.scaleY || 1;
+        const baseMeta = meta.metadata || {};
+        const baseFontSize = obj._baseFontSize || baseMeta.fontSize || obj.fontSize || 18;
+        const baseWidth = obj._baseWidth || obj.width || 240;
+
+        // Вычисляем реальные размеры с учетом масштаба
+        const width = baseWidth * scaleX;
+        const effectiveFontSize = baseFontSize * scaleY;
+        const height = obj.getScaledHeight();
+        const charSpacing = (scaleX - 1) * 100;
+
+        // Приводим объект к scaleX/scaleY = 1, сохраняя визуальный вид
+        obj.set({
+          fontSize: effectiveFontSize,
+          scaleX: 1,
+          scaleY: 1,
+          width: width,
+          height: height,
+          charSpacing: charSpacing
+        });
+        obj.setCoords();
+
+        payload.width = width;
+        payload.height = height;
+        const text = obj.text || '';
+        payload.metadata = {
+          ...baseMeta,
+          text,
+          fontSize: effectiveFontSize,
+          charSpacing: charSpacing
+        };
+        if (FLOOR_SPECIFIC_SHAPES.includes(shape)) {
+          payload.metadata.floor = currentFloor;
+        }
+        meta.metadata = { ...(meta.metadata || {}), ...payload.metadata };
+      }
+      // Новая система диванов
+      if (shape === 'sofa-straight' || shape === 'sofa-corner' || shape === 'sofa-double') {
+        // Убеждаемся, что координаты актуальны перед отправкой
+        obj.setCoords();
+        // Используем актуальные координаты объекта
+        payload.x = obj.left;
+        payload.y = obj.top;
+        payload.angle = obj.angle || 0;
+        
+        // Обновляем метаданные с текущими координатами частей
+        if (obj.sofaModel && obj.sofaModel.parts) {
+          payload.metadata = {
+            type: obj.sofaModel.type,
+            parts: obj.sofaModel.parts.map(p => ({
+              id: p.id,
+              x: p.x,
+              y: p.y,
+              orientation: p.orientation,
+              length: p.getLengthCells(),
+              width: p.width
+            }))
+          };
+        } else {
+          // Fallback - используем существующие метаданные
+          payload.metadata = meta.metadata || {};
+        }
+        
+        // Сохраняем этаж для этаже-специфичных элементов
+        if (FLOOR_SPECIFIC_SHAPES.includes(shape)) {
+          payload.metadata.floor = currentFloor;
+        }
+        
+        // Обновляем размеры для совместимости
+        payload.width = obj.getScaledWidth();
+        payload.height = obj.getScaledHeight();
+      }
+      if (shape === 'wall') {
+         const points = getWallAbsolutePoints(obj);
+         payload.x = points[0]?.x ?? obj.left;
+         payload.y = points[0]?.y ?? obj.top;
+         extra.metadata = { ...(extra.metadata || {}), points };
+       }
+      if (extra.metadata && shape !== 'sofa-straight' && shape !== 'sofa-corner' && shape !== 'sofa-double' && shape !== 'wall') {
+        payload.metadata = extra.metadata;
+        // Сохраняем этаж для этаже-специфичных элементов
+        if (FLOOR_SPECIFIC_SHAPES.includes(shape)) {
+          payload.metadata.floor = currentFloor;
+        }
+        meta.metadata = { ...(meta.metadata || {}), ...extra.metadata };
+      }
+      if (FLOOR_SPECIFIC_SHAPES.includes(shape) && !payload.metadata) {
+        // Для этаже-специфичных элементов всегда сохраняем этаж
+        payload.metadata = { ...(meta.metadata || {}) };
+        payload.metadata.floor = currentFloor;
+      }
+ 
+       try {
+         const response = await fetch(`/api/map/tables/${id}`, {
+           method: 'PATCH',
+           headers: { 'Content-Type': 'application/json' },
+           body: JSON.stringify(payload)
+         });
+         if (!response.ok) {
+           throw new Error('Не удалось сохранить изменения элемента');
+         }
+         const data = await response.json();
+        if (data.success && data.table) {
+          // Обновляем ID если он был временным
+          if (meta.id <= 0 && data.table.id > 0) {
+            const oldId = meta.id;
+            meta.id = data.table.id;
+            mapTableObjects.delete(oldId);
+            mapTableObjects.set(data.table.id, obj);
+          }
+          // Обновляем метаданные из ответа сервера для всех элементов
+          if (data.table.metadata) {
+            meta.metadata = data.table.metadata;
+          }
+         }
+       } catch (error) {
+         console.error('Ошибка сохранения элемента карты:', error);
+       }
+     };
+
+    // Ensure backing store size == CSS size (fix quadrant clipping)
+    const syncCanvasSize = () => {
+      if (!container || !canvas) return;
+      const w = container.clientWidth || 800;
+      const h = container.clientHeight || 720;
+      if (w === 0 || h === 0) {
+        console.warn('Размер контейнера равен 0, используем значения по умолчанию');
+        return;
+      }
+      const el = canvas.getElement();
+      if (!el) {
+        console.error('Элемент canvas не найден!');
+        return;
+      }
+      // Match backing store and CSS size 1:1 (без ретины для стабильности координат)
+      el.width = w; 
+      el.height = h;
+      el.style.width = w + 'px';
+      el.style.height = h + 'px';
+      canvas.setDimensions({ width: w, height: h });
+      canvas.setViewportTransform([1, 0, 0, 1, 0, 0]);
+      canvas.calcOffset();
+      canvas.requestRenderAll();
+    };
+    // Вызываем синхронизацию размера с небольшой задержкой, чтобы контейнер успел отрендериться
+    setTimeout(() => {
+    syncCanvasSize();
+    }, 100);
+
+    new ResizeObserver(syncCanvasSize).observe(container);
+
+    let activeTool = 'cursor';
+    const setTool = (tool) => {
+      // Очищаем последнюю точку стены при переключении инструмента
+      if (activeTool === 'walls' && tool !== 'walls') {
+        lastWallEndPoint = null;
+      }
+      activeTool = tool;
+      document.querySelectorAll('.pill[data-tool]').forEach(b => b.classList.remove('active'));
+      const btn = document.querySelector(`.pill[data-tool="${tool}"]`);
+      if (btn) btn.classList.add('active');
+      if (tool === 'walls') {
+        canvas.defaultCursor = 'crosshair';
+        canvas.skipTargetFind = true;     // ignore objects under cursor
+        canvas.selection = false;         // disable marquee selection
+        canvas.discardActiveObject();
+      } else {
+        canvas.defaultCursor = 'default';
+        canvas.skipTargetFind = false;
+        canvas.selection = true;
+      }
+      updateDeleteButtonVisibility();
+    };
+    setTool('cursor');
+
+    document.querySelectorAll('.pill[data-tool]').forEach(el => {
+      el.addEventListener('click', () => {
+        const tool = el.getAttribute('data-tool');
+        if (!tool) return;
+        setTool(tool);
+        // Для текста: сразу спрашиваем текст и ставим его в центр,
+        // без клика по карте. Один клик по кнопке = один текст.
+        if (tool === 'text') {
+          const center = canvas.getCenter();
+          addSimpleText(center.left, center.top);
+          // После добавления текста сразу возвращаемся к курсору
+          setTool('cursor');
+        }
+      });
+    });
+
+    if (deleteSelectionButton) {
+      deleteSelectionButton.addEventListener('click', async () => {
+        // Сначала фиксируем список элементов для удаления,
+        // пока активна группа/выделение.
+        const targets = getDeletableSelection().filter(obj => !obj.sofaHandleKind);
+        if (!targets.length) return;
+
+        // Затем снимаем выделение, чтобы Fabric не пытался рисовать
+        // контролы для объектов, которые мы удаляем (это вызывало ошибку getZoom).
+        canvas.discardActiveObject();
+        canvas.requestRenderAll();
+
+        const sofaHandled = [];
+        for (const target of targets) {
+          if (target.sofaHandleKind && target.sofaTarget) {
+            if (!sofaHandled.includes(target.sofaTarget)) {
+              sofaHandled.push(target.sofaTarget);
+              await deleteMapElement(target.sofaTarget);
+            }
+          } else {
+            await deleteMapElement(target);
+          }
+        }
+        updateDeleteButtonVisibility();
+      });
+    }
+
+    // Add-by-click from sidebar
+    const addAtCenter = (obj) => {
+      const center = canvas.getCenter();
+      obj.set({ left: center.left, top: center.top });
+      canvas.add(obj);
+      canvas.setActiveObject(obj);
+      canvas.requestRenderAll();
+    };
+
+    const handleAddObject = (type) => {
+      if (type === 'chair-decor') {
+        addDecorChair();
+        return;
+      }
+      if (type === 'table-square' || type === 'table-circle' || type === 'chair-numbered') {
+        createTableOnServer(type);
+        return;
+      }
+      if (type === 'sofa-straight') {
+        const center = canvas.getCenter();
+        const length = 16; // 16 ячеек = 160px по умолчанию
+        const sofaModel = new RectSofa(center.left, center.top, 0, fromGridCells(length));
+        const payload = {
+          shape: 'sofa-straight',
+          x: center.left,
+          y: center.top,
+          angle: 0,
+          width: fromGridCells(length),
+          height: fromGridCells(SOFA_DEPTH),
+          metadata: {
+            type: 'RECT',
+            parts: sofaModel.parts.map(p => ({
+              id: p.id,
+              x: p.x,
+              y: p.y,
+              orientation: p.orientation,
+              length: p.getLengthCells(),
+              width: p.width
+            }))
+          }
+        };
+        postMapElement(payload);
+        return;
+      }
+      if (type === 'sofa-corner') {
+        const center = canvas.getCenter();
+        const lengthA = 16; // горизонтальная часть (160px)
+        const lengthB = 12; // вертикальная часть (120px)
+        const sofaModel = createCornerSofa(center.left, center.top, fromGridCells(lengthA), fromGridCells(lengthB));
+        const payload = {
+          shape: 'sofa-corner',
+          x: center.left,
+          y: center.top,
+          angle: 0,
+          width: fromGridCells(lengthA + SOFA_DEPTH),
+          height: fromGridCells(lengthB + SOFA_DEPTH),
+          metadata: {
+            type: 'L',
+            lengthA: lengthA,
+            lengthB: lengthB
+          }
+        };
+        postMapElement(payload);
+        return;
+      }
+      if (type === 'sofa-double') {
+        const center = canvas.getCenter();
+        const lengthA = 12; // левая часть (120px)
+        const lengthB = 20; // нижняя часть (200px)
+        const lengthC = 12; // правая часть (120px)
+        const sofaModel = createPSofa(center.left, center.top, fromGridCells(lengthA), fromGridCells(lengthB), fromGridCells(lengthC));
+        const payload = {
+          shape: 'sofa-double',
+          x: center.left,
+          y: center.top,
+          angle: 0,
+          width: fromGridCells(lengthB),
+          height: fromGridCells(lengthA + lengthC),
+          metadata: {
+            type: 'P',
+            lengthA: lengthA,
+            lengthB: lengthB,
+            lengthC: lengthC
+          }
+        };
+        postMapElement(payload);
+        return;
+      }
+      if (type === 'zone') {
+        const defaultName = window.prompt('Введите название зоны', 'Новая зона');
+        if (defaultName === null) {
+          return;
+        }
+        const zoneLabel = defaultName && defaultName.trim().length > 0 ? defaultName.trim() : 'Zone';
+        const center = canvas.getCenter();
+        const defaults = TABLE_DEFAULTS.zone;
+        const payload = {
+          shape: 'zone',
+          x: center.left,
+          y: center.top,
+          angle: 0,
+          width: defaults.width,
+          height: defaults.height,
+          metadata: { label: zoneLabel }
+        };
+        postMapElement(payload);
+        return;
+      }
+    };
+
+    const attachAddListeners = (elements) => {
+      elements.forEach(el => {
+      el.addEventListener('mouseenter', () => el.classList.add('active'));
+      el.addEventListener('mouseleave', () => el.classList.remove('active'));
+      el.addEventListener('click', () => {
+          const type = el.getAttribute('data-add');
+          handleAddObject(type);
+      });
+    });
+    };
+
+    attachAddListeners(Array.from(document.querySelectorAll('.pill[data-add]')));
+    attachAddListeners(Array.from(document.querySelectorAll('.table-card[data-add]')));
+
+    // Simple text tool (fixed style)
+    const addSimpleText = (x, y) => {
+      const input = window.prompt('Введите текст', '');
+      if (input === null) return;
+      const value = input.trim();
+      if (!value) return;
+      // Сохраняем текст как отдельный элемент схемы (shape: 'text'),
+      // чтобы он появлялся после перезагрузки и был привязан к этажу.
+      const payload = {
+        shape: 'text',
+        x,
+        y,
+        angle: 0,
+        // Начальная ширина текстового блока, чтобы её можно было ресайзить и сохранять
+        width: 240,
+        metadata: {
+          text: value,
+          floor: currentFloor
+        }
+      };
+      postMapElement(payload);
+    };
+
+    const SNAP_TOLERANCE = Math.tan(10 * Math.PI / 180); // ~10°
+    const SNAP_PROXIMITY = 12;
+    const MIN_WALL_SEGMENT_LENGTH = 15; // Минимальная длина сегмента стены (предотвращает "огрызки")
+    const snapPoint = (prev, point) => {
+      if (!prev) return point;
+      const dx = point.x - prev.x;
+      const dy = point.y - prev.y;
+      if (dx === 0 && dy === 0) return point;
+      const absDx = Math.abs(dx);
+      const absDy = Math.abs(dy);
+      const snapped = { ...point };
+      // Выравнивание относительно предыдущей точки: если линия почти горизонтальная или вертикальная
+      if (absDy <= absDx * SNAP_TOLERANCE) {
+        // Горизонтальная линия - выравниваем Y
+        snapped.y = prev.y;
+      } else if (absDx <= absDy * SNAP_TOLERANCE) {
+        // Вертикальная линия - выравниваем X
+        snapped.x = prev.x;
+      }
+      return snapped;
+    };
+
+    const saveWallToServer = async (poly, points) => {
+       if (!points || points.length < 2) {
+         return;
+       }
+       const payload = {
+         shape: 'wall',
+         x: points[0].x,
+         y: points[0].y,
+         angle: 0,
+         metadata: { points, floor: currentFloor },
+         points
+       };
+       try {
+         const response = await fetch('/api/map/tables', {
+           method: 'POST',
+           headers: { 'Content-Type': 'application/json' },
+           body: JSON.stringify(payload)
+         });
+         const data = await response.json();
+         if (!response.ok || !data.success) {
+           throw new Error(data.error || 'Не удалось сохранить стену');
+         }
+         poly.mapTableMeta = {
+           id: data.table.id,
+           shape: 'wall',
+           metadata: data.table.metadata || { points }
+         };
++        updateWallMetadata(poly);
+         mapTableObjects.set(data.table.id, poly);
+         canvas.requestRenderAll();
+       } catch (error) {
+         console.error('Ошибка сохранения стены:', error);
+       }
+    };
+
+    // Walls tool: polyline with nodes (click to add points, Enter/RightClick to finish)
+    let wallPoints = [];
+    let wallPoly = null;
+    let wallStartPoint = null;
+    let wallGuideLine = null;
+    let wallStartIndicator = null;
+    let lastWallEndPoint = null; // Последняя точка завершенной стены для продолжения рисования
+    const finishWall = (options = {}) => {
+      // Удаляем направляющую линию и индикатор
+      if (wallGuideLine) {
+        canvas.remove(wallGuideLine);
+        wallGuideLine = null;
+      }
+      if (wallStartIndicator) {
+        canvas.remove(wallStartIndicator);
+        wallStartIndicator = null;
+      }
+      
+      if (wallPoly) {
+        const finalPoints = wallPoints.slice();
+        if (finalPoints.length < 2) {
+          canvas.remove(wallPoly);
+        } else {
+          // Стену после рисования пересоздаём через createWallObject,
+          // чтобы формат точек совпадал с форматом загрузки из БД (абсолютные координаты)
+          canvas.remove(wallPoly);
+          const tempTable = {
+            id: -1,
+            metadata: { points: finalPoints, floor: currentFloor }
+          };
+          const newWall = createWallObject(tempTable);
+          if (newWall) {
+            canvas.add(newWall);
+            canvas.bringToFront(newWall);
+            saveWallToServer(newWall, finalPoints);
+            // Сохраняем последнюю точку для продолжения рисования
+            if (finalPoints.length > 0) {
+              lastWallEndPoint = { ...finalPoints[finalPoints.length - 1] };
+            }
+          }
+        }
+        wallPoly = null;
+        wallPoints = [];
+        canvas.requestRenderAll();
+      }
+      // Если явно попросили сбросить продолжение, очищаем lastWallEndPoint,
+      // чтобы следующая стена начиналась с новой точки, а не с крайней.
+      if (options.resetContinuation) {
+        lastWallEndPoint = null;
+      }
+      // restore interaction when finishing drawing
+      if (activeTool === 'walls') {
+        canvas.skipTargetFind = true;
+        canvas.selection = false;
+      }
+      wallStartPoint = null;
+    };
+    canvas.on('mouse:down', (opt) => {
+      // Специальная обработка для углового дивана - убеждаемся, что группа правильно определяется
+      if (opt.target) {
+        const mapGroup = getMapGroup(opt.target);
+      }
+      const p = canvas.getPointer(opt.e);
+      if (activeTool === 'walls') {
+        // Если начинаем новую стену и есть последняя точка предыдущей, используем её
+        let lastPoint = wallPoints.length > 0 ? wallPoints[wallPoints.length - 1] : null;
+        if (!lastPoint && !wallPoly && lastWallEndPoint) {
+          // Начинаем новую стену от последней точки предыдущей
+          lastPoint = lastWallEndPoint;
+          wallPoints.push({ ...lastWallEndPoint });
+        }
+        let snapped = snapPoint(lastPoint, { x: p.x, y: p.y });
+        if (!wallStartPoint) {
+          wallStartPoint = { ...snapped };
+        }
+        // Гарантируем полное выравнивание относительно последней точки
+        if (lastPoint) {
+          const dxToLast = snapped.x - lastPoint.x;
+          const dyToLast = snapped.y - lastPoint.y;
+          const absDxToLast = Math.abs(dxToLast);
+          const absDyToLast = Math.abs(dyToLast);
+          
+          // Если линия горизонтальная или вертикальная, полностью выравниваем координату
+          if (absDyToLast <= absDxToLast * SNAP_TOLERANCE) {
+            // Горизонтальная линия - Y точно равен Y последней точки
+            snapped.y = lastPoint.y;
+          } else if (absDxToLast <= absDyToLast * SNAP_TOLERANCE) {
+            // Вертикальная линия - X точно равен X последней точки
+            snapped.x = lastPoint.x;
+          }
+        }
+        // Проверяем выравнивание относительно начальной точки только если близко к ней
+        if (wallStartPoint && lastPoint) {
+          const distToStart = Math.hypot(snapped.x - wallStartPoint.x, snapped.y - wallStartPoint.y);
+          if (distToStart <= SNAP_PROXIMITY) {
+            snapped = { ...wallStartPoint };
+          }
+        }
+        // Финальная проверка: гарантируем полное выравнивание перед добавлением точки
+        // Это критично для предотвращения "огрызков"
+        if (lastPoint) {
+          const dxToLast = snapped.x - lastPoint.x;
+          const dyToLast = snapped.y - lastPoint.y;
+          const absDxToLast = Math.abs(dxToLast);
+          const absDyToLast = Math.abs(dyToLast);
+          const distToLast = Math.hypot(dxToLast, dyToLast);
+          
+          // МИНИМАЛЬНОЕ РАССТОЯНИЕ: не добавляем точку, если она слишком близко к последней
+          if (distToLast < MIN_WALL_SEGMENT_LENGTH) {
+            // Если точка слишком близко, не добавляем её (это предотвратит "огрызки")
+            return;
+          }
+          
+          // Если линия почти горизонтальная, Y должен быть точно равен Y последней точки
+          if (absDyToLast <= absDxToLast * SNAP_TOLERANCE) {
+            snapped.y = lastPoint.y;
+          }
+          // Если линия почти вертикальная, X должен быть точно равен X последней точки
+          if (absDxToLast <= absDyToLast * SNAP_TOLERANCE) {
+            snapped.x = lastPoint.x;
+          }
+        }
+        if (wallStartPoint && wallPoints.length >= 2) {
+          const distToStart = Math.hypot(snapped.x - wallStartPoint.x, snapped.y - wallStartPoint.y);
+          if (distToStart <= SNAP_PROXIMITY) {
+            wallPoints.push({ ...wallStartPoint });
+            wallPoly.set({ points: wallPoints.slice() });
+            // Замкнули фигуру (замкнутый контур) — начинаем следующую стену с нуля,
+            // а не продолжаем от последней точки
+            finishWall({ resetContinuation: true });
+            return;
+          }
+        }
+        wallPoints.push(snapped);
+        if (!wallPoly) {
+          wallPoly = new fabric.Polyline(wallPoints, {
+            stroke: '#1EA276',
+            strokeWidth: 3,
+            strokeUniform: true,
+            fill: null,
+            selectable: false,
+            evented: false,
+            objectCaching: false,
+            noScaleCache: true
+          });
+          canvas.add(wallPoly);
+          canvas.bringToFront(wallPoly);
+        } else {
+          wallPoly.set({ points: wallPoints.slice() });
+          wallPoly.dirty = true; wallPoly.setCoords();
+          canvas.requestRenderAll();
+        }
+      }
+    });
+    canvas.on('mouse:move', (opt) => {
+      if (activeTool === 'walls') {
+        const pointer = canvas.getPointer(opt.e);
+        const lastPoint = wallPoints.length > 0 ? wallPoints[wallPoints.length - 1] : null;
+        
+        // Если нет последней точки, удаляем направляющую линию
+        if (!lastPoint) {
+          if (wallGuideLine) {
+            canvas.remove(wallGuideLine);
+            wallGuideLine = null;
+          }
+          if (wallStartIndicator) {
+            canvas.remove(wallStartIndicator);
+            wallStartIndicator = null;
+          }
+          return;
+        }
+        
+        // Применяем snap к текущей позиции курсора
+        let snapped = snapPoint(lastPoint, { x: pointer.x, y: pointer.y });
+        
+        // Вычисляем расстояния и углы
+        const dxToLast = snapped.x - lastPoint.x;
+        const dyToLast = snapped.y - lastPoint.y;
+        const absDxToLast = Math.abs(dxToLast);
+        const absDyToLast = Math.abs(dyToLast);
+        
+        // Принудительно выравниваем для горизонтальных/вертикальных линий
+        if (absDyToLast <= absDxToLast * SNAP_TOLERANCE) {
+          snapped.y = lastPoint.y;
+        } else if (absDxToLast <= absDyToLast * SNAP_TOLERANCE) {
+          snapped.x = lastPoint.x;
+        }
+        
+        // Проверяем близость к начальной точке
+        let distToStart = Infinity;
+        if (wallStartPoint) {
+          distToStart = Math.hypot(snapped.x - wallStartPoint.x, snapped.y - wallStartPoint.y);
+          if (distToStart <= SNAP_PROXIMITY) {
+            snapped = { ...wallStartPoint };
+          }
+        }
+        
+        // Удаляем старую направляющую линию
+        if (wallGuideLine) {
+          canvas.remove(wallGuideLine);
+          wallGuideLine = null;
+        }
+        
+        // Создаем новую направляющую линию для горизонтальных/вертикальных линий
+        const finalDx = snapped.x - lastPoint.x;
+        const finalDy = snapped.y - lastPoint.y;
+        const finalAbsDx = Math.abs(finalDx);
+        const finalAbsDy = Math.abs(finalDy);
+        
+        // Показываем направляющую линию всегда, когда курсор движется от последней точки
+        // Определяем, какая линия ближе к горизонтальной или вертикальной
+        if (finalAbsDy <= finalAbsDx * SNAP_TOLERANCE) {
+          // Горизонтальная линия - показываем от lastPoint до snapped.x
+          wallGuideLine = new fabric.Line(
+            [lastPoint.x, lastPoint.y, snapped.x, lastPoint.y],
+            {
+              stroke: '#9ca3af',
+              strokeWidth: 1.5,
+              strokeDashArray: [5, 5],
+              selectable: false,
+              evented: false,
+              excludeFromExport: true,
+              opacity: 0.8
+            }
+          );
+          canvas.add(wallGuideLine);
+          canvas.bringToFront(wallGuideLine);
+        } else if (finalAbsDx <= finalAbsDy * SNAP_TOLERANCE) {
+          // Вертикальная линия - показываем от lastPoint до snapped.y
+          wallGuideLine = new fabric.Line(
+            [lastPoint.x, lastPoint.y, lastPoint.x, snapped.y],
+            {
+              stroke: '#9ca3af',
+              strokeWidth: 1.5,
+              strokeDashArray: [5, 5],
+              selectable: false,
+              evented: false,
+              excludeFromExport: true,
+              opacity: 0.8
+            }
+          );
+          canvas.add(wallGuideLine);
+          canvas.bringToFront(wallGuideLine);
+        } else {
+          // Диагональная линия - показываем направляющую от lastPoint до snapped
+          wallGuideLine = new fabric.Line(
+            [lastPoint.x, lastPoint.y, snapped.x, snapped.y],
+            {
+              stroke: '#9ca3af',
+              strokeWidth: 1.5,
+              strokeDashArray: [5, 5],
+              selectable: false,
+              evented: false,
+              excludeFromExport: true,
+              opacity: 0.8
+            }
+          );
+          canvas.add(wallGuideLine);
+          canvas.bringToFront(wallGuideLine);
+        }
+        
+        // Показываем индикатор начальной точки
+        if (wallStartPoint) {
+          if (distToStart <= SNAP_PROXIMITY) {
+            if (!wallStartIndicator) {
+              wallStartIndicator = new fabric.Rect({
+                left: wallStartPoint.x - 6,
+                top: wallStartPoint.y - 6,
+                width: 12,
+                height: 12,
+                stroke: '#11998E',
+                strokeWidth: 1.5,
+                fill: 'rgba(17,153,142,0.15)',
+                selectable: false,
+                evented: false
+              });
+              canvas.add(wallStartIndicator);
+            }
+          } else if (wallStartIndicator) {
+            canvas.remove(wallStartIndicator);
+            wallStartIndicator = null;
+          }
+        }
+        
+        // Обновляем предпросмотр полилинии
+        if (wallPoly) {
+          const previewPoints = wallPoints.concat([snapped]);
+          wallPoly.set({ points: previewPoints });
+          wallPoly.dirty = true;
+          wallPoly.setCoords();
+        canvas.requestRenderAll();
+        }
+      }
+    });
+    canvas.on('mouse:up', () => {});
+    canvas.upperCanvasEl.addEventListener('contextmenu', (e) => { 
+      e.preventDefault(); 
+      if (activeTool==='walls') finishWall({ resetContinuation: true }); 
+    });
+    document.addEventListener('keydown', (e) => { 
+      if (activeTool==='walls' && (e.key==='Enter' || e.key==='Escape')) { 
+        finishWall({ resetContinuation: true }); 
+      }
+    });
+
+    // Edit text on double click
+    canvas.on('mouse:dblclick', (e) => {
+      const target = e.target;
+      if (!target) return;
+
+      const tableGroup = getMapGroup(target);
+      if (tableGroup && ['square', 'circle'].includes(tableGroup.mapTableMeta.shape)) {
+        const current = tableGroup.mapTableMeta.metadata?.capacity ?? '';
+        const input = window.prompt('Введите вместимость', current === undefined ? '' : String(current));
+        if (input === null) return;
+        const trimmed = input.trim();
+        if (trimmed === '') {
+          applyCapacityToGroup(tableGroup, null);
+          syncTableUpdate(tableGroup, { metadata: { ...tableGroup.mapTableMeta.metadata } });
+          return;
+        }
+        const capacityNumber = Number(trimmed);
+        if (!Number.isFinite(capacityNumber) || capacityNumber < 0) {
+          alert('Введите корректное неотрицательное число');
+          return;
+        }
+        const capacityValue = Math.round(capacityNumber);
+        applyCapacityToGroup(tableGroup, capacityValue);
+        syncTableUpdate(tableGroup, { metadata: { ...tableGroup.mapTableMeta.metadata } });
+        return;
+      }
+
+      if (target?.sofaHandleKind) {
+        return;
+      }
+      if (target.type === 'group') {
+        const txt = target._objects.find(o => o.type === 'textbox');
+        if (txt) {
+          txt.enterEditing();
+          txt.selectAll();
+        }
+      } else if (target.type === 'textbox') {
+        target.enterEditing();
+        target.selectAll();
+      }
+    });
+
+    // Grouping/Copy/Paste
+    // reuse global canvasClipboard
+    document.addEventListener('keydown', (e) => {
+      const meta = e.ctrlKey || e.metaKey;
+      if (meta && e.key.toLowerCase()==='g' && !e.shiftKey) { e.preventDefault(); const sel = canvas.getActiveObjects(); if (sel.length>1){ const g=new fabric.Group(sel); sel.forEach(o=>canvas.remove(o)); canvas.add(g).setActiveObject(g); canvas.requestRenderAll(); } }
+      if (meta && e.key.toLowerCase()==='g' && e.shiftKey) { e.preventDefault(); const obj=canvas.getActiveObject(); if (obj && obj.type==='group'){ const items=obj._objects; obj._restoreObjectsState(); canvas.remove(obj); items.forEach(o=>canvas.add(o)); canvas.discardActiveObject(); canvas.requestRenderAll(); } }
+      if (meta && e.key.toLowerCase()==='c') { const obj=canvas.getActiveObject(); if (obj) obj.clone(o=>canvasClipboard=o); }
+      if (meta && e.key.toLowerCase()==='v') { if (!canvasClipboard) return; canvasClipboard.clone(clone=>{ canvas.discardActiveObject(); clone.set({ left:(clone.left||0)+20, top:(clone.top||0)+20, evented:true }); if (clone.type==='activeSelection'){ clone.canvas=canvas; clone.forEachObject(o=>canvas.add(o)); clone.setCoords(); } else { canvas.add(clone); } canvas.setActiveObject(clone); canvas.requestRenderAll(); }); }
+    });
+
+    canvas.on('object:scaling', (event) => {
+      const obj = event.target;
+      if (obj?.mapTableMeta) {
+        // Для текста обрабатываем изменение ширины через scaleX
+        if (obj.mapTableMeta.shape === 'text') {
+          // Сохраняем базовую ширину при первом масштабировании
+          if (!obj._baseWidth) {
+            obj._baseWidth = obj.width || 240;
+          }
+          
+          // При масштабировании по X обновляем ширину и растягиваем текст
+          if (obj.scaleX !== 1) {
+            const newWidth = obj._baseWidth * obj.scaleX;
+            const scaleFactor = obj.scaleX;
+            
+            // Обновляем ширину и применяем charSpacing для растягивания
+            obj.set({
+              width: newWidth,
+              scaleX: 1,
+              charSpacing: (scaleFactor - 1) * 100
+            });
+            obj._baseWidth = newWidth; // Обновляем базовую ширину
+            obj.setCoords();
+            canvas.requestRenderAll();
+          }
+          
+          // При масштабировании по Y обновляем fontSize
+          if (obj.scaleY !== 1) {
+            if (!obj._baseFontSize) {
+              obj._baseFontSize = obj.fontSize || 18;
+            }
+            const newFontSize = obj._baseFontSize * obj.scaleY;
+            obj.set({
+              fontSize: newFontSize,
+              scaleY: 1
+            });
+            obj._baseFontSize = newFontSize; // Обновляем базовый размер шрифта
+            obj.setCoords();
+            canvas.requestRenderAll();
+          }
+          return;
+        }
+        // Для остальных объектов не трогаем масштаб внутренних надписей
+        maintainLabelSize(obj);
+        // Для диванов сохраняем исходные размеры и координаты при первом масштабировании
+        if ((obj.mapTableMeta.shape === 'sofa-straight' || obj.mapTableMeta.shape === 'sofa-corner' || obj.mapTableMeta.shape === 'sofa-double') && obj.sofaModel) {
+          if (!obj._sofaScalingBase) {
+            // Сохраняем исходные размеры группы и частей, а также координаты
+            obj._sofaScalingBase = {
+              width: obj.getScaledWidth(),
+              height: obj.getScaledHeight(),
+              parts: obj.sofaModel.parts.map(p => ({
+                id: p.id,
+                x: p.x,
+                y: p.y,
+                length: p.length,
+                width: p.width
+              }))
+            };
+          }
+        }
+      }
+    });
+
+    canvas.on('object:modified', (event) => {
+      const obj = event.target;
+      if (obj?.mapTableMeta) {
+        // Для текста не перекручиваем внутренние надписи и размеры
+        if (obj.mapTableMeta.shape !== 'text') {
+          maintainLabelSize(obj);
+        }
+        if (obj.mapTableMeta.shape === 'wall') {
+          updateWallMetadata(obj);
+        }
+        // Сохраняем изменения на сервере
+        // Для диванов сохраняем позицию и обновляем метаданные
+        if (obj.mapTableMeta.shape === 'sofa-straight' || obj.mapTableMeta.shape === 'sofa-corner' || obj.mapTableMeta.shape === 'sofa-double') {
+          // Обновляем размеры частей при изменении размера группы
+          if (obj.sofaModel && obj.sofaModel.parts && obj._sofaScalingBase) {
+            const baseWidth = obj._sofaScalingBase.width;
+            const baseHeight = obj._sofaScalingBase.height;
+            const newWidth = obj.getScaledWidth();
+            const newHeight = obj.getScaledHeight();
+            
+            // Вычисляем коэффициенты масштабирования
+            const scaleFactorX = newWidth / baseWidth;
+            const scaleFactorY = newHeight / baseHeight;
+            
+            // Сохраняем текущую позицию и угол группы
+            const savedLeft = obj.left;
+            const savedTop = obj.top;
+            const savedAngle = obj.angle || 0;
+            
+            // Сохраняем исходные координаты первой части (опорной точки) из базы
+            const baseFirstPart = obj._sofaScalingBase.parts[0];
+            const baseFirstPartX = baseFirstPart.x;
+            const baseFirstPartY = baseFirstPart.y;
+            
+            // Обновляем размеры и координаты частей пропорционально
+            obj.sofaModel.parts.forEach((part, index) => {
+              const basePart = obj._sofaScalingBase.parts[index];
+              if (basePart) {
+                // Обновляем координаты относительно первой части из базы
+                if (index === 0) {
+                  // Первая часть остается на исходной позиции
+                  part.x = baseFirstPartX;
+                  part.y = baseFirstPartY;
+                } else {
+                  // Остальные части масштабируются относительно первой части из базы
+                  const dx = basePart.x - baseFirstPartX;
+                  const dy = basePart.y - baseFirstPartY;
+                  part.x = baseFirstPartX + dx * scaleFactorX;
+                  part.y = baseFirstPartY + dy * scaleFactorY;
+                }
+                
+                // Определяем, по какой оси растягивается часть
+                if (part.orientation === 0 || part.orientation === 180) {
+                  // Горизонтальная часть - масштабируем по X
+                  part.length = basePart.length * scaleFactorX;
+                } else {
+                  // Вертикальная часть - масштабируем по Y
+                  part.length = basePart.length * scaleFactorY;
+                }
+                // Глубина (width) масштабируем по перпендикулярной оси
+                if (part.orientation === 0 || part.orientation === 180) {
+                  part.width = toGridCells(fromGridCells(basePart.width) * scaleFactorY);
+                } else {
+                  part.width = toGridCells(fromGridCells(basePart.width) * scaleFactorX);
+                }
+              }
+            });
+            
+            // Удаляем старую группу с canvas
+            canvas.remove(obj);
+            
+            // Создаем новую группу с обновленными размерами и координатами
+            const newGroup = createSofaFabricObject(obj.sofaModel, obj.mapTableMeta.id);
+            newGroup.set({
+              left: savedLeft,
+              top: savedTop,
+              angle: savedAngle,
+              scaleX: 1,
+              scaleY: 1
+            });
+            newGroup.setCoords();
+            
+            // Добавляем новую группу на canvas
+            canvas.add(newGroup);
+            canvas.setActiveObject(newGroup);
+            
+            // Обновляем ссылку в mapTableObjects
+            mapTableObjects.set(obj.mapTableMeta.id, newGroup);
+            
+            // Удаляем временные данные масштабирования
+            delete obj._sofaScalingBase;
+            
+            // Обновляем метаданные с новыми размерами
+            newGroup.mapTableMeta.metadata = {
+              type: newGroup.sofaModel.type,
+              parts: newGroup.sofaModel.parts.map(p => ({
+                id: p.id,
+                x: p.x,
+                y: p.y,
+                orientation: p.orientation,
+                length: p.getLengthCells(),
+                width: p.width
+              }))
+            };
+            
+            // Сохраняем на сервер
+            syncTableUpdate(newGroup);
+            canvas.requestRenderAll();
+          } else {
+            // Если не было масштабирования, просто обновляем метаданные
+            if (obj.sofaModel && obj.sofaModel.parts) {
+              obj.mapTableMeta.metadata = {
+                type: obj.sofaModel.type,
+                parts: obj.sofaModel.parts.map(p => ({
+                  id: p.id,
+                  x: p.x,
+                  y: p.y,
+                  orientation: p.orientation,
+                  length: p.getLengthCells(),
+                  width: p.width
+                }))
+              };
+            }
+            syncTableUpdate(obj);
+          }
+        } else {
+          syncTableUpdate(obj);
+        }
+        if (obj.mapTableMeta.shape === 'wall') {
+          updateWallHandlesPosition(obj);
+        }
+      }
+    });
+
+    // Дополнительно сохраняем координаты при завершении перемещения дивана
+    // Старые переменные для диванов удалены
+    canvas.on('object:moving', (event) => {
+      const obj = getMapGroup(event.target);
+      // Старая логика для sofa-double удалена
+      if (obj && obj.mapTableMeta && obj.mapTableMeta.shape === 'wall') {
+        updateWallHandlesPosition(obj);
+      }
+    });
+
+    canvas.on('mouse:up', () => {
+      // Сохраняем позиции диванов после перемещения
+      const activeObject = canvas.getActiveObject();
+      if (activeObject && activeObject.mapTableMeta) {
+        const shape = activeObject.mapTableMeta.shape;
+        if (shape === 'sofa-straight' || shape === 'sofa-corner' || shape === 'sofa-double') {
+          // Обновляем координаты частей на основе новой позиции группы
+          if (activeObject.sofaModel && activeObject.sofaModel.parts) {
+            const groupLeft = activeObject.left;
+            const groupTop = activeObject.top;
+            const groupAngle = activeObject.angle || 0;
+            
+            // Обновляем координаты частей относительно новой позиции группы
+            // (пока оставляем как есть, так как части уже в локальных координатах группы)
+            
+            // Обновляем метаданные
+            activeObject.mapTableMeta.metadata = {
+              type: activeObject.sofaModel.type,
+              parts: activeObject.sofaModel.parts.map(p => ({
+                id: p.id,
+                x: p.x,
+                y: p.y,
+                orientation: p.orientation,
+                length: p.getLengthCells(),
+                width: p.width
+              }))
+            };
+          }
+          
+          // Сохраняем на сервер
+          syncTableUpdate(activeObject);
+        }
+      }
+    });
+
+    // Загружаем сохраненные этажи при инициализации (если еще не загружены)
+    if (!document.querySelector('.tab:not(:first-child)')) {
+      loadFloorsList();
+    }
+    
+    // Устанавливаем текущий этаж из активной вкладки
+    const activeTab = document.querySelector('.tab.active');
+    if (activeTab) {
+      currentFloor = activeTab.textContent.trim();
+    }
+    
+    // Загружаем элементы после инициализации canvas
+    setTimeout(() => {
+      loadMapTables();
+    }, 200);
+
+    // Zoom label sync
+    const zoomLabel = document.getElementById('zoomLabel');
+    canvas.on('mouse:wheel', (opt) => { let z = canvas.getZoom(); z *= Math.pow(0.999, opt.e.deltaY); if (z<0.2) z=0.2; if (z>4) z=4; canvas.zoomToPoint(new fabric.Point(opt.e.offsetX,opt.e.offsetY), z); opt.e.preventDefault(); opt.e.stopPropagation(); zoomLabel.textContent = `${Math.round(canvas.getZoom()*100)}%`; });
+
+    // Преобразование между локальными и абсолютными координатами для стен
+    const getWallAbsolutePoints = (polyline) => {
+      const scaleX = polyline.scaleX || 1;
+      const scaleY = polyline.scaleY || 1;
+      return polyline.points.map((pt) => ({
+        x: polyline.left + pt.x * scaleX,
+        y: polyline.top + pt.y * scaleY
+      }));
+    };
+
+    const setWallPointFromHandle = (polyline, handle) => {
+      const scaleX = polyline.scaleX || 1;
+      const scaleY = polyline.scaleY || 1;
+      const localX = (handle.left - polyline.left) / scaleX;
+      const localY = (handle.top - polyline.top) / scaleY;
+      polyline.points[handle.pointIndex].x = localX;
+      polyline.points[handle.pointIndex].y = localY;
+    };
+
+    const updateWallMetadata = (polyline) => {
+      if (!polyline.mapTableMeta) {
+        polyline.mapTableMeta = { shape: 'wall', metadata: {} };
+      } else if (!polyline.mapTableMeta.metadata) {
+        polyline.mapTableMeta.metadata = {};
+      }
+      const points = getWallAbsolutePoints(polyline);
+      polyline.mapTableMeta.metadata = { ...(polyline.mapTableMeta.metadata || {}), points };
+    };
+
+    const updateWallHandlesPosition = (polyline) => {
+      if (!polyline._wallHandles) return;
+      const points = getWallAbsolutePoints(polyline);
+      polyline._wallHandles.forEach((handle, index) => {
+        handle.set({ left: points[index].x, top: points[index].y });
+        handle.setCoords();
+      });
+    };
+
+    let activeWall = null;
+
+    const hideWallHandles = (polyline) => {
+      if (!polyline || !polyline._wallHandles) return;
+      polyline._wallHandles.forEach((handle) => {
+        canvas.remove(handle);
+      });
+      polyline._wallHandles = null;
+      if (activeWall === polyline) {
+        activeWall = null;
+      }
+    };
+
+    const showWallHandles = (polyline) => {
+      if (!polyline) return;
+      if (activeWall && activeWall !== polyline) {
+        hideWallHandles(activeWall);
+      }
+      hideWallHandles(polyline);
+      const points = getWallAbsolutePoints(polyline);
+      polyline._wallHandles = points.map((pt, index) => {
+        const handle = new fabric.Circle({
+          left: pt.x,
+          top: pt.y,
+          radius: 6,
+          fill: '#1EA276',
+          stroke: '#ffffff',
+          strokeWidth: 2,
+          originX: 'center',
+          originY: 'center',
+          hasBorders: false,
+          hasControls: false,
+          lockScalingX: true,
+          lockScalingY: true,
+          lockRotation: true,
+          hoverCursor: 'pointer'
+        });
+        handle.wallHandle = true;
+        handle.wall = polyline;
+        handle.pointIndex = index;
+        handle.on('moving', (evt) => {
+          const h = evt.target;
+          if (!h.wall) return;
+          setWallPointFromHandle(h.wall, h);
+          h.wall.dirty = true;
+          h.wall.setCoords();
+          updateWallMetadata(h.wall);
+          updateWallHandlesPosition(h.wall);
+          canvas.requestRenderAll();
+        });
+        handle.on('modified', (evt) => {
+          const h = evt.target;
+          if (!h.wall) return;
+          updateWallMetadata(h.wall);
+          syncTableUpdate(h.wall, { metadata: { ...(h.wall.mapTableMeta.metadata || {}) } });
+        });
+        canvas.add(handle);
+        return handle;
+      });
+      activeWall = polyline;
+      canvas.requestRenderAll();
+    };
+
+    canvas.on('selection:created', (e) => {
+      const primary = e.selected && e.selected[0];
+      if (primary?.sofaHandleKind || primary?.sofaCornerHandleKind || primary?.wallHandle) {
+        return;
+      }
+      // Для стен используем сам объект, так как стена не является группой
+      const obj = primary?.mapTableMeta ? primary : getMapGroup(primary);
+      if (obj && obj.mapTableMeta) {
+        if (obj.mapTableMeta.shape === 'wall') {
+          showWallHandles(obj);
+        } else {
+          if (activeWall) {
+            hideWallHandles(activeWall);
+          }
+        }
+      } else {
+        if (activeWall) hideWallHandles(activeWall);
+      }
+      updateDeleteButtonVisibility();
+    });
+
+    canvas.on('selection:updated', (e) => {
+      const primary = e.selected && e.selected[0];
+      if (primary?.sofaHandleKind || primary?.sofaCornerHandleKind || primary?.wallHandle) {
+        return;
+      }
+      // Для стен используем сам объект, так как стена не является группой
+      const obj = primary?.mapTableMeta ? primary : getMapGroup(primary);
+      if (obj && obj.mapTableMeta) {
+        if (obj.mapTableMeta.shape === 'wall') {
+          showWallHandles(obj);
+        } else {
+          if (activeWall) {
+            hideWallHandles(activeWall);
+          }
+        }
+      } else {
+        if (activeWall) hideWallHandles(activeWall);
+      }
+      updateDeleteButtonVisibility();
+    });
+
+    canvas.on('selection:cleared', () => {
+      if (activeWall) hideWallHandles(activeWall);
+      updateDeleteButtonVisibility();
+    });
+
+    // Edit text on double click
+    canvas.on('mouse:dblclick', (e) => {
+      const target = e.target;
+      if (!target) return;
+
+      const tableGroup = getMapGroup(target);
+      if (tableGroup && ['square', 'circle'].includes(tableGroup.mapTableMeta.shape)) {
+        const current = tableGroup.mapTableMeta.metadata?.capacity ?? '';
+        const input = window.prompt('Введите вместимость', current === undefined ? '' : String(current));
+        if (input === null) return;
+        const trimmed = input.trim();
+        if (trimmed === '') {
+          applyCapacityToGroup(tableGroup, null);
+          syncTableUpdate(tableGroup, { metadata: { ...tableGroup.mapTableMeta.metadata } });
+          return;
+        }
+        const capacityNumber = Number(trimmed);
+        if (!Number.isFinite(capacityNumber) || capacityNumber < 0) {
+          alert('Введите корректное неотрицательное число');
+          return;
+        }
+        const capacityValue = Math.round(capacityNumber);
+        applyCapacityToGroup(tableGroup, capacityValue);
+        syncTableUpdate(tableGroup, { metadata: { ...tableGroup.mapTableMeta.metadata } });
+        return;
+      }
+
+      if (target.type === 'group') {
+        const txt = target._objects.find(o => o.type === 'textbox');
+        if (txt) {
+          txt.enterEditing();
+          txt.selectAll();
+        }
+      } else if (target.type === 'textbox') {
+        target.enterEditing();
+        target.selectAll();
+      }
+    });
+
+    // Grouping/Copy/Paste
+    // reuse global canvasClipboard
+  });
+
+  // Mobile functions
+  function toggleMobileSearch() {
+    const modal = document.getElementById('mobileSearchModal');
+    const isVisible = modal.style.display === 'block';
+    modal.style.display = isVisible ? 'none' : 'block';
+    
+    if (!isVisible) {
+      document.getElementById('mobileSearchInput').focus();
+    }
+  }
+
   function toggleMobileSidebar() {
     const sidebar = document.getElementById('mobileSidebar');
     const overlay = document.getElementById('mobileSidebarOverlay');
     
-    sidebar.classList.toggle('open');
-    overlay.classList.toggle('show');
+    sidebar.classList.add('open');
+    overlay.classList.add('show');
   }
 
   function closeMobileSidebar() {
@@ -411,177 +3227,5 @@
     sidebar.classList.remove('open');
     overlay.classList.remove('show');
   }
-
-  // Mobile search functions
-  function toggleMobileSearch() {
-    const modal = document.getElementById('mobileSearchModal');
-    const isVisible = modal.style.display === 'block';
-    
-    if (isVisible) {
-      modal.style.display = 'none';
-    } else {
-      modal.style.display = 'block';
-      document.getElementById('mobileSearchInput').focus();
-    }
-  }
-
-  // Close mobile search modal when clicking outside
-  document.addEventListener('click', function(e) {
-    const modal = document.getElementById('mobileSearchModal');
-    const searchBtn = document.querySelector('.mobile-search-btn');
-    const searchResults = document.getElementById('search-results');
-    
-    // Проверяем, что клик не по модальному окну, кнопке поиска или результатам поиска
-    if (modal && modal.style.display === 'block' && 
-        !modal.contains(e.target) && 
-        !searchBtn.contains(e.target) && 
-        !searchResults.contains(e.target)) {
-      modal.style.display = 'none';
-      searchResults.style.display = 'none';
-    }
-  });
-
-  // Search functionality
-  document.addEventListener('DOMContentLoaded', function() {
-    const searchBox = document.querySelector('.search-box');
-    const searchResults = document.getElementById('search-results');
-    
-    // Данные клиентов из сервера
-    const clientsData = [
-        {% for c in contacts %}
-        {
-            id: {{ c.id }},
-            firstName: "{{ c.first_name or '' }}",
-            lastName: "{{ c.last_name or '' }}",
-            phone: "{{ c.phone or '' }}",
-            lastBookingDate: "{{ client_stats[c.id].last_visit_str or '' }}",
-            lastBookingTime: "",
-            lastBookingStatus: "{{ client_stats[c.id].last_booking_status or '' }}",
-            visitsCount: {{ client_stats[c.id].visits_confirmed or 0 }},
-            averageSpend: {{ client_stats[c.id].avg_spend or 0 }}
-        }{% if not loop.last %},{% endif %}
-        {% endfor %}
-    ];
-
-    function searchClients(query) {
-        if (!query || query.trim().length < 2) {
-            searchResults.style.display = 'none';
-            return;
-        }
-
-        const searchTerm = query.toLowerCase().trim();
-        const results = clientsData.filter(client => {
-            const fullName = `${client.firstName} ${client.lastName}`.toLowerCase();
-            const phone = client.phone.toLowerCase();
-            
-            return fullName.includes(searchTerm) || 
-                   phone.includes(searchTerm) ||
-                   client.firstName.toLowerCase().includes(searchTerm) ||
-                   client.lastName.toLowerCase().includes(searchTerm);
-        });
-
-        displaySearchResults(results);
-    }
-
-    function displaySearchResults(results) {
-        const resultsContent = document.querySelector('.search-results-content');
-        resultsContent.innerHTML = '';
-
-        if (results.length === 0) {
-            resultsContent.innerHTML = '<div style="padding: 20px; text-align: center; color: #6b7280; font-family: \'Manrope\', sans-serif; font-size: 14px;">Nema rezultata pretrage</div>';
-        } else {
-            results.forEach(client => {
-                const resultItem = createSearchResultItem(client);
-                resultsContent.appendChild(resultItem);
-            });
-        }
-
-        searchResults.style.display = 'block';
-    }
-
-    // Функция создания элемента результата
-    function createSearchResultItem(client) {
-        const item = document.createElement('div');
-        item.className = 'search-result-item';
-        item.onclick = () => window.location.href = `/clients/${client.id}`;
-
-        const statusText = getStatusText(client.lastBookingStatus);
-        const statusClass = getStatusClass(client.lastBookingStatus);
-
-        const lastBookingInfo = client.lastBookingDate ? 
-            `<div class="search-result-date">${client.lastBookingDate}</div>
-             ${client.lastBookingStatus ? `<div class="search-result-status ${statusClass}">${statusText}</div>` : ''}` :
-            '<div class="search-result-date" style="color: #9ca3af; font-style: italic;">Nema rezervacije</div>';
-
-        const phoneInfo = client.phone ? 
-            `<div class="search-result-phone">${client.phone}</div>` :
-            '<div class="search-result-phone" style="color: #9ca3af; font-style: italic;">Nema telefona</div>';
-
-        item.innerHTML = `
-            <div class="search-result-main">
-                <div class="search-result-name">${client.firstName} ${client.lastName}</div>
-                ${phoneInfo}
-                <div class="search-result-last-booking">
-                    ${lastBookingInfo}
-                </div>
-            </div>
-        `;
-
-        return item;
-    }
-
-    // Функция получения текста статуса
-    function getStatusText(status) {
-        const statusMap = {
-            'dogovoreno': 'Dogovoreno',
-            'na_cekaju': 'Na čekanju',
-            'nacekanju': 'Na čekanju',
-            'potvrdjeno': 'Potvrđeno',
-            'otkazano': 'Otkazano',
-            'nisu': 'Nisu došli',
-            'dosli': 'Došli'
-        };
-        return statusMap[status] || status;
-    }
-
-    // Функция получения CSS класса статуса
-    function getStatusClass(status) {
-        const classMap = {
-            'dogovoreno': 'dogovoreno',
-            'na_cekaju': 'na-cekaju',
-            'nacekanju': 'na-cekaju',
-            'potvrdjeno': 'potvrdjeno',
-            'otkazano': 'otkazano',
-            'nisu': 'nisu-dosli',
-            'dosli': 'dosli'
-        };
-        return classMap[status] || '';
-    }
-
-    // Desktop search
-    if (searchBox) {
-      searchBox.addEventListener('input', function() {
-        searchClients(this.value);
-      });
-
-      searchBox.addEventListener('blur', function() {
-        if (!this.value.trim()) {
-          setTimeout(() => {
-            if (!this.value.trim()) {
-              searchResults.style.display = 'none';
-            }
-          }, 200);
-        }
-      });
-    }
-
-    // Mobile search
-    const mobileSearchInput = document.getElementById('mobileSearchInput');
-    if (mobileSearchInput) {
-      mobileSearchInput.addEventListener('input', function() {
-        searchClients(this.value);
-      });
-    }
-  });
 </script>
 {% endblock %}

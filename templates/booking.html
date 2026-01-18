@@ -324,6 +324,11 @@
     flex-wrap: nowrap !important;
     padding: 10px 20px 5px 20px !important;
     gap: 15px !important;
+    justify-content: space-between !important;
+  }
+  
+  .mobile-table-settings-container {
+    flex-shrink: 0;
   }
   
   .mobile-compact-window .guests-info {
@@ -948,11 +953,341 @@
     font-size: 16px;
     white-space: normal;
     word-wrap: break-word;
+    position: sticky;
+    top: 0;
+    z-index: 10;
+    cursor: pointer;
+  }
+  
+  /* Индикатор активного фильтра */
+  .filter-indicator {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    background: #2CAB5C;
+    color: white;
+    border-radius: 12px;
+    min-width: 24px;
+    height: 24px;
+    padding: 0 8px;
+    font-size: 12px;
+    font-weight: 600;
+    margin-left: 8px;
+    position: relative;
+  }
+  
+  .filter-indicator .filter-close {
+    position: absolute;
+    top: -6px;
+    right: -6px;
+    width: 16px;
+    height: 16px;
+    background: #11998E;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    font-size: 10px;
+    color: white;
+    line-height: 1;
+    border: 2px solid white;
+  }
+  
+  .filter-indicator .filter-close:hover {
+    background: #0d7a70;
+  }
+  
+  /* Индикатор сортировки - стрелочка в зеленом кружке */
+  .sort-indicator {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    background: #2CAB5C;
+    color: white;
+    border-radius: 50%;
+    width: 24px;
+    height: 24px;
+    font-size: 12px;
+    font-weight: 600;
+    margin-left: 8px;
+    cursor: pointer;
+    transition: background 0.2s;
+  }
+  
+  .sort-indicator:hover {
+    background: #11998E;
+  }
+  
+  .sort-indicator.asc::before {
+    content: '▲';
+  }
+  
+  .sort-indicator.desc::before {
+    content: '▼';
+  }
+  
+  /* Модальное окно для фильтров - улучшенный дизайн */
+  .column-filter-modal {
+    display: none;
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.6);
+    backdrop-filter: blur(4px);
+    z-index: 3000;
+    align-items: center;
+    justify-content: center;
+    animation: fadeIn 0.2s ease;
+  }
+  
+  @keyframes fadeIn {
+    from {
+      opacity: 0;
+    }
+    to {
+      opacity: 1;
+    }
+  }
+  
+  .column-filter-modal.show {
+    display: flex;
+  }
+  
+  .column-filter-modal-content {
+    position: relative;
+    width: 560px;
+    max-width: 90%;
+    max-height: 85vh;
+    background: #FFFFFF;
+    border: none;
+    border-radius: 24px;
+    padding: 0;
+    box-sizing: border-box;
+    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+    animation: slideUp 0.3s ease;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+  }
+  
+  @keyframes slideUp {
+    from {
+      transform: translateY(20px);
+      opacity: 0;
+    }
+    to {
+      transform: translateY(0);
+      opacity: 1;
+    }
+  }
+  
+  .column-filter-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 28px 32px;
+    border-bottom: 1px solid #E5E7EB;
+    background: linear-gradient(135deg, #F9FAFB 0%, #FFFFFF 100%);
+  }
+  
+  .column-filter-title {
+    font-family: 'Manrope', sans-serif;
+    font-size: 22px;
+    font-weight: 700;
+    color: #111827;
+    margin: 0;
+  }
+  
+  .column-filter-close {
+    width: 36px;
+    height: 36px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 28px;
+    font-weight: bold;
+    color: #2CAB5C;
+    border-radius: 8px;
+    transition: all 0.2s;
+    line-height: 1;
+  }
+  
+  .column-filter-close:hover {
+    color: #11998E;
+    background: #E8F5E9;
+  }
+  
+  .filter-options {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    padding: 24px 32px;
+    overflow-y: auto;
+    flex: 1;
+  }
+  
+  .filter-option {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    padding: 14px 16px;
+    border: 2px solid #E5E7EB;
+    border-radius: 12px;
+    cursor: pointer;
+    transition: all 0.2s;
+    background: #FFFFFF;
+  }
+  
+  .filter-option:hover {
+    background: #F9FAFB;
+    border-color: #11998E;
+    transform: translateX(2px);
+  }
+  
+  .filter-option.selected {
+    background: linear-gradient(135deg, #E8F5E9 0%, #F1F8F4 100%);
+    border-color: #2CAB5C;
+    box-shadow: 0 2px 8px rgba(44, 171, 92, 0.15);
+  }
+  
+  .filter-option input[type="radio"],
+  .filter-option input[type="checkbox"] {
+    width: 20px;
+    height: 20px;
+    cursor: pointer;
+    accent-color: #2CAB5C;
+  }
+  
+  .filter-option label {
+    font-family: 'Manrope', sans-serif;
+    font-size: 16px;
+    color: #111827;
+    cursor: pointer;
+    flex: 1;
+    font-weight: 500;
+  }
+  
+  .filter-actions {
+    display: flex;
+    justify-content: space-between;
+    gap: 12px;
+    padding: 20px 32px;
+    border-top: 1px solid #E5E7EB;
+    background: #FAFBFC;
+  }
+  
+  .filter-btn {
+    padding: 12px 28px;
+    border: none;
+    border-radius: 12px;
+    font-family: 'Manrope', sans-serif;
+    font-size: 16px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s;
+    min-width: 120px;
+  }
+  
+  .filter-btn-cancel {
+    background: #FFFFFF;
+    color: #6b7280;
+    border: 2px solid #E5E7EB;
+  }
+  
+  .filter-btn-cancel:hover {
+    background: #F9FAFB;
+    border-color: #D1D5DB;
+    color: #374151;
+  }
+  
+  .filter-btn-save {
+    background: linear-gradient(270deg, #11998E 0%, #2CAB5C 100%);
+    color: white;
+    box-shadow: 0 4px 12px rgba(17, 153, 142, 0.3);
+  }
+  
+  .filter-btn-save:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 6px 16px rgba(17, 153, 142, 0.4);
+  }
+  
+  .filter-btn-save:active {
+    transform: translateY(0);
+  }
+  
+  /* Для выбора из списка (Tip stola, Lead source) - улучшенный дизайн */
+  .filter-list {
+    max-height: 320px;
+    overflow-y: auto;
+    border: 2px solid #E5E7EB;
+    border-radius: 16px;
+    padding: 8px;
+    background: #FAFBFC;
+  }
+  
+  .filter-list::-webkit-scrollbar {
+    width: 6px;
+  }
+  
+  .filter-list::-webkit-scrollbar-track {
+    background: #F3F4F6;
+    border-radius: 3px;
+  }
+  
+  .filter-list::-webkit-scrollbar-thumb {
+    background: #D1D5DB;
+    border-radius: 3px;
+  }
+  
+  .filter-list::-webkit-scrollbar-thumb:hover {
+    background: #9CA3AF;
+  }
+  
+  .filter-list-item {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 12px 16px;
+    cursor: pointer;
+    border-radius: 10px;
+    transition: all 0.2s;
+    margin-bottom: 4px;
+    background: #FFFFFF;
+    border: 2px solid transparent;
+  }
+  
+  .filter-list-item:hover {
+    background: #F9FAFB;
+    border-color: #E5E7EB;
+  }
+  
+  .filter-list-item.selected {
+    background: linear-gradient(135deg, #E8F5E9 0%, #F1F8F4 100%);
+    border-color: #2CAB5C;
+    color: #2CAB5C;
+    font-weight: 600;
+    box-shadow: 0 2px 6px rgba(44, 171, 92, 0.15);
+  }
+  
+  .filter-list-item input[type="checkbox"] {
+    width: 18px;
+    height: 18px;
+    cursor: pointer;
+    accent-color: #2CAB5C;
+  }
+  
+  .filter-list-item:last-child {
+    margin-bottom: 0;
   }
   
   .bookings-table tbody tr {
     border: none !important; 
-    height: 65px; 
+    height: 65px !important;
+    max-height: 65px !important;
     cursor: pointer;
   }
   
@@ -975,136 +1310,178 @@
     word-wrap: break-word;
   }
   
-  /* Колонка Gost - показываем полностью без сокращений */
-  .bookings-table tbody td:nth-child(2) {
-    white-space: normal;
-    word-wrap: break-word;
-    overflow: visible;
-    text-overflow: clip;
-    line-height: 1.4;
+  /* Колонка Gost - фиксированная ширина, перенос строк, скролл */
+  .bookings-table thead th[data-column="gost"],
+  .bookings-table tbody td[data-column="gost"] {
+    min-width: 250px !important;
+    max-width: 250px !important;
+    width: 250px !important;
   }
   
-  /* Ячейки с длинным текстом - вертикальный скролл */
-  .bookings-table tbody td:nth-child(12) {
-    white-space: normal;
-    overflow-y: auto;
-    max-height: 65px;
-    word-wrap: break-word;
-    line-height: 1.4;
-  }
-  
-  /* Улучшенная прокрутка для Tip stola - максимум 2 строки, остальное прокручивается */
-  .bookings-table thead th:nth-child(9),
-  .bookings-table tbody td:nth-child(9) {
-    min-width: 200px !important;
-    max-width: 270px !important;
-    width: 200px !important;
-  }
-  
-  .bookings-table tbody td:nth-child(9) {
-    padding: 0.5rem 0.5rem !important;
-    vertical-align: top !important;
-    position: relative !important;
+  .bookings-table tbody td[data-column="gost"] {
+    height: 65px !important;
+    max-height: 65px !important;
     overflow: hidden !important;
+    padding: 0.5rem 0.5rem !important;
+    white-space: normal;
+    word-wrap: break-word;
+    line-height: 1.4;
+    vertical-align: top;
+    position: relative;
   }
   
-  /* Фиксированная ширина для колонки Lead source (10-я колонка) */
-  .bookings-table thead th:nth-child(10),
-  .bookings-table tbody td:nth-child(10) {
+  .bookings-table tbody td[data-column="gost"] .guest-name,
+  .bookings-table tbody td[data-column="gost"] .guest-name-link {
+    display: block;
+    max-height: calc(1.4em * 2);
+    overflow-y: auto;
+    overflow-x: hidden;
+    word-wrap: break-word;
+    white-space: normal;
+    line-height: 1.4;
+    scrollbar-width: thin;
+    scrollbar-color: #2CAB5C #f1f1f1;
+  }
+  
+  /* Колонка Komentar - фиксированная ширина, перенос строк, скролл */
+  .bookings-table thead th[data-column="komentar"],
+  .bookings-table tbody td[data-column="komentar"] {
     min-width: 200px !important;
     max-width: 200px !important;
     width: 200px !important;
   }
   
-  .bookings-table tbody td:nth-child(10) {
+  .bookings-table tbody td[data-column="komentar"] {
+    height: 65px !important;
     padding: 0.5rem 0.5rem !important;
-    vertical-align: top !important;
+    line-height: 1.4;
+    vertical-align: top;
+    position: relative;
+    overflow: hidden;
+    white-space: normal;
+    word-wrap: break-word;
+  }
+  
+  /* Обертка для содержимого комментариев с ограничением до 2 строк */
+  .bookings-table tbody td[data-column="komentar"] .comment-content {
+    display: block;
+    max-height: calc(1.4em * 2);
+    overflow-y: auto;
+    overflow-x: hidden;
+    word-wrap: break-word;
+    white-space: normal;
+    line-height: 1.4;
+    scrollbar-width: thin;
+    scrollbar-color: #2CAB5C #f1f1f1;
+  }
+  
+  /* Улучшенная прокрутка для Tip stola - максимум 2 строки, остальное прокручивается */
+  .bookings-table thead th[data-column="tip_stola"],
+  .bookings-table tbody td[data-column="tip_stola"] {
+    min-width: 200px !important;
+    max-width: 270px !important;
+    width: 200px !important;
+  }
+  
+  .bookings-table tbody td[data-column="tip_stola"] {
+    height: 65px !important;
+    max-height: 65px !important;
+    padding: 0.5rem 0.5rem !important;
+    vertical-align: top;
     position: relative !important;
     overflow: hidden !important;
+    white-space: normal;
+    word-wrap: break-word;
+    line-height: 1.4;
+  }
+  
+  /* Фиксированная ширина для колонки Lead source */
+  .bookings-table thead th[data-column="lead_source"],
+  .bookings-table tbody td[data-column="lead_source"] {
+    min-width: 200px !important;
+    max-width: 200px !important;
+    width: 200px !important;
+  }
+  
+  .bookings-table tbody td[data-column="lead_source"] {
+    height: 65px !important;
+    max-height: 65px !important;
+    padding: 0.5rem 0.5rem !important;
+    vertical-align: top;
+    position: relative !important;
+    overflow: hidden !important;
+    white-space: normal;
+    word-wrap: break-word;
+    line-height: 1.4;
   }
   
   /* Стили для прокручиваемого контейнера Lead source (как в Tip stola) */
   .lead-source-scrollable {
+    display: block;
+    max-height: calc(1.4em * 2);
     overflow-y: auto !important;
     overflow-x: hidden !important;
-    max-height: 48px !important; /* Ровно 2 строки: 16px font-size * 1.4 line-height * 2 = 44.8px */
     line-height: 1.4 !important;
     white-space: normal !important;
     word-wrap: break-word !important;
     width: 100%;
     max-width: 100%;
     text-align: left;
+    scrollbar-width: thin;
+    scrollbar-color: #2CAB5C #f1f1f1;
   }
   
   .lead-source-scrollable::-webkit-scrollbar {
-    width: 4px;
+    width: 4px !important;
   }
   
   .lead-source-scrollable::-webkit-scrollbar-track {
-    background: #f1f1f1;
+    background: #f1f1f1 !important;
     border-radius: 2px;
   }
   
   .lead-source-scrollable::-webkit-scrollbar-thumb {
-    background: #2CAB5C;
+    background: #2CAB5C !important;
     border-radius: 2px;
   }
   
   .lead-source-scrollable::-webkit-scrollbar-thumb:hover {
-    background: #11998E;
+    background: #11998E !important;
   }
   
   .table-type-scrollable {
+    display: block;
+    max-height: calc(1.4em * 2);
     overflow-y: auto !important;
     overflow-x: hidden !important;
-    max-height: 48px !important; /* Ровно 2 строки: 16px font-size * 1.4 line-height * 2 = 44.8px */
     line-height: 1.4 !important;
     white-space: normal !important;
     word-wrap: break-word !important;
     width: 100%;
     max-width: 100%;
     text-align: left;
+    scrollbar-width: thin;
+    scrollbar-color: #2CAB5C #f1f1f1;
   }
   
   .table-type-scrollable::-webkit-scrollbar {
-    width: 4px;
+    width: 4px !important;
   }
   
   .table-type-scrollable::-webkit-scrollbar-track {
-    background: #f1f1f1;
+    background: #f1f1f1 !important;
     border-radius: 2px;
   }
   
   .table-type-scrollable::-webkit-scrollbar-thumb {
-    background: #888;
+    background: #2CAB5C !important;
     border-radius: 2px;
   }
   
   .table-type-scrollable::-webkit-scrollbar-thumb:hover {
-    background: #555;
+    background: #11998E !important;
   }
   
-  .bookings-table tbody td:nth-child(9)::-webkit-scrollbar,
-  .bookings-table tbody td:nth-child(12)::-webkit-scrollbar {
-    width: 4px;
-  }
-  
-  .bookings-table tbody td:nth-child(9)::-webkit-scrollbar-track,
-  .bookings-table tbody td:nth-child(12)::-webkit-scrollbar-track {
-    background: #f1f1f1;
-    border-radius: 2px;
-  }
-  
-  .bookings-table tbody td:nth-child(9)::-webkit-scrollbar-thumb,
-  .bookings-table tbody td:nth-child(12)::-webkit-scrollbar-thumb {
-    background: #888;
-    border-radius: 2px;
-  }
-  
-  .bookings-table tbody td:nth-child(9)::-webkit-scrollbar-thumb:hover,
-  .bookings-table tbody td:nth-child(12)::-webkit-scrollbar-thumb:hover {
-    background: #555;
-  }
   
   .no-bookings {
     text-align: center !important;
@@ -1300,7 +1677,7 @@
     align-items: center;
     gap: 16px;
     box-shadow: 0px -4px 10px rgba(0, 0, 0, 0.1);
-    z-index: 1000;
+    z-index: 2000; /* Увеличиваем z-index, чтобы панель была поверх кнопки "+ Nova rezervacija" */
   }
   
   .selection-action-panel.show {
@@ -1750,12 +2127,19 @@
   }
   
   .new-booking-close {
-    width: 20px;
-    height: 20px;
+    width: 36px;
+    height: 36px;
     cursor: pointer;
     position: absolute;
     top: 20px;
     right: 20px;
+    filter: brightness(0) saturate(100%) invert(60%) sepia(90%) saturate(400%) hue-rotate(90deg) brightness(95%) contrast(85%);
+    transition: all 0.2s;
+  }
+  
+  .new-booking-close:hover {
+    filter: brightness(0) saturate(100%) invert(55%) sepia(95%) saturate(450%) hue-rotate(100deg) brightness(90%) contrast(90%);
+    transform: scale(1.1);
   }
   
   .custom-status-dropdown {
@@ -2936,9 +3320,16 @@
   }
 
   .feedback-modal-close {
-    width: 20px;
-    height: 20px;
+    width: 36px;
+    height: 36px;
     cursor: pointer;
+    filter: brightness(0) saturate(100%) invert(60%) sepia(90%) saturate(400%) hue-rotate(90deg) brightness(95%) contrast(85%);
+    transition: all 0.2s;
+  }
+  
+  .feedback-modal-close:hover {
+    filter: brightness(0) saturate(100%) invert(55%) sepia(95%) saturate(450%) hue-rotate(100deg) brightness(90%) contrast(90%);
+    transform: scale(1.1);
   }
 
   .feedback-modal-body {
@@ -2961,7 +3352,8 @@
 
   .table-columns-modal-content {
     background: white;
-    width: 600px;
+    width: 900px;
+    max-width: 95vw;
     max-height: 80vh;
     border-radius: 19.5px;
     position: relative;
@@ -2989,9 +3381,17 @@
   }
 
   .table-columns-modal-close {
-    width: 20px;
-    height: 20px;
+    width: 24px;
+    height: 24px;
     cursor: pointer;
+    filter: brightness(0) saturate(100%) invert(50%);
+    opacity: 0.6;
+    transition: all 0.2s;
+  }
+  
+  .table-columns-modal-close:hover {
+    opacity: 1;
+    transform: scale(1.1);
   }
 
   .table-columns-modal-body {
@@ -3049,6 +3449,135 @@
     color: #000000;
     flex: 1;
   }
+  
+  /* Стили для модального окна настройки порядка столбцов */
+  .column-order-modal {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.6);
+    backdrop-filter: blur(4px);
+    z-index: 4000;
+    display: none;
+    align-items: center;
+    justify-content: center;
+  }
+  
+  .column-order-modal.show {
+    display: flex;
+  }
+  
+  .column-order-modal-content {
+    position: relative;
+    background: white;
+    border-radius: 20px;
+    padding: 32px;
+    max-width: 800px;
+    width: 90%;
+    max-height: 80vh;
+    overflow-y: auto;
+    box-shadow: 0px 7px 30px rgba(0, 0, 0, 0.15);
+  }
+  
+  /* Ячейки для размещения столбцов */
+  .column-slot {
+    min-width: 120px;
+    min-height: 50px;
+    padding: 12px 16px;
+    background: white;
+    border: 2px solid #e5e7eb;
+    border-radius: 8px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.2s;
+    position: relative;
+  }
+  
+  .column-slot.empty {
+    border-style: dashed;
+    border-color: #d1d5db;
+    background: #f9fafb;
+  }
+  
+  .column-slot.filled {
+    background: #e0f2fe;
+    border-color: #11998E;
+  }
+  
+  .column-slot.drag-over {
+    border-color: #11998E;
+    background: #dbeafe;
+    transform: scale(1.05);
+  }
+  
+  .column-slot .column-label {
+    font-family: 'Manrope', sans-serif;
+    font-size: 14px;
+    font-weight: 500;
+    color: #000;
+    text-align: center;
+  }
+  
+  .column-slot .remove-btn {
+    position: absolute;
+    top: -8px;
+    right: -8px;
+    width: 20px;
+    height: 20px;
+    border-radius: 50%;
+    background: #ef4444;
+    color: white;
+    border: none;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 12px;
+    font-weight: bold;
+    opacity: 0;
+    transition: opacity 0.2s;
+  }
+  
+  .column-slot:hover .remove-btn {
+    opacity: 1;
+  }
+  
+  /* Элементы доступных столбцов */
+  .available-column-item {
+    display: flex;
+    align-items: center;
+    padding: 10px 14px;
+    background: #11998E;
+    color: white;
+    border: none;
+    border-radius: 8px;
+    cursor: grab;
+    transition: all 0.2s;
+    user-select: none;
+    font-family: 'Manrope', sans-serif;
+    font-size: 14px;
+    font-weight: 500;
+  }
+  
+  .available-column-item:hover {
+    background: #0d7a70;
+    transform: translateY(-2px);
+    box-shadow: 0 4px 8px rgba(17, 153, 142, 0.3);
+  }
+  
+  .available-column-item.dragging {
+    opacity: 0.5;
+    cursor: grabbing;
+  }
+  
+  .available-column-item.used {
+    background: #9ca3af;
+    cursor: not-allowed;
+    opacity: 0.5;
+  }
 
   .close-button {
       position: absolute;
@@ -3058,8 +3587,23 @@
       border: none;
       cursor: pointer;
       padding: 0;
-      width: 20px;
-      height: 20px;
+      width: 36px;
+      height: 36px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+  }
+  
+  .close-button img {
+      width: 36px;
+      height: 36px;
+      filter: brightness(0) saturate(100%) invert(60%) sepia(90%) saturate(400%) hue-rotate(90deg) brightness(95%) contrast(85%);
+      transition: all 0.2s;
+  }
+  
+  .close-button:hover img {
+      filter: brightness(0) saturate(100%) invert(55%) sepia(95%) saturate(450%) hue-rotate(100deg) brightness(90%) contrast(90%);
+      transform: scale(1.1);
   }
 
   .call-modal-content .client-name {
@@ -3295,6 +3839,29 @@
     .bookings-table tbody td {
       padding: 10px;
       font-size: 14px;
+    }
+    
+    .bookings-table thead th {
+      position: sticky;
+      top: 0;
+      z-index: 10;
+      background: #ffffff;
+    }
+    
+    /* Центрирование сообщения "Nema rezervacija za odabrani dan" в мобильной версии */
+    .no-bookings-row td.no-bookings,
+    .no-results-row td.no-bookings {
+      position: fixed !important;
+      left: 50% !important;
+      transform: translateX(-50%) !important;
+      text-align: center !important;
+      width: auto !important;
+      max-width: calc(100vw - 40px) !important;
+      padding: 20px !important;
+      z-index: 100 !important;
+      white-space: normal !important;
+      pointer-events: none !important;
+      margin: 0 !important;
     }
     
     /* Mobile search results */
@@ -3766,6 +4333,22 @@
     <div class="reservations-info" id="mobileReservationsInfo">
       Rezervacije: {{ bookings|length }}
     </div>
+    
+    <!-- Mobile Table Settings Icon -->
+    <div class="mobile-table-settings-container" style="position: relative; margin-left: auto;">
+      <span class="table-settings-icon" onclick="toggleTableSettingsMenu()" style="width: 20px; height: 20px; cursor: pointer; display: inline-flex; align-items: center; justify-content: center; font-size: 20px; font-weight: 400; filter: brightness(0) saturate(100%) invert(75%) sepia(0%) saturate(0%) hue-rotate(0deg) brightness(1.2);" title="Podešavanja tabele">⚙</span>
+      <div class="table-settings-menu" id="mobileTableSettingsMenu" style="display: none; position: absolute; top: 45px; right: 0; background: white; border: 1px solid #D9D9D9; border-radius: 12px; box-shadow: 0px 7px 30px rgba(0, 0, 0, 0.15); padding: 8px; min-width: 180px; z-index: 1000;">
+        <button class="table-settings-menu-item" onclick="toggleSelectionMode()" style="width: 100%; padding: 12px 16px; background: none; border: none; text-align: left; cursor: pointer; font-family: 'Manrope', sans-serif; font-size: 14px; color: #000; border-radius: 8px; transition: background 0.2s;">
+          Izaberi
+        </button>
+        <button class="table-settings-menu-item" onclick="openTableColumnsModal()" style="width: 100%; padding: 12px 16px; background: none; border: none; text-align: left; cursor: pointer; font-family: 'Manrope', sans-serif; font-size: 14px; color: #000; border-radius: 8px; transition: background 0.2s;">
+          Podesi tabelu
+        </button>
+        <button class="table-settings-menu-item" onclick="exportToExcel()" style="width: 100%; padding: 12px 16px; background: none; border: none; text-align: left; cursor: pointer; font-family: 'Manrope', sans-serif; font-size: 14px; color: #000; border-radius: 8px; transition: background 0.2s;">
+          Izvezi u Excel
+        </button>
+      </div>
+    </div>
   </div>
   
   <!-- Date Picker and Shift Filter Row -->
@@ -4020,19 +4603,19 @@
     <thead>
         <tr>
           <th class="selection-checkbox-column" style="min-width: 50px;"></th>
-          <th style="min-width: 75px;">Vreme</th>
-          <th style="min-width: 250px;">Gost</th>
-          <th style="min-width: 225px;">Telefon</th>
-          <th style="min-width: 100px;">Broj osoba</th>
-          <th style="min-width: 90px;">Muškarci</th>
-          <th style="min-width: 60px;">Žene</th>
-          <th style="min-width: 50px;">Sto</th>
-          <th style="min-width: 200px; max-width: 270px;">Tip stola</th>
-          <th style="min-width: 200px;">Lead source</th>
-          <th style="min-width: 80px;">Uslov</th>
-          <th style="min-width: 200px;">Komentar</th>
-          <th style="min-width: 75px;">Status</th>
-          <th style="min-width: 150px;">Akcije</th>
+          <th data-column="vreme" style="min-width: 75px;" onclick="toggleColumnSort('vreme')">Vreme</th>
+          <th data-column="gost" style="min-width: 250px;" onclick="toggleColumnSort('gost')">Gost</th>
+          <th data-column="telefon" style="min-width: 225px;" onclick="openColumnFilterModal('telefon', 'Telefon')">Telefon</th>
+          <th data-column="broj_osoba" style="min-width: 100px;" onclick="toggleColumnSort('broj_osoba')">Broj osoba</th>
+          <th data-column="muskarci" style="min-width: 90px;" onclick="toggleColumnSort('muskarci')">Muškarci</th>
+          <th data-column="zene" style="min-width: 60px;" onclick="toggleColumnSort('zene')">Žene</th>
+          <th data-column="sto" style="min-width: 50px;">Sto</th>
+          <th data-column="tip_stola" style="min-width: 200px; max-width: 270px;" onclick="openColumnFilterModal('tip_stola', 'Tip stola')">Tip stola</th>
+          <th data-column="lead_source" style="min-width: 200px;" onclick="openColumnFilterModal('lead_source', 'Lead source')">Lead source</th>
+          <th data-column="uslov" style="min-width: 80px;" onclick="toggleColumnSort('uslov')">Uslov</th>
+          <th data-column="komentar" style="min-width: 200px;" onclick="openColumnFilterModal('komentar', 'Komentar')">Komentar</th>
+          <th data-column="status" style="min-width: 75px;">Status</th>
+          <th data-column="akcije" style="min-width: 150px;">Akcije</th>
       </tr>
     </thead>
       <tbody id="bookingsTableBody">
@@ -4042,7 +4625,7 @@
           <td class="selection-checkbox-column">
             <input type="checkbox" class="selection-checkbox" data-booking-id="{{ b.id }}" onclick="event.stopPropagation();">
           </td>
-          <td>
+          <td data-column="vreme">
             <span class="time-from">
               {{ b.time_from.strftime('%H:%M') if b.time_from else '' }}
               {% if b.end_date and b.end_date != b.date %}
@@ -4050,41 +4633,41 @@
               {% endif %}
             </span>
           </td>
-          <td>
+          <td data-column="gost">
             {% if c and c.id %}
               <a href="/clients/{{ c.id }}" class="guest-name guest-name-link">{{ c.first_name if c else '—' }}{% if c and c.last_name %} {{ c.last_name }}{% endif %}</a>
             {% else %}
               <span class="guest-name">{{ c.first_name if c else '—' }}{% if c and c.last_name %} {{ c.last_name }}{% endif %}</span>
             {% endif %}
           </td>
-          <td>
+          <td data-column="telefon">
             {{ c.phone if c else '' }}
           </td>
-          <td class="party-size">
+          <td data-column="broj_osoba" class="party-size">
             {{ b.party_size or '' }}
           </td>
-          <td>
+          <td data-column="muskarci">
             {{ b.males_count or '' }}
           </td>
-          <td>
+          <td data-column="zene">
             {{ b.females_count or '' }}
           </td>
-          <td>
+          <td data-column="sto">
             {{ b.table_number or '' }}
           </td>
-          <td>
+          <td data-column="tip_stola">
             <div class="table-type-scrollable">{{ b.table_type or '' }}</div>
           </td>
-          <td>
+          <td data-column="lead_source">
             <div class="lead-source-scrollable">{{ b.lead_source or '' }}</div>
           </td>
-          <td>
+          <td data-column="uslov">
             {% if b.deposit is not none and b.deposit != 0 %}{{ "%.2f"|format(b.deposit) }}{% else %}-{% endif %}
           </td>
-          <td>
+          <td data-column="komentar">
             {{ b.comment or '' }}
           </td>
-          <td>
+          <td data-column="status">
             {% if b.status == 'dogovoreno' %}
             <div class="status-badge-table status-dogovoreno" id="status-badge-{{ b.id }}" onclick="event.stopPropagation(); showStatusTagsPopup(this)" data-booking-id="{{ b.id }}" data-current-status="{{ b.status }}">
               Dogovoreno
@@ -4114,8 +4697,8 @@
               {{ b.status|title }}
             </div>
             {% endif %}
-        </td>
-          <td>
+          </td>
+          <td data-column="akcije">
             <div class="action-buttons">
               <img src="/static/images/karandash.png" alt="Edit" class="action-btn" onclick="event.stopPropagation(); openEditBookingModal({{ b.id }}, '{{ b.status }}')">
               {% if c and c.phone %}
@@ -4188,14 +4771,42 @@
     </div>
     <div class="table-columns-modal-body">
       <p style="font-family: 'Manrope', sans-serif; font-size: 14px; color: #6b7280; margin-bottom: 20px;">
-        Izaberite kolone koje treba da se prikazuju u tabeli rezervacija:
+        Prevucite kolone da biste promenili redosled. Kliknite na kolonu da je uključite ili isključite:
       </p>
-      <div class="table-columns-list" id="tableColumnsList">
-        <!-- Колонки будут добавлены через JavaScript -->
+      <!-- Таблица в одну строчку для ПК версии -->
+      <div class="columns-table-container" style="margin-bottom: 24px;">
+        <div class="columns-table-row" id="columnsTableRow" style="display: flex; flex-wrap: nowrap; gap: 8px; overflow-x: auto; padding: 12px; background: #f9fafb; border: 2px solid #e5e7eb; border-radius: 8px; min-height: 60px;" ondrop="handleTableRowDrop(event)" ondragover="event.preventDefault(); event.dataTransfer.dropEffect = 'move';">
+          <!-- Колонки будут добавлены через JavaScript -->
+        </div>
       </div>
-      <div class="form-actions" style="margin-top: 20px;">
-        <button class="save-btn" onclick="saveTableColumnsSettings()">Sačuvati</button>
+      <!-- Список доступных столбцов -->
+      <div class="available-columns-container">
+        <div class="available-columns-title" style="font-family: 'Manrope', sans-serif; font-size: 14px; font-weight: 600; color: #000; margin-bottom: 12px;">Dostupne kolone:</div>
+        <div class="available-columns" id="availableColumns" style="display: flex; flex-wrap: wrap; gap: 8px;">
+          <!-- Столбцы будут добавлены через JavaScript -->
+        </div>
       </div>
+      <div class="form-actions" style="margin-top: 24px; display: flex; gap: 12px; justify-content: flex-end;">
+        <button class="filter-btn filter-btn-cancel" onclick="closeTableColumnsModal()" style="padding: 12px 24px; background: #f3f4f6; color: #000; border: none; border-radius: 8px; font-size: 16px; font-weight: 600; cursor: pointer; font-family: 'Manrope', sans-serif;">Otkaži</button>
+        <button class="save-btn" onclick="saveTableColumnsSettings()" style="padding: 12px 24px; background: #11998E; color: white; border: none; border-radius: 8px; font-size: 16px; font-weight: 600; cursor: pointer; font-family: 'Manrope', sans-serif; transition: background 0.2s;" onmouseover="this.style.background='#0d7a70'" onmouseout="this.style.background='#11998E'">Sačuvati</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Column Filter Modal -->
+<div class="column-filter-modal" id="columnFilterModal">
+  <div class="column-filter-modal-content">
+    <div class="column-filter-header">
+      <h2 class="column-filter-title" id="filterModalTitle">Podešavanje filtera</h2>
+      <div class="column-filter-close" onclick="closeColumnFilterModal()">×</div>
+    </div>
+    <div class="filter-options" id="filterOptions">
+      <!-- Опции фильтра будут добавлены динамически -->
+    </div>
+    <div class="filter-actions">
+      <button class="filter-btn filter-btn-cancel" onclick="closeColumnFilterModal()">Otkaži</button>
+      <button class="filter-btn filter-btn-save" onclick="saveColumnFilter()">Sačuvati</button>
     </div>
   </div>
 </div>
@@ -4235,7 +4846,7 @@
 <div class="call-modal" id="callModal">
     <div class="call-modal-content">
         <button class="close-button" onclick="closeCallModal()">
-            <img src="/static/images/krest.png" alt="Close" width="20" height="20">
+            <img src="/static/images/krest.png" alt="Close">
         </button>
         <div class="client-name" id="callClientName"></div>
         <div class="last-reservation-date" id="callLastReservation"></div>
@@ -4576,6 +5187,13 @@
         defaultBookingTime = data.settings.default_booking_time || null;
         console.log('Booking duration loaded:', bookingDuration);
         console.log('Default booking time loaded:', defaultBookingTime);
+        
+        // Сохраняем business_id если он есть в ответе
+        if (data.business_id) {
+          sessionStorage.setItem('currentBusinessId', data.business_id);
+        } else if (data.settings.business_id) {
+          sessionStorage.setItem('currentBusinessId', data.settings.business_id);
+        }
         
         // Обрабатываем lead_sources - может быть массивом или строкой JSON
         let leadSources = data.settings.lead_sources || [];
@@ -5539,13 +6157,38 @@
     
     if (!container) return;
     
+    // Проверяем, мобильная ли версия
+    const isMobile = window.innerWidth <= 768;
+    
     const updatePosition = (cell) => {
       if (!cell) return;
-      const containerRect = container.getBoundingClientRect();
-      const centerX = containerRect.left + containerRect.width / 2;
-      const centerY = containerRect.top + containerRect.height / 2;
-      cell.style.left = centerX + 'px';
-      cell.style.top = centerY + 'px';
+      
+      if (isMobile) {
+        // В мобильной версии центрируем горизонтально и позиционируем ниже заголовков таблицы
+        const table = document.querySelector('.bookings-table');
+        const thead = table ? table.querySelector('thead') : null;
+        
+        cell.style.left = '50%';
+        cell.style.transform = 'translateX(-50%)';
+        
+        if (thead) {
+          // Позиционируем ниже заголовков таблицы
+          const theadRect = thead.getBoundingClientRect();
+          const offsetFromTop = 100; // Отступ от заголовков таблицы
+          cell.style.top = (theadRect.bottom + offsetFromTop) + 'px';
+        } else {
+          // Если заголовки не найдены, используем контейнер
+          const containerRect = container.getBoundingClientRect();
+          cell.style.top = (containerRect.top + 150) + 'px';
+        }
+      } else {
+        // В десктопной версии центрируем относительно контейнера
+        const containerRect = container.getBoundingClientRect();
+        const centerX = containerRect.left + containerRect.width / 2;
+        const centerY = containerRect.top + containerRect.height / 2;
+        cell.style.left = centerX + 'px';
+        cell.style.top = centerY + 'px';
+      }
     };
     
     updatePosition(noBookingsCell);
@@ -6201,6 +6844,49 @@
     }
   }
   
+  // Функция для автоматического уменьшения шрифта мобильной даты
+  function adjustMobileDateTextFontSize() {
+    const mobileDateText = document.getElementById('mobileDateText');
+    if (!mobileDateText) return;
+    
+    const parent = mobileDateText.parentElement; // .mobile-date-picker
+    if (!parent) return;
+    
+    // Проверяем, виден ли элемент (мобильная версия активна)
+    const mobileCompactWindow = document.querySelector('.mobile-compact-window');
+    if (!mobileCompactWindow || window.getComputedStyle(mobileCompactWindow).display === 'none') {
+      return; // Не мобильная версия, не нужно корректировать
+    }
+    
+    // Устанавливаем white-space: nowrap для точной проверки
+    const originalWhiteSpace = mobileDateText.style.whiteSpace;
+    mobileDateText.style.whiteSpace = 'nowrap';
+    
+    // Сбрасываем размер шрифта до исходного
+    mobileDateText.style.fontSize = '';
+    const computedStyle = window.getComputedStyle(mobileDateText);
+    let fontSize = parseFloat(computedStyle.fontSize);
+    const minFontSize = 8; // Минимальный размер шрифта
+    
+    // Получаем доступную ширину (учитываем иконку календаря и стрелку)
+    const calendarIcon = parent.querySelector('.calendar-icon');
+    const dateArrow = parent.querySelector('.date-arrow');
+    const iconWidth = calendarIcon ? calendarIcon.offsetWidth + 8 : 0; // +8 для отступов
+    const arrowWidth = dateArrow ? dateArrow.offsetWidth + 8 : 0; // +8 для отступов
+    const padding = 16; // padding контейнера (0 8px с каждой стороны)
+    const availableWidth = parent.offsetWidth - iconWidth - arrowWidth - padding;
+    
+    // Проверяем, помещается ли текст в одну строку
+    // Если scrollWidth больше доступной ширины, уменьшаем шрифт
+    while (mobileDateText.scrollWidth > availableWidth && fontSize > minFontSize) {
+      fontSize -= 0.5;
+      mobileDateText.style.fontSize = fontSize + 'px';
+    }
+    
+    // Восстанавливаем white-space
+    mobileDateText.style.whiteSpace = originalWhiteSpace || '';
+  }
+  
   window.selectMobileDate = function(day) {
     selectedDate = new Date(currentDate.getFullYear(), currentDate.getMonth(), day);
     
@@ -6505,18 +7191,46 @@
 
   // Table Settings Functions
   window.toggleTableSettingsMenu = function() {
-    const menu = document.getElementById('tableSettingsMenu');
-    if (menu) {
-      menu.style.display = menu.style.display === 'none' ? 'block' : 'none';
+    // Закрываем все меню сначала
+    const pcMenu = document.getElementById('tableSettingsMenu');
+    const mobileMenu = document.getElementById('mobileTableSettingsMenu');
+    
+    // Определяем, какое меню открывать/закрывать
+    const allMenus = [pcMenu, mobileMenu].filter(Boolean);
+    const allIcons = document.querySelectorAll('.table-settings-icon');
+    
+    // Проверяем, открыто ли какое-то меню
+    const isAnyMenuOpen = allMenus.some(menu => menu && menu.style.display !== 'none');
+    
+    if (isAnyMenuOpen) {
+      // Закрываем все меню
+      allMenus.forEach(menu => {
+        if (menu) menu.style.display = 'none';
+      });
+    } else {
+      // Открываем соответствующее меню (PC или мобильное)
+      if (window.innerWidth > 768) {
+        if (pcMenu) pcMenu.style.display = 'block';
+      } else {
+        if (mobileMenu) mobileMenu.style.display = 'block';
+      }
     }
   }
 
   // Close table settings menu when clicking outside
   document.addEventListener('click', function(e) {
-    const menu = document.getElementById('tableSettingsMenu');
-    const icon = document.querySelector('.table-settings-icon');
-    if (menu && icon && !menu.contains(e.target) && !icon.contains(e.target)) {
-      menu.style.display = 'none';
+    const pcMenu = document.getElementById('tableSettingsMenu');
+    const mobileMenu = document.getElementById('mobileTableSettingsMenu');
+    const allIcons = document.querySelectorAll('.table-settings-icon');
+    
+    // Проверяем, был ли клик по иконке или внутри меню
+    const clickedOnIcon = Array.from(allIcons).some(icon => icon.contains(e.target));
+    const clickedInMenu = (pcMenu && pcMenu.contains(e.target)) || (mobileMenu && mobileMenu.contains(e.target));
+    
+    if (!clickedOnIcon && !clickedInMenu) {
+      // Закрываем все меню
+      if (pcMenu) pcMenu.style.display = 'none';
+      if (mobileMenu) mobileMenu.style.display = 'none';
     }
   });
 
@@ -6544,7 +7258,7 @@
     
     // Используем текущие настройки из tableColumnsConfig (не загружаем заново)
     // Это гарантирует, что чекбоксы отражают актуальное состояние
-        renderTableColumnsList();
+        renderColumnsTable();
         
         if (modal) {
           modal.style.display = 'flex';
@@ -6558,44 +7272,467 @@
     }
   }
 
-  function renderTableColumnsList() {
-    const list = document.getElementById('tableColumnsList');
-    if (!list) return;
+  // Переменные для автопрокрутки
+  let autoScrollInterval = null;
+  let isDragging = false;
+  
+  // Переменные для отслеживания touch событий
+  let touchStartX = 0;
+  let touchStartY = 0;
+  let draggedElement = null;
+  let draggedColumnKey = null;
+  
+  function handleColumnDragStart(e) {
+    const columnKey = this.dataset.columnKey;
+    this.style.opacity = '0.5';
+    if (e.dataTransfer) {
+      e.dataTransfer.effectAllowed = 'move';
+      e.dataTransfer.setData('text/plain', columnKey);
+    }
+    isDragging = true;
+    draggedElement = this;
+    draggedColumnKey = columnKey;
     
-    list.innerHTML = '';
+    // Запускаем автопрокрутку
+    startAutoScroll();
+  }
+  
+  function handleColumnDragEnd(e) {
+    this.style.opacity = '1';
+    this.style.transform = '';
+    isDragging = false;
+    // Останавливаем автопрокрутку
+    stopAutoScroll();
+    // Сбрасываем цвет границы у всех элементов
+    document.querySelectorAll('.column-table-item, .available-column-item').forEach(item => {
+      item.style.borderColor = '';
+      item.style.borderWidth = '';
+      item.style.transform = '';
+      item.style.zIndex = '';
+    });
+    draggedElement = null;
+    draggedColumnKey = null;
+  }
+  
+  // Функция для автопрокрутки при перетаскивании
+  function startAutoScroll(direction) {
+    const tableRow = document.getElementById('columnsTableRow');
+    if (!tableRow) return;
     
-    // Sort columns by index
-    const sortedColumns = Object.entries(tableColumnsConfig).sort((a, b) => a[1].index - b[1].index);
+    // Если direction указан (для touch), используем его напрямую
+    if (direction !== undefined) {
+      const scrollSpeed = 10;
+      autoScrollInterval = setInterval(() => {
+        if (!isDragging) {
+          stopAutoScroll();
+          return;
+        }
+        tableRow.scrollLeft += direction;
+        if (tableRow.scrollLeft <= 0 || tableRow.scrollLeft >= tableRow.scrollWidth - tableRow.clientWidth) {
+          stopAutoScroll();
+        }
+      }, 16); // ~60fps
+      return;
+    }
     
-    sortedColumns.forEach(([key, config]) => {
-      const item = document.createElement('div');
-      item.className = 'table-column-item';
-      item.onclick = function() {
-        toggleTableColumn(key);
-      };
+    // Оригинальная логика для мыши
+    const scrollSpeed = 15; // Скорость прокрутки в пикселях
+    const scrollZone = 80; // Зона у края, где начинается прокрутка (в пикселях)
+    
+    autoScrollInterval = setInterval(() => {
+      if (!isDragging) {
+        stopAutoScroll();
+        return;
+      }
       
-      const checkbox = document.createElement('div');
-      checkbox.className = 'table-column-checkbox' + (config.visible ? ' checked' : '');
+      // Получаем позицию курсора
+      const mouseX = window.mouseX || 0;
+      if (!mouseX) return;
+      
+      // Получаем позицию контейнера относительно viewport
+      const rect = tableRow.getBoundingClientRect();
+      const relativeX = mouseX - rect.left;
+      
+      // Если курсор близко к левому краю контейнера, прокручиваем влево
+      if (relativeX < scrollZone && tableRow.scrollLeft > 0) {
+        const scrollAmount = scrollSpeed * (1 - relativeX / scrollZone); // Плавное ускорение
+        tableRow.scrollLeft = Math.max(0, tableRow.scrollLeft - scrollAmount);
+      }
+      // Если курсор близко к правому краю контейнера, прокручиваем вправо
+      else if (relativeX > rect.width - scrollZone && tableRow.scrollLeft < tableRow.scrollWidth - tableRow.clientWidth) {
+        const scrollAmount = scrollSpeed * (1 - (rect.width - relativeX) / scrollZone); // Плавное ускорение
+        tableRow.scrollLeft = Math.min(tableRow.scrollWidth - tableRow.clientWidth, tableRow.scrollLeft + scrollAmount);
+      }
+    }, 16); // ~60 FPS для плавной прокрутки
+  }
+  
+  function stopAutoScroll() {
+    if (autoScrollInterval) {
+      clearInterval(autoScrollInterval);
+      autoScrollInterval = null;
+    }
+  }
+  
+  // Отслеживаем позицию курсора во время перетаскивания
+  document.addEventListener('dragover', function(e) {
+    window.mouseX = e.clientX;
+    window.mouseY = e.clientY;
+  });
+
+  function renderColumnsTable() {
+    const tableRow = document.getElementById('columnsTableRow');
+    const availableContainer = document.getElementById('availableColumns');
+    if (!tableRow || !availableContainer) return;
+    
+    tableRow.innerHTML = '';
+    availableContainer.innerHTML = '';
+    
+    // Сортируем колонки по текущему индексу
+    const sortedColumns = Object.entries(tableColumnsConfig)
+      .filter(([key, config]) => config.visible || key === 'akcije') // Всегда показываем akcije
+      .sort((a, b) => a[1].index - b[1].index);
+    
+    // Создаем элементы для таблицы в одну строчку
+    sortedColumns.forEach(([key, config]) => {
+      const columnItem = document.createElement('div');
+      columnItem.className = 'column-table-item';
+      columnItem.dataset.columnKey = key;
+      columnItem.draggable = true;
+      columnItem.style.cssText = 'display: flex; align-items: center; gap: 8px; padding: 8px 12px; background: white; border: 2px solid #e5e7eb; border-radius: 6px; cursor: move; user-select: none; white-space: nowrap; min-width: 120px;';
+      
+      const checkbox = document.createElement('input');
+      checkbox.type = 'checkbox';
+      checkbox.checked = config.visible;
       checkbox.onclick = function(e) {
         e.stopPropagation();
         toggleTableColumn(key);
       };
       
-      const label = document.createElement('div');
-      label.className = 'table-column-label';
+      const label = document.createElement('span');
       label.textContent = config.label;
+      label.style.cssText = 'font-family: "Manrope", sans-serif; font-size: 14px; color: #000;';
       
-      item.appendChild(checkbox);
-      item.appendChild(label);
-      list.appendChild(item);
+      columnItem.appendChild(checkbox);
+      columnItem.appendChild(label);
+      
+      // Обработчики drag-and-drop для десктопов
+      columnItem.addEventListener('dragstart', handleColumnDragStart);
+      columnItem.addEventListener('dragend', handleColumnDragEnd);
+      columnItem.addEventListener('dragover', handleColumnDragOver);
+      columnItem.addEventListener('drop', handleColumnDrop);
+      
+      // Обработчики touch событий для мобильных устройств
+      columnItem.addEventListener('touchstart', handleTouchStart, { passive: false });
+      columnItem.addEventListener('touchmove', handleTouchMove, { passive: false });
+      columnItem.addEventListener('touchend', handleTouchEnd, { passive: false });
+      
+      tableRow.appendChild(columnItem);
+    });
+    
+    // Создаем список доступных столбцов (только невидимые)
+    Object.entries(tableColumnsConfig).forEach(([key, config]) => {
+      const isVisible = sortedColumns.some(([k]) => k === key);
+      if (!isVisible && key !== 'akcije') {
+        const item = document.createElement('div');
+        item.className = 'available-column-item';
+        item.draggable = true;
+        item.dataset.columnKey = key;
+        item.style.cssText = 'display: flex; align-items: center; gap: 8px; padding: 8px 16px; background: white; border: 2px solid #d1d5db; border-radius: 6px; cursor: pointer; font-family: "Manrope", sans-serif; font-size: 14px; color: #000;';
+        
+        // Добавляем чекбокс для включения колонки
+        const checkbox = document.createElement('input');
+        checkbox.type = 'checkbox';
+        checkbox.checked = false;
+        checkbox.style.cssText = 'cursor: pointer;';
+        checkbox.onclick = function(e) {
+          e.stopPropagation();
+          toggleTableColumn(key);
+        };
+        
+        const label = document.createElement('span');
+        label.textContent = config.label;
+        label.style.cssText = 'flex: 1; cursor: pointer;';
+        label.onclick = function() {
+          toggleTableColumn(key);
+        };
+        
+        item.appendChild(checkbox);
+        item.appendChild(label);
+        
+        // Обработчики drag-and-drop для десктопов
+        item.addEventListener('dragstart', handleColumnDragStart);
+        item.addEventListener('dragend', handleColumnDragEnd);
+        
+        // Обработчики touch событий для мобильных устройств
+        item.addEventListener('touchstart', handleTouchStart, { passive: false });
+        item.addEventListener('touchmove', handleTouchMove, { passive: false });
+        item.addEventListener('touchend', handleTouchEnd, { passive: false });
+        
+        availableContainer.appendChild(item);
+      }
     });
   }
+  
+  function handleColumnDragOver(e) {
+    if (e.preventDefault) {
+      e.preventDefault();
+    }
+    e.dataTransfer.dropEffect = 'move';
+    this.style.borderColor = '#11998E';
+    return false;
+  }
+  
+  function handleColumnDrop(e) {
+    if (e.stopPropagation) {
+      e.stopPropagation();
+    }
+    
+    // Останавливаем автопрокрутку
+    isDragging = false;
+    stopAutoScroll();
+    
+    const columnKey = e.dataTransfer.getData('text/plain');
+    const targetKey = this.dataset.columnKey;
+    
+    if (columnKey && targetKey && columnKey !== targetKey) {
+      // Меняем местами элементы в DOM
+      const tableRow = document.getElementById('columnsTableRow');
+      if (tableRow) {
+        const sourceItem = tableRow.querySelector(`[data-column-key="${columnKey}"]`);
+        const targetItem = this;
+        
+        if (sourceItem && targetItem) {
+          // Меняем местами в DOM
+          if (sourceItem.nextSibling === targetItem) {
+            tableRow.insertBefore(targetItem, sourceItem);
+          } else if (targetItem.nextSibling === sourceItem) {
+            tableRow.insertBefore(sourceItem, targetItem);
+          } else {
+            const sourceNext = sourceItem.nextSibling;
+            tableRow.insertBefore(sourceItem, targetItem);
+            if (sourceNext) {
+              tableRow.insertBefore(targetItem, sourceNext);
+            } else {
+              tableRow.appendChild(targetItem);
+            }
+          }
+          
+          // Обновляем индексы на основе нового порядка в DOM
+          const items = Array.from(tableRow.querySelectorAll('.column-table-item'));
+          items.forEach((item, index) => {
+            const key = item.dataset.columnKey;
+            if (key && tableColumnsConfig[key]) {
+              tableColumnsConfig[key].index = index;
+            }
+          });
+        }
+      }
+    }
+    
+    // Сбрасываем цвет границы у всех элементов
+    document.querySelectorAll('.column-table-item').forEach(item => {
+      item.style.borderColor = '#e5e7eb';
+    });
+    return false;
+  }
+  
+  window.handleTableRowDrop = function(e) {
+    e.preventDefault();
+    e.stopPropagation();
+    
+    // Останавливаем автопрокрутку
+    isDragging = false;
+    stopAutoScroll();
+    
+    const columnKey = e.dataTransfer.getData('text/plain');
+    if (!columnKey) return;
+    
+    // Если колонка уже есть в таблице, ничего не делаем
+    const tableRow = document.getElementById('columnsTableRow');
+    if (tableRow && tableRow.querySelector(`[data-column-key="${columnKey}"]`)) {
+      return;
+    }
+    
+    // Добавляем колонку в таблицу
+    if (tableColumnsConfig[columnKey] && columnKey !== 'akcije') {
+      tableColumnsConfig[columnKey].visible = true;
+      // Устанавливаем индекс в конец
+      const visibleCount = Object.entries(tableColumnsConfig)
+        .filter(([k, c]) => (c.visible || k === 'akcije')).length;
+      tableColumnsConfig[columnKey].index = visibleCount - 1;
+      renderColumnsTable();
+    }
+  };
 
   function toggleTableColumn(key) {
-    if (tableColumnsConfig[key]) {
+    if (tableColumnsConfig[key] && key !== 'akcije') {
+      const wasVisible = tableColumnsConfig[key].visible;
       tableColumnsConfig[key].visible = !tableColumnsConfig[key].visible;
-      renderTableColumnsList();
+      
+      // Если колонка включается, устанавливаем индекс в конец
+      if (!wasVisible && tableColumnsConfig[key].visible) {
+        const visibleCount = Object.entries(tableColumnsConfig)
+          .filter(([k, c]) => (c.visible || k === 'akcije')).length;
+        tableColumnsConfig[key].index = visibleCount - 1;
+      }
+      
+      renderColumnsTable();
     }
+  }
+  
+  // Обработчики touch событий для мобильных устройств
+  function handleTouchStart(e) {
+    if (e.touches.length !== 1) return;
+    
+    const touch = e.touches[0];
+    touchStartX = touch.clientX;
+    touchStartY = touch.clientY;
+    
+    const columnKey = this.dataset.columnKey;
+    if (!columnKey) return;
+    
+    this.style.opacity = '0.5';
+    this.style.transform = 'scale(0.95)';
+    this.style.zIndex = '1000';
+    this.style.transition = 'transform 0.2s';
+    
+    draggedElement = this;
+    draggedColumnKey = columnKey;
+    isDragging = true;
+    
+    // Предотвращаем прокрутку страницы во время перетаскивания
+    e.preventDefault();
+  }
+  
+  function handleTouchMove(e) {
+    if (!isDragging || !draggedElement || e.touches.length !== 1) return;
+    
+    const touch = e.touches[0];
+    const deltaX = touch.clientX - touchStartX;
+    const deltaY = touch.clientY - touchStartY;
+    
+    // Обновляем позицию элемента визуально
+    draggedElement.style.transform = `translate(${deltaX}px, ${deltaY}px) scale(0.95)`;
+    draggedElement.style.transition = 'none';
+    
+    // Находим элемент под пальцем
+    const elementBelow = document.elementFromPoint(touch.clientX, touch.clientY);
+    if (elementBelow) {
+      // Ищем ближайший элемент колонки
+      const targetItem = elementBelow.closest('.column-table-item, .available-column-item');
+      if (targetItem && targetItem !== draggedElement && targetItem.dataset.columnKey) {
+        // Подсвечиваем целевой элемент
+        targetItem.style.borderColor = '#11998E';
+        targetItem.style.borderWidth = '3px';
+      } else {
+        // Сбрасываем подсветку
+        document.querySelectorAll('.column-table-item, .available-column-item').forEach(item => {
+          if (item !== draggedElement) {
+            item.style.borderColor = '';
+            item.style.borderWidth = '';
+          }
+        });
+      }
+    }
+    
+    // Автопрокрутка при приближении к краям
+    const tableRow = document.getElementById('columnsTableRow');
+    if (tableRow && draggedElement.closest('#columnsTableRow')) {
+      const rect = tableRow.getBoundingClientRect();
+      const scrollThreshold = 50;
+      
+      if (touch.clientX < rect.left + scrollThreshold) {
+        startAutoScroll(-10);
+      } else if (touch.clientX > rect.right - scrollThreshold) {
+        startAutoScroll(10);
+      } else {
+        stopAutoScroll();
+      }
+    }
+    
+    e.preventDefault();
+  }
+  
+  function handleTouchEnd(e) {
+    if (!isDragging || !draggedElement || !draggedColumnKey) {
+      // Сбрасываем состояние на всякий случай
+      isDragging = false;
+      draggedElement = null;
+      draggedColumnKey = null;
+      return;
+    }
+    
+    const touch = e.changedTouches[0];
+    const elementBelow = document.elementFromPoint(touch.clientX, touch.clientY);
+    
+    // Находим целевой элемент
+    let targetItem = null;
+    if (elementBelow) {
+      targetItem = elementBelow.closest('.column-table-item, .available-column-item');
+    }
+    
+    // Если перетаскиваем в строку таблицы (в другое место строки)
+    const tableRow = document.getElementById('columnsTableRow');
+    if (tableRow && draggedElement.closest('#columnsTableRow')) {
+      if (targetItem && targetItem !== draggedElement && targetItem.dataset.columnKey) {
+        const targetKey = targetItem.dataset.columnKey;
+        // Меняем местами колонки
+        if (draggedColumnKey !== targetKey) {
+          const sourceItem = draggedElement;
+          const targetElement = targetItem;
+          
+          // Меняем местами в DOM
+          if (sourceItem.nextSibling === targetElement) {
+            tableRow.insertBefore(targetElement, sourceItem);
+          } else if (targetElement.nextSibling === sourceItem) {
+            tableRow.insertBefore(sourceItem, targetElement);
+          } else {
+            const sourceNext = sourceItem.nextSibling;
+            tableRow.insertBefore(sourceItem, targetElement);
+            if (sourceNext) {
+              tableRow.insertBefore(targetElement, sourceNext);
+            } else {
+              tableRow.appendChild(targetElement);
+            }
+          }
+          
+          // Обновляем индексы
+          const items = Array.from(tableRow.querySelectorAll('.column-table-item'));
+          items.forEach((item, index) => {
+            const key = item.dataset.columnKey;
+            if (key && tableColumnsConfig[key]) {
+              tableColumnsConfig[key].index = index;
+            }
+          });
+        }
+      }
+    } else if (tableRow && elementBelow === tableRow) {
+      // Если перетаскиваем из списка доступных в строку таблицы
+      if (tableColumnsConfig[draggedColumnKey] && draggedColumnKey !== 'akcije') {
+        tableColumnsConfig[draggedColumnKey].visible = true;
+        const visibleCount = Object.entries(tableColumnsConfig)
+          .filter(([k, c]) => (c.visible || k === 'akcije')).length;
+        tableColumnsConfig[draggedColumnKey].index = visibleCount - 1;
+        renderColumnsTable();
+      }
+    }
+    
+    // Сбрасываем стили и состояние
+    stopAutoScroll();
+    document.querySelectorAll('.column-table-item, .available-column-item').forEach(item => {
+      item.style.opacity = '';
+      item.style.transform = '';
+      item.style.zIndex = '';
+      item.style.borderColor = '';
+      item.style.borderWidth = '';
+      item.style.transition = '';
+    });
+    
+    draggedElement = null;
+    draggedColumnKey = null;
+    isDragging = false;
+    
+    e.preventDefault();
   }
 
   // Настройки колонок из сервера (передаются прямо в шаблон для быстрой загрузки)
@@ -6658,6 +7795,72 @@
   }
 
   window.saveTableColumnsSettings = function() {
+    // Собираем порядок из таблицы в одну строчку (видимые колонки)
+    const tableRow = document.getElementById('columnsTableRow');
+    if (tableRow) {
+      const columnItems = Array.from(tableRow.querySelectorAll('.column-table-item'));
+      columnItems.forEach((item, index) => {
+        const key = item.dataset.columnKey;
+        if (key && tableColumnsConfig[key]) {
+          tableColumnsConfig[key].index = index;
+          const checkbox = item.querySelector('input[type="checkbox"]');
+          if (checkbox) {
+            tableColumnsConfig[key].visible = checkbox.checked;
+          } else {
+            tableColumnsConfig[key].visible = true; // Если в таблице, значит видима
+          }
+        }
+      });
+    }
+    
+    // Собираем настройки из списка доступных колонок (невидимые или только что включенные)
+    const availableContainer = document.getElementById('availableColumns');
+    if (availableContainer) {
+      const availableItems = Array.from(availableContainer.querySelectorAll('.available-column-item'));
+      availableItems.forEach((item) => {
+        const key = item.dataset.columnKey;
+        if (key && tableColumnsConfig[key]) {
+          const checkbox = item.querySelector('input[type="checkbox"]');
+          if (checkbox) {
+            // Если чекбокс отмечен, колонка должна быть видима
+            if (checkbox.checked) {
+              tableColumnsConfig[key].visible = true;
+              // Если колонка стала видимой, нужно добавить её в таблицу с правильным индексом
+              // Но она уже должна быть в таблице после toggleTableColumn, так что просто обновляем индекс
+              const visibleCount = Object.entries(tableColumnsConfig)
+                .filter(([k, c]) => (c.visible || k === 'akcije')).length;
+              tableColumnsConfig[key].index = visibleCount - 1;
+            } else {
+              tableColumnsConfig[key].visible = false;
+            }
+          } else {
+            // Если чекбокса нет, значит колонка невидима
+            tableColumnsConfig[key].visible = false;
+          }
+        }
+      });
+    }
+    
+    // Убеждаемся, что все колонки, которые не в таблице и не в списке доступных, невидимы
+    Object.keys(tableColumnsConfig).forEach(key => {
+      if (key !== 'akcije') {
+        const tableRow = document.getElementById('columnsTableRow');
+        const availableContainer = document.getElementById('availableColumns');
+        const inTable = tableRow && tableRow.querySelector(`[data-column-key="${key}"]`);
+        const inAvailable = availableContainer && availableContainer.querySelector(`[data-column-key="${key}"]`);
+        
+        // Если колонка нигде не отображается, но она видима в конфиге, значит что-то не так
+        // Оставляем её видимость как есть в tableColumnsConfig
+      }
+    });
+    
+    // Убеждаемся, что akcije всегда видима
+    if (tableColumnsConfig['akcije']) {
+      tableColumnsConfig['akcije'].visible = true;
+    }
+    
+    console.log('Final tableColumnsConfig before save:', JSON.stringify(tableColumnsConfig, null, 2));
+    
     const columnsToSave = {};
     Object.keys(tableColumnsConfig).forEach(key => {
       columnsToSave[key] = {
@@ -6681,36 +7884,58 @@
     .then(data => {
       console.log('Save response:', data);
       if (data.success) {
-        showNotification('Podešavanja tabele su sačuvana', 'success');
-        closeTableColumnsModal();
+        // Используем локально сохраненные данные (они уже в tableColumnsConfig и правильные)
+        // Не обновляем из ответа сервера, так как локальные данные уже актуальны
         
-        // Обновляем настройки из ответа сервера и применяем сразу
-        if (data.settings && data.settings.table_columns) {
-          const savedColumns = data.settings.table_columns;
-          Object.keys(tableColumnsConfig).forEach(key => {
-            if (savedColumns[key] !== undefined) {
-              if (savedColumns[key].hasOwnProperty('visible')) {
-                tableColumnsConfig[key].visible = savedColumns[key].visible === true;
-              } else {
-                tableColumnsConfig[key].visible = true;
-              }
-              if (savedColumns[key].index !== undefined) {
-                tableColumnsConfig[key].index = savedColumns[key].index;
-              }
-            } else {
-              tableColumnsConfig[key].visible = false;
-            }
-          });
-      } else {
-          // Если в ответе нет настроек, используем сохраненные локально
-          // (они уже в tableColumnsConfig)
+        // Убеждаемся, что akcije всегда видима
+        if (tableColumnsConfig['akcije']) {
+          tableColumnsConfig['akcije'].visible = true;
         }
         
-        // Обновляем список колонок в модальном окне, чтобы чекбоксы отражали текущее состояние
-        renderTableColumnsList();
+        console.log('Applying settings from local tableColumnsConfig:', tableColumnsConfig);
+        console.log('Visible columns:', Object.entries(tableColumnsConfig).filter(([k, c]) => c.visible).map(([k]) => k));
         
-        // Применяем настройки сразу после сохранения
-        applyTableColumnsSettings();
+        // Закрываем модальное окно сначала
+        closeTableColumnsModal();
+        
+        // Применяем настройки после закрытия модального окна
+        // Используем небольшой таймаут, чтобы модальное окно успело закрыться
+        setTimeout(() => {
+          console.log('Applying table columns settings...');
+          
+          // Проверяем, что таблица существует
+          const thead = document.querySelector('.bookings-table thead tr');
+          const tbody = document.querySelector('.bookings-table tbody');
+          console.log('Table found - thead:', !!thead, 'tbody:', !!tbody);
+          
+          if (thead && tbody) {
+            // СНАЧАЛА применяем видимость, ПОТОМ переставляем
+            // Это гарантирует, что все колонки (включая только что включенные) попадут в DOM
+            applyTableColumnsSettings();
+            
+            // Небольшая задержка перед перестановкой, чтобы стили применились
+            setTimeout(() => {
+              reorderTableColumns();
+              // После перестановки снова применяем видимость, так как перестановка может сбросить стили
+              applyTableColumnsSettings();
+              console.log('Table columns settings applied successfully');
+            }, 50);
+          } else {
+            console.error('Table not found! Cannot apply settings.');
+            // Пробуем еще раз через небольшую задержку
+            setTimeout(() => {
+              const thead2 = document.querySelector('.bookings-table thead tr');
+              const tbody2 = document.querySelector('.bookings-table tbody');
+              if (thead2 && tbody2) {
+                applyTableColumnsSettings();
+                reorderTableColumns();
+                console.log('Table columns settings applied on retry');
+              }
+            }, 200);
+          }
+        }, 100);
+        
+        showNotification('Podešavanja tabele su sačuvana', 'success');
       } else {
         showNotification(data.error || 'Greška pri čuvanju podešavanja', 'error');
         console.error('Save failed:', data);
@@ -6722,6 +7947,113 @@
     });
   }
 
+  
+  function reorderTableColumns() {
+    // Получаем новый порядок столбцов
+    // ВАЖНО: включаем ВСЕ колонки из tableColumnsConfig, даже невидимые
+    // чтобы сохранить их в DOM и потом применить настройки видимости
+    const sortedColumns = Object.entries(tableColumnsConfig)
+      .filter(([key]) => key !== 'akcije' || tableColumnsConfig[key].visible) // akcije всегда последняя
+      .sort((a, b) => a[1].index - b[1].index);
+    
+    // Добавляем akcije в конец, если она видима
+    if (tableColumnsConfig['akcije'] && tableColumnsConfig['akcije'].visible) {
+      sortedColumns.push(['akcije', tableColumnsConfig['akcije']]);
+    }
+    
+    const thead = document.querySelector('.bookings-table thead tr');
+    const tbodyRows = document.querySelectorAll('.bookings-table tbody tr');
+    
+    if (!thead) return;
+    
+    // Сохраняем элементы заголовков по data-column атрибутам
+    const headers = {};
+    Array.from(thead.querySelectorAll('th')).forEach(header => {
+      const columnKey = header.getAttribute('data-column');
+      if (columnKey) {
+        headers[columnKey] = header;
+      }
+    });
+    const firstHeader = thead.querySelector('th.selection-checkbox-column'); // Чекбокс всегда первый
+    
+    // Создаем новый порядок заголовков - включаем ВСЕ колонки
+    const newHeaders = [firstHeader];
+    sortedColumns.forEach(([key]) => {
+      if (headers[key]) {
+        newHeaders.push(headers[key]);
+      }
+    });
+    
+    // Переставляем заголовки
+    thead.innerHTML = '';
+    newHeaders.forEach(header => {
+      thead.appendChild(header);
+    });
+    
+    // Переставляем ячейки в каждой строке
+    tbodyRows.forEach(row => {
+      const cells = {};
+      Array.from(row.querySelectorAll('td')).forEach(cell => {
+        const columnKey = cell.getAttribute('data-column');
+        if (columnKey) {
+          cells[columnKey] = cell;
+        }
+      });
+      const firstCell = row.querySelector('td.selection-checkbox-column'); // Чекбокс всегда первый
+      
+      const newCells = [firstCell];
+      sortedColumns.forEach(([key]) => {
+        if (cells[key]) {
+          newCells.push(cells[key]);
+        }
+      });
+      
+      row.innerHTML = '';
+      newCells.forEach(cell => {
+        row.appendChild(cell);
+      });
+    });
+    
+    // Обновляем обертку комментариев после перестановки
+    wrapCommentContent();
+    
+    // Применяем вертикальное выравнивание после перестановки
+    setTimeout(() => {
+      adjustVerticalAlignment();
+    }, 50);
+    
+    // Применяем настройки видимости после перестановки
+    // (на случай, если перестановка сбросила стили)
+    // ВАЖНО: Применяем ко ВСЕМ колонкам из tableColumnsConfig, а не только к тем, что в sortedColumns
+    const theadAfter = document.querySelector('.bookings-table thead tr');
+    const tbodyRowsAfter = document.querySelectorAll('.bookings-table tbody tr');
+    
+    if (theadAfter) {
+      Object.keys(tableColumnsConfig).forEach(key => {
+        const shouldBeVisible = tableColumnsConfig[key].visible || key === 'akcije';
+        
+        // Применяем к заголовкам
+        const header = theadAfter.querySelector(`th[data-column="${key}"]`);
+        if (header) {
+          header.style.display = shouldBeVisible ? '' : 'none';
+          console.log(`After reorder: Column ${key}: shouldBeVisible=${shouldBeVisible}, display=${header.style.display}`);
+        } else {
+          console.warn(`After reorder: Column ${key} header not found in DOM!`);
+        }
+        
+        // Применяем к ячейкам
+        tbodyRowsAfter.forEach(row => {
+          const cell = row.querySelector(`td[data-column="${key}"]`);
+          if (cell) {
+            cell.style.display = shouldBeVisible ? '' : 'none';
+          }
+        });
+      });
+    }
+    
+    console.log('reorderTableColumns completed');
+  }
+  
   function applyTableColumnsSettings() {
     // Проверяем, есть ли хотя бы одна видимая колонка (кроме akcije, которая всегда видна)
     const hasVisibleColumns = Object.entries(tableColumnsConfig)
@@ -6762,42 +8094,38 @@
       return;
     }
     
-    // Apply column visibility to table
-    // ВАЖНО: Первая колонка в таблице - это чекбокс (selection-checkbox-column)
-    // Поэтому индексы в DOM сдвинуты на +1 относительно индексов в tableColumnsConfig
-    const columnMap = {
-      'vreme': 1,      // В DOM это 2-я колонка (после чекбокса)
-      'gost': 2,
-      'telefon': 3,
-      'broj_osoba': 4,
-      'muskarci': 5,
-      'zene': 6,
-      'sto': 7,
-      'tip_stola': 8,
-      'lead_source': 9,
-      'uslov': 10,
-      'komentar': 11,
-      'status': 12,
-      'akcije': 13
-    };
-    
+    // Apply column visibility to table using data-column attributes
     const thead = document.querySelector('.bookings-table thead tr');
     const tbody = document.querySelectorAll('.bookings-table tbody tr');
     
+    console.log('applyTableColumnsSettings: thead found:', !!thead, 'tbody rows:', tbody.length);
+    console.log('tableColumnsConfig:', JSON.stringify(tableColumnsConfig, null, 2));
+    
+    if (!thead) {
+      console.error('applyTableColumnsSettings: thead not found!');
+      return;
+    }
+    
+    if (tbody.length === 0) {
+      console.warn('applyTableColumnsSettings: no tbody rows found!');
+    }
+    
     if (thead) {
-      const headers = thead.querySelectorAll('th');
-      Object.entries(columnMap).forEach(([key, index]) => {
-        if (headers[index] && tableColumnsConfig[key]) {
-          headers[index].style.display = tableColumnsConfig[key].visible ? '' : 'none';
+      Object.keys(tableColumnsConfig).forEach(key => {
+        const header = thead.querySelector(`th[data-column="${key}"]`);
+        if (header && tableColumnsConfig[key]) {
+          const shouldBeVisible = tableColumnsConfig[key].visible || key === 'akcije';
+          header.style.display = shouldBeVisible ? '' : 'none';
+          console.log(`Column ${key}: config.visible=${tableColumnsConfig[key].visible}, shouldBeVisible=${shouldBeVisible}, display=${header.style.display}`);
           // Если колонка видима, убираем фиксированную ширину, оставляем только min-width
           if (tableColumnsConfig[key].visible) {
-            const currentWidth = headers[index].style.width;
+            const currentWidth = header.style.width;
             if (currentWidth && currentWidth.includes('px') && !currentWidth.includes('min-width')) {
               // Оставляем только min-width из inline стилей
-              const minWidthMatch = headers[index].style.minWidth;
+              const minWidthMatch = header.style.minWidth;
               if (minWidthMatch) {
-                headers[index].style.width = '';
-                headers[index].style.maxWidth = 'none';
+                header.style.width = '';
+                header.style.maxWidth = 'none';
               }
             }
           }
@@ -6806,13 +8134,16 @@
     }
     
     tbody.forEach(row => {
-      const cells = row.querySelectorAll('td');
-      Object.entries(columnMap).forEach(([key, index]) => {
-        if (cells[index] && tableColumnsConfig[key]) {
-          cells[index].style.display = tableColumnsConfig[key].visible ? '' : 'none';
+      Object.keys(tableColumnsConfig).forEach(key => {
+        const cell = row.querySelector(`td[data-column="${key}"]`);
+        if (cell && tableColumnsConfig[key]) {
+          const shouldBeVisible = tableColumnsConfig[key].visible || key === 'akcije';
+          cell.style.display = shouldBeVisible ? '' : 'none';
         }
       });
     });
+    
+    console.log('applyTableColumnsSettings completed');
   }
 
   // Старая функция удалена - теперь используется initTableSettingsFast() выше
@@ -6836,7 +8167,21 @@
     // Применяем настройки сразу при загрузке (не ждем DOM)
     // Используем requestAnimationFrame для применения после рендера
     requestAnimationFrame(() => {
-      applyTableColumnsSettings();
+      // Ждем, пока таблица будет готова
+      const checkTable = setInterval(() => {
+        const thead = document.querySelector('.bookings-table thead tr');
+        const tbody = document.querySelector('.bookings-table tbody');
+        if (thead && tbody && tbody.children.length > 0) {
+          clearInterval(checkTable);
+          // Сначала применяем видимость колонок
+          applyTableColumnsSettings();
+          // Затем применяем порядок столбцов
+          reorderTableColumns();
+        }
+      }, 50);
+      
+      // Таймаут на случай, если таблица не загрузится
+      setTimeout(() => clearInterval(checkTable), 5000);
       
       // Если нет видимых колонок, показываем сообщение через 3 секунды
       const hasVisibleColumns = Object.entries(tableColumnsConfig)
@@ -6875,6 +8220,7 @@
           applySettingsScheduled = true;
           setTimeout(function() {
             applyTableColumnsSettings();
+            reorderTableColumns();
             applySettingsScheduled = false;
           }, 100);
         }
@@ -6882,11 +8228,134 @@
     });
   });
   
+  // Функция для обертки содержимого комментариев в span для ограничения до 2 строк
+  function wrapCommentContent() {
+    const commentCells = document.querySelectorAll('.bookings-table tbody td[data-column="komentar"]');
+    commentCells.forEach(cell => {
+      // Проверяем, не обернуто ли уже содержимое
+      if (cell.querySelector('.comment-content')) {
+        return;
+      }
+      
+      // Сохраняем HTML содержимое ячейки
+      const htmlContent = cell.innerHTML.trim();
+      if (htmlContent) {
+        // Очищаем ячейку и добавляем обертку
+        cell.innerHTML = '';
+        const wrapper = document.createElement('span');
+        wrapper.className = 'comment-content';
+        wrapper.innerHTML = htmlContent;
+        cell.appendChild(wrapper);
+      }
+    });
+  }
+  
+  // Функция для проверки вертикального выравнивания для колонок с многострочным текстом
+  function adjustVerticalAlignment() {
+    const columns = ['gost', 'komentar', 'tip_stola', 'lead_source'];
+    
+    columns.forEach(columnKey => {
+      const cells = document.querySelectorAll(`.bookings-table tbody td[data-column="${columnKey}"]`);
+      
+      cells.forEach(cell => {
+        // Получаем содержимое ячейки (либо напрямую, либо из обертки)
+        const contentWrapper = cell.querySelector('.comment-content, .guest-name, .guest-name-link, .table-type-scrollable, .lead-source-scrollable');
+        const contentElement = contentWrapper || cell;
+        
+        // Получаем вычисленные стили
+        const computedStyle = window.getComputedStyle(cell);
+        const fontSize = parseFloat(computedStyle.fontSize);
+        const lineHeight = parseFloat(computedStyle.lineHeight) || fontSize * 1.4;
+        const cellWidth = cell.offsetWidth;
+        const padding = parseFloat(computedStyle.paddingLeft) + parseFloat(computedStyle.paddingRight);
+        const availableWidth = cellWidth - padding;
+        
+        // Получаем текст содержимого
+        const textContent = contentElement.textContent || contentElement.innerText || '';
+        
+        if (!textContent.trim()) {
+          // Если текст пустой, выравниваем по центру
+          cell.style.verticalAlign = 'middle';
+          return;
+        }
+        
+        // Создаем временный элемент для измерения реальной высоты текста
+        const tempDiv = document.createElement('div');
+        tempDiv.style.cssText = `
+          position: absolute;
+          visibility: hidden;
+          width: ${availableWidth}px;
+          font-family: ${computedStyle.fontFamily};
+          font-size: ${computedStyle.fontSize};
+          font-weight: ${computedStyle.fontWeight};
+          line-height: ${computedStyle.lineHeight};
+          white-space: normal;
+          word-wrap: break-word;
+          padding: 0;
+          margin: 0;
+        `;
+        tempDiv.textContent = textContent;
+        document.body.appendChild(tempDiv);
+        
+        // Получаем реальную высоту текста
+        const textHeight = tempDiv.offsetHeight;
+        document.body.removeChild(tempDiv);
+        
+        // Если текст умещается в одну строку (высота <= line-height * 1.5), выравниваем по центру
+        // Используем 1.5 для учета погрешности измерений и паддингов
+        if (textHeight <= lineHeight * 1.5) {
+          cell.style.verticalAlign = 'middle';
+          cell.style.setProperty('vertical-align', 'middle', 'important');
+        } else {
+          // Если несколько строк, выравниваем по верху
+          cell.style.verticalAlign = 'top';
+          cell.style.setProperty('vertical-align', 'top', 'important');
+        }
+      });
+    });
+  }
+  
   // Start observing when DOM is ready
   document.addEventListener('DOMContentLoaded', function() {
     const table = document.querySelector('.bookings-table');
     if (table) {
       observer.observe(table, { childList: true, subtree: true });
+      // Обертываем комментарии при загрузке
+      wrapCommentContent();
+      // Применяем настройки и порядок столбцов после загрузки DOM
+      setTimeout(() => {
+        const thead = document.querySelector('.bookings-table thead tr');
+        const tbody = document.querySelector('.bookings-table tbody');
+        if (thead && tbody) {
+          applyTableColumnsSettings();
+          reorderTableColumns();
+          // Применяем вертикальное выравнивание после применения настроек
+          setTimeout(() => {
+            adjustVerticalAlignment();
+          }, 100);
+        }
+      }, 200);
+    }
+  });
+  
+  // Обертываем комментарии при изменении таблицы
+  const commentObserver = new MutationObserver(function(mutations) {
+    wrapCommentContent();
+    // Применяем вертикальное выравнивание после изменений
+    setTimeout(() => {
+      adjustVerticalAlignment();
+    }, 50);
+  });
+  
+  document.addEventListener('DOMContentLoaded', function() {
+    const tableBody = document.getElementById('bookingsTableBody');
+    if (tableBody) {
+      commentObserver.observe(tableBody, { childList: true, subtree: true });
+      wrapCommentContent();
+      // Применяем вертикальное выравнивание после загрузки
+      setTimeout(() => {
+        adjustVerticalAlignment();
+      }, 100);
     }
   });
 
@@ -7178,6 +8647,8 @@
       // Находим строку таблицы с этой резервацией
       const bookingRow = statusBadge.closest('tr');
       if (bookingRow) {
+        // Обновляем атрибут data-status в строке таблицы
+        bookingRow.setAttribute('data-status', newStatus);
         // Находим контейнер с action-buttons
         const actionButtons = bookingRow.querySelector('.action-buttons');
         if (actionButtons) {
@@ -7215,6 +8686,20 @@
             }
           }
         }
+        
+        // Обновляем счетчики статусов сразу после изменения статуса в UI
+        // Получаем текущий shift фильтр
+        const currentShift = typeof currentShiftFilter !== 'undefined' ? currentShiftFilter : 'all';
+        if (typeof updateStatusCounters === 'function') {
+          updateStatusCounters(currentShift);
+        }
+        
+        // Применяем вертикальное выравнивание после изменения статуса
+        setTimeout(() => {
+          if (typeof adjustVerticalAlignment === 'function') {
+            adjustVerticalAlignment();
+          }
+        }, 50);
       }
     }
     
@@ -7239,6 +8724,14 @@
       // console.log('Response data:', data);
       if (data.success) {
         // console.log('Status updated successfully');
+        
+        // Обновляем счетчики статусов после успешного обновления
+        // Получаем текущий shift фильтр
+        const currentShift = typeof currentShiftFilter !== 'undefined' ? currentShiftFilter : 'all';
+        if (typeof updateStatusCounters === 'function') {
+          updateStatusCounters(currentShift);
+        }
+        
         // Optional: Show success notification
         showNotification('Status je uspešno ažuriran', 'success');
       } else {
@@ -7713,6 +9206,8 @@
     
     // Load business settings to get table types and lead sources
     await loadBusinessSettings();
+    // Загружаем сохраненные фильтры после загрузки настроек
+    loadFiltersFromStorage();
     
     // Set booking ID for editing
     modal.dataset.bookingId = bookingId;
@@ -8085,56 +9580,77 @@
       return;
     }
     
-    console.log('No selected contact, searching by phone:', phone);
+    console.log('No selected contact, phone:', phone);
     
-    // Phone number is unique identifier - search by phone only
-    if (!phone || !phone.trim()) {
-      showNotification('Molimo unesite broj telefona', 'error');
-      return;
-    }
-    
-    // First, try to find existing contact by phone number only
-    fetch(`/api/contacts/find-by-phone?phone=${encodeURIComponent(phone.trim())}`)
-    .then(response => response.json())
-    .then(data => {
-      let contactId;
-      
-      if (data.success && data.contact_id) {
-        // Contact exists with this phone number, use its ID
-        // Phone number is unique identifier, so we use existing contact
-        contactId = data.contact_id;
-      } else {
-        // Contact doesn't exist, create new one
-        return fetch('/api/contacts/create', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({
-            first_name: name || '',
-            phone: phone.trim()
+    // Если есть телефон, ищем/создаем контакт по телефону
+    if (phone && phone.trim()) {
+      // First, try to find existing contact by phone number only
+      fetch(`/api/contacts/find-by-phone?phone=${encodeURIComponent(phone.trim())}`)
+      .then(response => response.json())
+      .then(data => {
+        let contactId;
+        
+        if (data.success && data.contact_id) {
+          // Contact exists with this phone number, use its ID
+          contactId = data.contact_id;
+        } else {
+          // Contact doesn't exist, create new one
+          return fetch('/api/contacts/create', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+              first_name: name || '',
+              phone: phone.trim()
+            })
           })
+          .then(response => response.json())
+          .then(result => {
+            if (result.contact_id) {
+              return result.contact_id;
+            } else {
+              throw new Error('Failed to create contact');
+            }
+          });
+        }
+        
+        return contactId;
+      })
+      .then(contactId => {
+        createBookingWithContactId(contactId, date, timeFrom, timeTo, partySize, tableType, occasion, comment, malesCount, femalesCount, initialCheckRsd, finalCheckRsd, deposit, leadSource, feedback, foodDrink);
+      })
+      .catch(error => {
+        isSavingBooking = false; // Reset flag on error
+        console.error('Error:', error);
+        showNotification('Greška pri kreiranju rezervacije', 'error');
+      });
+    } else {
+      // Если телефона нет, создаем контакт только с именем (или без имени, если и его нет)
+      fetch('/api/contacts/create', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          first_name: name || 'Gost',
+          phone: null
         })
-        .then(response => response.json())
-        .then(result => {
-          if (result.contact_id) {
-            return result.contact_id;
-          } else {
-            throw new Error('Failed to create contact');
-          }
-        });
-      }
-      
-      return contactId;
-    })
-    .then(contactId => {
-      createBookingWithContactId(contactId, date, timeFrom, timeTo, partySize, tableType, occasion, comment, malesCount, femalesCount, initialCheckRsd, finalCheckRsd, deposit, leadSource, feedback, foodDrink);
-    })
-    .catch(error => {
-      isSavingBooking = false; // Reset flag on error
-      console.error('Error:', error);
-      showNotification('Greška pri kreiranju rezervacije', 'error');
-    });
+      })
+      .then(response => response.json())
+      .then(result => {
+        if (result.contact_id) {
+          createBookingWithContactId(result.contact_id, date, timeFrom, timeTo, partySize, tableType, occasion, comment, malesCount, femalesCount, initialCheckRsd, finalCheckRsd, deposit, leadSource, feedback, foodDrink);
+        } else {
+          throw new Error('Failed to create contact');
+        }
+      })
+      .catch(error => {
+        isSavingBooking = false; // Reset flag on error
+        console.error('Error:', error);
+        showNotification('Greška pri kreiranju rezervacije', 'error');
+      });
+    }
   }
   
   function createBookingWithContactId(contactId, date, timeFrom, timeTo, partySize, tableType, occasion, comment, malesCount, femalesCount, initialCheckRsd, finalCheckRsd, deposit, leadSource, feedback, foodDrink) {
@@ -8263,9 +9779,11 @@
       if (actionPanel) actionPanel.classList.remove('show');
     }
     
-    // Close settings menu
-    const menu = document.getElementById('tableSettingsMenu');
-    if (menu) menu.style.display = 'none';
+    // Close settings menu (both PC and mobile)
+    const pcMenu = document.getElementById('tableSettingsMenu');
+    const mobileMenu = document.getElementById('mobileTableSettingsMenu');
+    if (pcMenu) pcMenu.style.display = 'none';
+    if (mobileMenu) mobileMenu.style.display = 'none';
   };
 
   // Update selection count
@@ -8502,29 +10020,56 @@
       .then(data => {
         if (data.success) {
           completed++;
+          
+          // Обновляем статус в строке таблицы сразу после успешного обновления
+          const bookingRow = document.querySelector(`tr[data-booking-id="${bookingId}"]`);
+          if (bookingRow) {
+            // Обновляем атрибут data-status
+            bookingRow.setAttribute('data-status', status);
+            
+            // Обновляем отображение статуса в таблице
+            const statusBadge = bookingRow.querySelector(`#status-badge-${bookingId}`);
+            if (statusBadge && typeof updateStatusDisplay === 'function') {
+              updateStatusDisplay(statusBadge, status);
+            }
+          }
         } else {
           failed++;
         }
         
-        // If this is the last request, show notification and reload
+        // If this is the last request, show notification and update counters
         if (completed + failed === bookingIds.length) {
+          // Обновляем счетчики статусов после обновления всех бронирований
+          const currentShift = typeof currentShiftFilter !== 'undefined' ? currentShiftFilter : 'all';
+          if (typeof updateStatusCounters === 'function') {
+            updateStatusCounters(currentShift);
+          }
+          
           if (failed === 0) {
             showNotification(`Status je uspešno promenjen za ${completed} rezervacija`, 'success');
           } else {
             showNotification(`Status je promenjen za ${completed} rezervacija, grešaka: ${failed}`, 'error');
           }
-          setTimeout(() => {
-            window.location.reload();
-          }, 1000);
+          // Убираем перезагрузку страницы, так как мы обновляем UI вручную
+          // setTimeout(() => {
+          //   window.location.reload();
+          // }, 1000);
         }
       })
       .catch(error => {
         failed++;
         if (completed + failed === bookingIds.length) {
+          // Обновляем счетчики даже при ошибках (для успешно обновленных)
+          const currentShift = typeof currentShiftFilter !== 'undefined' ? currentShiftFilter : 'all';
+          if (typeof updateStatusCounters === 'function') {
+            updateStatusCounters(currentShift);
+          }
+          
           showNotification(`Greška pri promeni statusa. Uspešno: ${completed}, Grešaka: ${failed}`, 'error');
-          setTimeout(() => {
-            window.location.reload();
-          }, 1000);
+          // Убираем перезагрузку страницы
+          // setTimeout(() => {
+          //   window.location.reload();
+          // }, 1000);
         }
       });
     });
@@ -8912,6 +10457,20 @@
       window.addEventListener('resize', centerNoBookingsMessage);
     }, 500);
     
+    // Настройка размера шрифта для мобильной даты
+    let resizeTimeout;
+    function debouncedAdjustFontSize() {
+      clearTimeout(resizeTimeout);
+      resizeTimeout = setTimeout(() => {
+        requestAnimationFrame(adjustMobileDateTextFontSize);
+      }, 100);
+    }
+    
+    setTimeout(() => {
+      adjustMobileDateTextFontSize();
+      window.addEventListener('resize', debouncedAdjustFontSize);
+    }, 100);
+    
     // Проверяем после применения настроек колонок (но только если таблица видна)
     const originalApplySettings = window.applyTableColumnsSettings;
     if (originalApplySettings) {
@@ -8947,13 +10506,23 @@
       return;
     }
     
-    // Get visible rows (not hidden by filters)
-    const visibleRows = document.querySelectorAll('.booking-row:not(.hidden-row)');
+    // Get visible rows (not hidden by filters or CSS)
+    const allRows = document.querySelectorAll('.booking-row');
+    const visibleRows = Array.from(allRows).filter(row => {
+      // Проверяем видимость через несколько методов
+      const style = window.getComputedStyle(row);
+      return style.display !== 'none' && 
+             !row.classList.contains('hidden-row') &&
+             !row.classList.contains('no-results-row') &&
+             row.offsetParent !== null;
+    });
     
     if (visibleRows.length === 0) {
       showNotification('Nema podataka za izvoz', 'error');
       return;
     }
+    
+    console.log('Export - visible rows count:', visibleRows.length);
     
     // Calculate total guests from visible rows
     let totalGuests = 0;
@@ -9001,22 +10570,6 @@
       .filter(([key, config]) => config.visible && key !== 'akcije')
       .sort((a, b) => a[1].index - b[1].index);
     
-    // Column mapping (accounting for checkbox column at index 0)
-    const columnIndexMap = {
-      'vreme': 1,
-      'gost': 2,
-      'telefon': 3,
-      'broj_osoba': 4,
-      'muskarci': 5,
-      'zene': 6,
-      'sto': 7,
-      'tip_stola': 8,
-      'lead_source': 9,
-      'uslov': 10,
-      'komentar': 11,
-      'status': 12
-    };
-    
     // Prepare data for Excel
     const data = [];
     
@@ -9039,42 +10592,208 @@
     const headerRow = visibleColumns.map(([key, config]) => config.label);
     data.push(headerRow);
     
-    // Add data rows
-    visibleRows.forEach(row => {
+    // Add data rows - используем data-column атрибуты вместо nth-child
+    visibleRows.forEach((row, rowIndex) => {
+      // Проверяем, что строка видима (через несколько методов)
+      const computedStyle = window.getComputedStyle(row);
+      if (row.style.display === 'none' || computedStyle.display === 'none' || 
+          row.classList.contains('hidden-row') || row.classList.contains('no-results-row')) {
+        return;
+      }
+      
       const rowData = [];
       visibleColumns.forEach(([key, config]) => {
-        const cellIndex = columnIndexMap[key];
-        if (cellIndex !== undefined) {
-          const cell = row.querySelector(`td:nth-child(${cellIndex + 1})`); // +1 because nth-child is 1-based
-          let cellText = '';
+        // Используем data-column атрибут для поиска ячейки
+        const cell = row.querySelector(`td[data-column="${key}"]`);
+        let cellText = '';
+        
+        if (cell) {
+          // Проверяем видимость ячейки
+          const cellStyle = window.getComputedStyle(cell);
+          if (cellStyle.display === 'none') {
+            rowData.push('');
+            return;
+          }
           
-          if (cell) {
-            // Get text content, handling special cases
+          // Get text content, handling special cases for each column type
+          try {
+            // Для колонок с особыми элементами сначала пытаемся найти специфичный элемент
             if (key === 'status') {
               const statusBadge = cell.querySelector('.status-badge-table');
-              cellText = statusBadge ? statusBadge.textContent.trim() : '';
+              cellText = statusBadge ? statusBadge.textContent.trim() : (cell.textContent || '').trim();
             } else if (key === 'vreme') {
               const timeSpan = cell.querySelector('.time-from');
-              cellText = timeSpan ? timeSpan.textContent.trim().replace('🌙', '').trim() : '';
+              if (timeSpan) {
+                cellText = timeSpan.textContent.trim().replace(/🌙/g, '').trim();
+              } else {
+                cellText = (cell.textContent || '').trim();
+              }
             } else if (key === 'gost') {
+              // Сначала пытаемся найти ссылку или span с именем
+              const guestLink = cell.querySelector('.guest-name-link');
               const guestSpan = cell.querySelector('.guest-name');
-              cellText = guestSpan ? guestSpan.textContent.trim() : '';
+              if (guestLink) {
+                cellText = guestLink.textContent.trim();
+              } else if (guestSpan) {
+                cellText = guestSpan.textContent.trim();
+              } else {
+                // Если нет специальных элементов, берем весь текст ячейки
+                cellText = (cell.textContent || '').trim();
+              }
             } else if (key === 'tip_stola') {
               const tableTypeDiv = cell.querySelector('.table-type-scrollable');
-              cellText = tableTypeDiv ? tableTypeDiv.textContent.trim() : '';
+              if (tableTypeDiv) {
+                cellText = tableTypeDiv.textContent.trim();
+              } else {
+                cellText = (cell.textContent || '').trim();
+              }
+            } else if (key === 'lead_source') {
+              const leadSourceDiv = cell.querySelector('.lead-source-scrollable');
+              if (leadSourceDiv) {
+                cellText = leadSourceDiv.textContent.trim();
+              } else {
+                cellText = (cell.textContent || '').trim();
+              }
+            } else if (key === 'komentar') {
+              const commentDiv = cell.querySelector('.comment-content');
+              if (commentDiv) {
+                cellText = commentDiv.textContent.trim();
+              } else {
+                cellText = (cell.textContent || '').trim();
+              }
             } else {
-              cellText = cell.textContent.trim();
+              // Для всех остальных колонок просто берем текстовое содержимое
+              // Используем textContent, который игнорирует скрытые элементы
+              cellText = (cell.textContent || '').trim();
             }
+          } catch (e) {
+            console.error(`Error extracting data from column ${key}:`, e);
+            cellText = '';
           }
-          rowData.push(cellText);
         }
+        
+        // Очищаем от лишних пробелов и переносов строк
+        // Убеждаемся, что cellText - это строка
+        let finalText = '';
+        if (typeof cellText === 'string') {
+          // Заменяем переносы строк на пробелы и убираем множественные пробелы
+          finalText = cellText.replace(/\r?\n/g, ' ').replace(/\s+/g, ' ').trim();
+        } else {
+          // Если это не строка, преобразуем в строку
+          finalText = String(cellText || '').trim();
+        }
+        
+        // Всегда добавляем строку в массив (даже пустую)
+        rowData.push(finalText);
       });
-      data.push(rowData);
+      
+      // Убеждаемся, что rowData имеет правильную длину
+      while (rowData.length < visibleColumns.length) {
+        rowData.push('');
+      }
+      
+      // Убеждаемся, что rowData - это массив строк, не один большой строковый элемент
+      // Проверяем, что длина rowData соответствует количеству видимых колонок
+      if (rowData.length !== visibleColumns.length) {
+        console.warn(`Row ${data.length} has incorrect length: ${rowData.length} expected ${visibleColumns.length}`);
+        // Дополняем пустыми строками, если нужно
+        while (rowData.length < visibleColumns.length) {
+          rowData.push('');
+        }
+        // Обрезаем, если больше (на всякий случай)
+        if (rowData.length > visibleColumns.length) {
+          rowData = rowData.slice(0, visibleColumns.length);
+        }
+      }
+      
+      // Добавляем строку данных только если есть видимые колонки
+      if (visibleColumns.length > 0) {
+        // Убеждаемся, что rowData - это массив строк правильной длины
+        if (!Array.isArray(rowData)) {
+          console.error('rowData is not an array:', rowData, typeof rowData);
+          // Если это не массив, создаем массив из одной строки
+          rowData = [String(rowData || '')];
+        }
+        
+        // Убеждаемся, что длина массива соответствует количеству колонок
+        if (rowData.length !== visibleColumns.length) {
+          console.warn(`Row ${data.length} length mismatch: ${rowData.length} vs ${visibleColumns.length}`);
+          // Дополняем или обрезаем до нужной длины
+          while (rowData.length < visibleColumns.length) {
+            rowData.push('');
+          }
+          if (rowData.length > visibleColumns.length) {
+            rowData = rowData.slice(0, visibleColumns.length);
+          }
+        }
+        
+        // Убеждаемся, что все элементы - строки
+        const cleanedRowData = rowData.map((cell, idx) => {
+          if (Array.isArray(cell)) {
+            return cell.join(' ').trim();
+          }
+          if (cell != null && typeof cell === 'object') {
+            return JSON.stringify(cell);
+          }
+          return String(cell != null ? cell : '');
+        });
+        
+        data.push(cleanedRowData);
+      }
+    });
+    
+    // Debug: проверяем структуру данных перед экспортом
+    console.log('Excel export data structure:', {
+      totalRows: data.length,
+      headerRow: headerRow,
+      firstDataRow: data.length > 2 ? data[2] : null,
+      visibleColumnsCount: visibleColumns.length,
+      firstDataRowType: data.length > 2 && Array.isArray(data[2]) ? 'array' : typeof (data[2]),
+      firstDataRowLength: data.length > 2 && Array.isArray(data[2]) ? data[2].length : 'N/A',
+      sampleFirstCells: data.length > 2 && Array.isArray(data[2]) ? data[2].slice(0, 5) : 'N/A'
     });
     
     // Create workbook and worksheet
     const wb = XLSX.utils.book_new();
-    const ws = XLSX.utils.aoa_to_sheet(data);
+    
+    // Убеждаемся, что data - это массив массивов, где каждая строка - отдельный массив
+    // Проверяем и исправляем структуру данных, если нужно
+    const cleanedData = data.map((row, index) => {
+      // Убеждаемся, что row - это массив
+      if (!Array.isArray(row)) {
+        console.warn(`Row ${index} is not an array:`, row, typeof row);
+        // Если это не массив, пытаемся преобразовать
+        if (row != null && typeof row === 'object') {
+          return Object.values(row).map(v => String(v || ''));
+        }
+        return [String(row || '')];
+      }
+      
+      // Убеждаемся, что каждый элемент строки - это примитивное значение (строка, число)
+      return row.map((cell, cellIndex) => {
+        // Если это массив - соединяем в строку
+        if (Array.isArray(cell)) {
+          console.warn(`Cell [${index}][${cellIndex}] is an array, joining:`, cell);
+          return cell.map(c => String(c || '')).join(' ').trim();
+        }
+        // Если это объект - преобразуем в строку
+        if (cell != null && typeof cell === 'object') {
+          console.warn(`Cell [${index}][${cellIndex}] is an object, converting:`, cell);
+          return JSON.stringify(cell);
+        }
+        // Иначе просто преобразуем в строку
+        return String(cell != null ? cell : '');
+      });
+    });
+    
+    console.log('Cleaned data structure:', {
+      totalRows: cleanedData.length,
+      headerRow: cleanedData[2],
+      firstDataRow: cleanedData[3],
+      rowLengths: cleanedData.slice(0, 5).map((r, i) => ({ row: i, length: r.length }))
+    });
+    
+    const ws = XLSX.utils.aoa_to_sheet(cleanedData);
     
     // Set column widths
     const colWidths = visibleColumns.map(() => ({ wch: 15 }));
@@ -9156,12 +10875,6 @@
       .filter(([key, config]) => config.visible && key !== 'akcije')
       .sort((a, b) => a[1].index - b[1].index);
     
-    const columnIndexMap = {
-      'vreme': 1, 'gost': 2, 'telefon': 3, 'broj_osoba': 4, 'muskarci': 5,
-      'zene': 6, 'sto': 7, 'tip_stola': 8, 'lead_source': 9, 'uslov': 10,
-      'komentar': 11, 'status': 12
-    };
-    
     const data = [];
     
     // Add title row with date, shift, guests info, and reservations
@@ -9183,35 +10896,90 @@
     const headerRow = visibleColumns.map(([key, config]) => config.label);
     data.push(headerRow);
     
+    // Add data rows - используем data-column атрибуты вместо nth-child
     visibleRows.forEach(row => {
+      // Проверяем, что строка видима
+      if (row.style.display === 'none') return;
+      
       const rowData = [];
       visibleColumns.forEach(([key, config]) => {
-        const cellIndex = columnIndexMap[key];
-        if (cellIndex !== undefined) {
-          const cell = row.querySelector(`td:nth-child(${cellIndex + 1})`);
-          let cellText = '';
-          
-          if (cell) {
-            if (key === 'status') {
-              const statusBadge = cell.querySelector('.status-badge-table');
-              cellText = statusBadge ? statusBadge.textContent.trim() : '';
-            } else if (key === 'vreme') {
-              const timeSpan = cell.querySelector('.time-from');
-              cellText = timeSpan ? timeSpan.textContent.trim().replace('🌙', '').trim() : '';
-            } else if (key === 'gost') {
-              const guestSpan = cell.querySelector('.guest-name');
-              cellText = guestSpan ? guestSpan.textContent.trim() : '';
-            } else if (key === 'tip_stola') {
-              const tableTypeDiv = cell.querySelector('.table-type-scrollable');
-              cellText = tableTypeDiv ? tableTypeDiv.textContent.trim() : '';
+        // Используем data-column атрибут для поиска ячейки
+        const cell = row.querySelector(`td[data-column="${key}"]`);
+        let cellText = '';
+        
+        if (cell) {
+          // Get text content, handling special cases for each column type
+          if (key === 'status') {
+            const statusBadge = cell.querySelector('.status-badge-table');
+            cellText = statusBadge ? statusBadge.textContent.trim() : '';
+          } else if (key === 'vreme') {
+            const timeSpan = cell.querySelector('.time-from');
+            if (timeSpan) {
+              cellText = timeSpan.textContent.trim().replace('🌙', '').trim();
+            }
+          } else if (key === 'gost') {
+            const guestLink = cell.querySelector('.guest-name-link');
+            const guestSpan = cell.querySelector('.guest-name');
+            if (guestLink) {
+              cellText = guestLink.textContent.trim();
+            } else if (guestSpan) {
+              cellText = guestSpan.textContent.trim();
+            }
+          } else if (key === 'telefon') {
+            // Телефон - прямой текст без вложенных элементов
+            cellText = cell.textContent.trim();
+          } else if (key === 'broj_osoba') {
+            // Брой особа - прямой текст
+            cellText = cell.textContent.trim();
+          } else if (key === 'muskarci') {
+            // Мускарци - прямой текст
+            cellText = cell.textContent.trim();
+          } else if (key === 'zene') {
+            // Жене - прямой текст
+            cellText = cell.textContent.trim();
+          } else if (key === 'sto') {
+            // Стол - прямой текст
+            cellText = cell.textContent.trim();
+          } else if (key === 'tip_stola') {
+            const tableTypeDiv = cell.querySelector('.table-type-scrollable');
+            if (tableTypeDiv) {
+              cellText = tableTypeDiv.textContent.trim();
             } else {
               cellText = cell.textContent.trim();
             }
+          } else if (key === 'lead_source') {
+            const leadSourceDiv = cell.querySelector('.lead-source-scrollable');
+            if (leadSourceDiv) {
+              cellText = leadSourceDiv.textContent.trim();
+            } else {
+              cellText = cell.textContent.trim();
+            }
+          } else if (key === 'uslov') {
+            // Услов - прямой текст
+            cellText = cell.textContent.trim();
+          } else if (key === 'komentar') {
+            const commentDiv = cell.querySelector('.comment-content');
+            if (commentDiv) {
+              cellText = commentDiv.textContent.trim();
+            } else {
+              // Если обертки нет, берем прямой текст (для совместимости)
+              cellText = cell.textContent.trim();
+            }
+          } else {
+            // Для остальных колонок получаем текст напрямую
+            cellText = cell.textContent.trim();
           }
-          rowData.push(cellText);
         }
+        
+        // Очищаем от лишних пробелов и символов переноса строки
+        cellText = (cellText || '').replace(/\s+/g, ' ').trim();
+        rowData.push(cellText); // Добавляем пустую строку если нет данных
       });
-      data.push(rowData);
+      
+      // Добавляем строку данных
+      if (rowData.length > 0) {
+        data.push(rowData);
+      }
     });
     
     let csvContent = '\uFEFF';
@@ -9238,5 +11006,800 @@
     
     showNotification('Podaci su uspešno izvezeni u CSV', 'success');
   }
+  
+  // ========== Функции для фильтрации колонок ==========
+  let currentFilterColumn = null;
+  let activeFilters = {}; // Хранит активные фильтры для каждой колонки
+  
+  // Загружаем фильтры из localStorage сразу при инициализации
+  (function() {
+    function getBusinessIdQuick() {
+      let storedBusinessId = sessionStorage.getItem('currentBusinessId');
+      if (storedBusinessId) return storedBusinessId;
+      const urlParams = new URLSearchParams(window.location.search);
+      const businessId = urlParams.get('business_id');
+      if (businessId) {
+        sessionStorage.setItem('currentBusinessId', businessId);
+        return businessId;
+      }
+      const pathMatch = window.location.pathname.match(/\/booking\/(\d+)/);
+      if (pathMatch && pathMatch[1]) {
+        sessionStorage.setItem('currentBusinessId', pathMatch[1]);
+        return pathMatch[1];
+      }
+      return 'default';
+    }
+    
+    try {
+      const businessId = getBusinessIdQuick();
+      const storageKey = `booking_filters_${businessId}`;
+      const savedFilters = localStorage.getItem(storageKey);
+      if (savedFilters) {
+        activeFilters = JSON.parse(savedFilters);
+      }
+    } catch (e) {
+      console.error('Ошибка ранней загрузки фильтров:', e);
+    }
+  })();
+  
+  // Получение ID заведения
+  function getBusinessId() {
+    // Пытаемся получить из sessionStorage (сохраняется при загрузке настроек)
+    let storedBusinessId = sessionStorage.getItem('currentBusinessId');
+    if (storedBusinessId) {
+      console.log('Business ID из sessionStorage:', storedBusinessId);
+      return storedBusinessId;
+    }
+    
+    // Пытаемся получить из URL параметров
+    const urlParams = new URLSearchParams(window.location.search);
+    const businessId = urlParams.get('business_id');
+    if (businessId) {
+      sessionStorage.setItem('currentBusinessId', businessId);
+      console.log('Business ID из URL:', businessId);
+      return businessId;
+    }
+    
+    // Пытаемся получить из пути URL (например, /booking/123)
+    const pathMatch = window.location.pathname.match(/\/booking\/(\d+)/);
+    if (pathMatch && pathMatch[1]) {
+      sessionStorage.setItem('currentBusinessId', pathMatch[1]);
+      console.log('Business ID из пути URL:', pathMatch[1]);
+      return pathMatch[1];
+    }
+    
+    // Используем дефолтное значение
+    console.log('Business ID не найден, используем "default"');
+    return 'default';
+  }
+  
+  // Сохранение фильтров в localStorage
+  function saveFiltersToStorage() {
+    const businessId = getBusinessId();
+    const storageKey = `booking_filters_${businessId}`;
+    try {
+      console.log('Сохранение фильтров:', { businessId, storageKey, activeFilters });
+      localStorage.setItem(storageKey, JSON.stringify(activeFilters));
+      console.log('Фильтры успешно сохранены');
+    } catch (e) {
+      console.error('Ошибка сохранения фильтров:', e);
+    }
+  }
+  
+  // Немедленное применение фильтров (без повторной загрузки из localStorage)
+  function applyFiltersImmediately() {
+    if (Object.keys(activeFilters).length === 0) return;
+    
+    // Восстанавливаем индикаторы
+    Object.keys(activeFilters).forEach(columnKey => {
+      updateFilterIndicator(columnKey);
+    });
+    
+    // Применяем фильтры
+    const table = document.querySelector('.bookings-table tbody');
+    if (table && table.children.length > 0) {
+      applyFilters();
+    }
+  }
+  
+  // Загрузка фильтров из localStorage (если еще не загружены)
+  function loadFiltersFromStorage() {
+    // Если фильтры уже загружены, просто применяем их
+    if (Object.keys(activeFilters).length > 0) {
+      applyFiltersImmediately();
+      return;
+    }
+    
+    const businessId = getBusinessId();
+    const storageKey = `booking_filters_${businessId}`;
+    try {
+      const savedFilters = localStorage.getItem(storageKey);
+      if (savedFilters) {
+        activeFilters = JSON.parse(savedFilters);
+        applyFiltersImmediately();
+      }
+    } catch (e) {
+      console.error('Ошибка загрузки фильтров:', e);
+    }
+  }
+  
+  // Функция для попытки загрузки фильтров (когда таблица загружена)
+  function tryLoadFilters() {
+    const table = document.querySelector('.bookings-table tbody');
+    if (table && table.children.length > 0) {
+      applyFiltersImmediately();
+      return true;
+    }
+    return false;
+  }
+  
+  // Открытие модального окна фильтра
+  window.openColumnFilterModal = function(columnKey, columnName) {
+    // Для колонок с простой сортировкой не открываем модальное окно
+    if (['vreme', 'gost', 'broj_osoba', 'muskarci', 'zene', 'uslov'].includes(columnKey)) {
+      toggleColumnSort(columnKey);
+      return;
+    }
+    
+    currentFilterColumn = columnKey;
+    const modal = document.getElementById('columnFilterModal');
+    const title = document.getElementById('filterModalTitle');
+    const options = document.getElementById('filterOptions');
+    
+    if (!modal || !title || !options) return;
+    
+    title.textContent = `Podešavanje filtera za kategoriju ${columnName}`;
+    options.innerHTML = '';
+    
+    // Генерируем опции в зависимости от типа колонки
+    if (['vreme', 'broj_osoba', 'muskarci', 'zene', 'uslov'].includes(columnKey)) {
+      // Сортировка по возрастанию/убыванию
+      options.innerHTML = `
+        <div class="filter-option" onclick="selectFilterOption(this, 'asc')">
+          <input type="radio" name="filterOption" value="asc" id="filter_asc">
+          <label for="filter_asc">Rastuće</label>
+        </div>
+        <div class="filter-option" onclick="selectFilterOption(this, 'desc')">
+          <input type="radio" name="filterOption" value="desc" id="filter_desc">
+          <label for="filter_desc">Opadajuće</label>
+        </div>
+      `;
+    } else if (['telefon', 'komentar'].includes(columnKey)) {
+      // Есть/нет
+      options.innerHTML = `
+        <div class="filter-option" onclick="selectFilterOption(this, 'has')">
+          <input type="radio" name="filterOption" value="has" id="filter_has">
+          <label for="filter_has">${columnKey === 'telefon' ? 'Ima telefon' : 'Ima komentar'}</label>
+        </div>
+        <div class="filter-option" onclick="selectFilterOption(this, 'no')">
+          <input type="radio" name="filterOption" value="no" id="filter_no">
+          <label for="filter_no">${columnKey === 'telefon' ? 'Nema telefona' : 'Nema komentara'}</label>
+        </div>
+      `;
+    } else if (['tip_stola', 'lead_source'].includes(columnKey)) {
+      // Выбор из списка (множественный выбор с чекбоксами)
+      const uniqueValues = getUniqueColumnValues(columnKey);
+      let listHTML = '<div class="filter-list">';
+      listHTML += `<div class="filter-list-item" onclick="toggleFilterListOption(this, '')">
+        <input type="checkbox" id="filter_empty_${columnKey}" value="">
+        <label for="filter_empty_${columnKey}">Prazno</label>
+      </div>`;
+      uniqueValues.forEach((value, index) => {
+        if (value) {
+          const safeValue = value.replace(/'/g, "\\'").replace(/"/g, '&quot;');
+          listHTML += `<div class="filter-list-item" onclick="toggleFilterListOption(this, '${safeValue}')">
+            <input type="checkbox" id="filter_${columnKey}_${index}" value="${safeValue}">
+            <label for="filter_${columnKey}_${index}">${value}</label>
+          </div>`;
+        }
+      });
+      listHTML += '</div>';
+      options.innerHTML = listHTML;
+    }
+    
+    // Восстанавливаем выбранное значение, если фильтр уже активен
+    if (activeFilters[columnKey]) {
+      restoreFilterSelection(columnKey);
+    }
+    
+    modal.classList.add('show');
+  };
+  
+  // Закрытие модального окна
+  window.closeColumnFilterModal = function() {
+    const modal = document.getElementById('columnFilterModal');
+    if (modal) {
+      modal.classList.remove('show');
+    }
+    currentFilterColumn = null;
+  };
+  
+  // Выбор опции фильтра (для радио-кнопок)
+  window.selectFilterOption = function(element, value) {
+    // Убираем выделение со всех опций
+    document.querySelectorAll('.filter-option').forEach(opt => {
+      opt.classList.remove('selected');
+      opt.querySelector('input[type="radio"]').checked = false;
+    });
+    
+    // Выделяем выбранную опцию
+    element.classList.add('selected');
+    element.querySelector('input[type="radio"]').checked = true;
+  };
+  
+  // Переключение опции из списка (для Tip stola, Lead source) - множественный выбор
+  window.toggleFilterListOption = function(element, value) {
+    const checkbox = element.querySelector('input[type="checkbox"]');
+    if (!checkbox) return;
+    
+    // Переключаем чекбокс
+    checkbox.checked = !checkbox.checked;
+    
+    // Обновляем визуальное состояние
+    if (checkbox.checked) {
+      element.classList.add('selected');
+    } else {
+      element.classList.remove('selected');
+    }
+  };
+  
+  // Сохранение фильтра
+  window.saveColumnFilter = function() {
+    if (!currentFilterColumn) return;
+    
+    let filterValue = null;
+    
+    // Получаем выбранное значение
+    if (['vreme', 'broj_osoba', 'muskarci', 'zene', 'uslov', 'gost', 'telefon', 'komentar'].includes(currentFilterColumn)) {
+      const selected = document.querySelector('.filter-option.selected input[type="radio"]');
+      if (selected) {
+        filterValue = selected.value;
+      }
+    } else if (['tip_stola', 'lead_source'].includes(currentFilterColumn)) {
+      // Множественный выбор - собираем все выбранные значения
+      const selectedCheckboxes = document.querySelectorAll('.filter-list-item input[type="checkbox"]:checked');
+      if (selectedCheckboxes.length > 0) {
+        filterValue = Array.from(selectedCheckboxes).map(cb => cb.value);
+      }
+    }
+    
+    if (filterValue !== null && (Array.isArray(filterValue) ? filterValue.length > 0 : true)) {
+      activeFilters[currentFilterColumn] = filterValue;
+      updateFilterIndicator(currentFilterColumn);
+      applyFilters();
+      saveFiltersToStorage(); // Сохраняем фильтры
+    }
+    
+    closeColumnFilterModal();
+  };
+  
+  // Восстановление выбранного значения фильтра
+  function restoreFilterSelection(columnKey) {
+    const filterValue = activeFilters[columnKey];
+    if (!filterValue) return;
+    
+    if (['vreme', 'broj_osoba', 'muskarci', 'zene', 'uslov', 'gost', 'telefon', 'komentar'].includes(columnKey)) {
+      const option = document.querySelector(`input[type="radio"][value="${filterValue}"]`);
+      if (option) {
+        option.closest('.filter-option').classList.add('selected');
+        option.checked = true;
+      }
+    } else if (['tip_stola', 'lead_source'].includes(columnKey)) {
+      // Множественный выбор - отмечаем все выбранные значения
+      if (Array.isArray(filterValue)) {
+        filterValue.forEach(value => {
+          const checkbox = document.querySelector(`.filter-list-item input[type="checkbox"][value="${value.replace(/"/g, '&quot;')}"]`);
+          if (checkbox) {
+            checkbox.checked = true;
+            checkbox.closest('.filter-list-item').classList.add('selected');
+          }
+        });
+      }
+    }
+  }
+  
+  // Обновление индикатора фильтра
+  function updateFilterIndicator(columnKey) {
+    // Ищем заголовок по onclick или по тексту
+    let th = document.querySelector(`th[onclick*="${columnKey}"]`);
+    if (!th) {
+      // Если не нашли по onclick, ищем по тексту заголовка
+      const headers = document.querySelectorAll('.bookings-table thead th');
+      const columnNames = {
+        'vreme': 'Vreme',
+        'gost': 'Gost',
+        'telefon': 'Telefon',
+        'broj_osoba': 'Broj osoba',
+        'muskarci': 'Muškarci',
+        'zene': 'Žene',
+        'tip_stola': 'Tip stola',
+        'lead_source': 'Lead source',
+        'uslov': 'Uslov',
+        'komentar': 'Komentar'
+      };
+      const columnName = columnNames[columnKey];
+      if (columnName) {
+        headers.forEach(header => {
+          if (header.textContent.trim().includes(columnName)) {
+            th = header;
+          }
+        });
+      }
+    }
+    if (!th) return;
+    
+    // Удаляем старые индикаторы, если есть
+    const oldIndicator = th.querySelector('.filter-indicator');
+    if (oldIndicator) {
+      oldIndicator.remove();
+    }
+    const oldSortIndicator = th.querySelector('.sort-indicator');
+    if (oldSortIndicator) {
+      oldSortIndicator.remove();
+    }
+    
+    // Для колонок с простой сортировкой показываем стрелочку
+    if (['vreme', 'gost', 'broj_osoba', 'muskarci', 'zene', 'uslov'].includes(columnKey)) {
+      if (activeFilters[columnKey]) {
+        const filterValue = activeFilters[columnKey];
+        let sortClass = '';
+        if (filterValue === 'asc' || filterValue === 'a-z') {
+          sortClass = 'asc';
+        } else if (filterValue === 'desc' || filterValue === 'z-a') {
+          sortClass = 'desc';
+        }
+        
+        if (sortClass) {
+          const indicator = document.createElement('span');
+          indicator.className = `sort-indicator ${sortClass}`;
+          indicator.onclick = function(e) {
+            e.stopPropagation();
+            toggleColumnSort(columnKey);
+          };
+          th.appendChild(indicator);
+        }
+      }
+    } else {
+      // Для остальных колонок показываем обычный индикатор с цифрой
+      if (activeFilters[columnKey]) {
+        const filterValue = activeFilters[columnKey];
+        // Для множественного выбора показываем количество выбранных элементов
+        const count = Array.isArray(filterValue) ? filterValue.length : 1;
+        
+        const indicator = document.createElement('span');
+        indicator.className = 'filter-indicator';
+        indicator.innerHTML = `
+          <span>${count}</span>
+          <span class="filter-close" onclick="event.stopPropagation(); clearColumnFilter('${columnKey}')">×</span>
+        `;
+        th.appendChild(indicator);
+      }
+    }
+  }
+  
+  // Переключение сортировки для колонок (3 состояния: none -> asc -> desc -> none)
+  window.toggleColumnSort = function(columnKey) {
+    const currentFilter = activeFilters[columnKey];
+    
+    // Определяем следующее состояние
+    let nextFilter = null;
+    if (!currentFilter) {
+      // Нет фильтра -> по возрастанию
+      nextFilter = columnKey === 'gost' ? 'a-z' : 'asc';
+    } else if (currentFilter === 'asc' || currentFilter === 'a-z') {
+      // По возрастанию -> по убыванию
+      nextFilter = columnKey === 'gost' ? 'z-a' : 'desc';
+    } else if (currentFilter === 'desc' || currentFilter === 'z-a') {
+      // По убыванию -> убрать фильтр
+      nextFilter = null;
+    }
+    
+    // Обновляем фильтр
+    if (nextFilter) {
+      activeFilters[columnKey] = nextFilter;
+    } else {
+      delete activeFilters[columnKey];
+    }
+    
+    // Обновляем индикатор
+    updateFilterIndicator(columnKey);
+    
+    // Сохраняем фильтры
+    saveFiltersToStorage();
+    
+    // Применяем фильтры и сортировку
+    applyFilters();
+  };
+  
+  // Очистка фильтра
+  window.clearColumnFilter = function(columnKey) {
+    delete activeFilters[columnKey];
+    updateFilterIndicator(columnKey);
+    saveFiltersToStorage(); // Сохраняем фильтры после очистки
+    
+    // Обновляем таблицу - показываем все строки и применяем оставшиеся фильтры
+    refreshTableAfterFilterClear();
+  };
+  
+  // Обновление таблицы после сброса фильтра
+  function refreshTableAfterFilterClear() {
+    const rows = document.querySelectorAll('.bookings-table tbody tr');
+    
+    // Сначала показываем все строки (кроме служебных)
+    rows.forEach(row => {
+      if (!row.classList.contains('no-bookings-row') && !row.classList.contains('no-results-row')) {
+        row.style.display = '';
+      }
+    });
+    
+    // Проверяем, есть ли активные фильтры сортировки
+    const hasSortingFilters = Object.keys(activeFilters).some(key => {
+      const value = activeFilters[key];
+      return (['vreme', 'broj_osoba', 'muskarci', 'zene', 'uslov'].includes(key) && (value === 'asc' || value === 'desc')) ||
+             (key === 'gost' && (value === 'a-z' || value === 'z-a'));
+    });
+    
+    // Если нет фильтров сортировки, восстанавливаем исходный порядок
+    if (!hasSortingFilters) {
+      restoreOriginalOrder();
+      // Обновляем статистику после восстановления порядка
+      updateFilteredStatistics();
+      // После восстановления порядка просто выходим, не применяя фильтры
+      return;
+    }
+    
+    // Если есть другие фильтры (не сортировка), применяем их
+    applyFilters();
+    
+    // Обновляем счетчики и информацию, если есть такие функции
+    if (typeof updateCounters === 'function') {
+      updateCounters();
+    }
+  }
+  
+  // Сохранение исходного порядка строк
+  let originalRowOrder = [];
+  
+  function saveOriginalOrder() {
+    const tbody = document.querySelector('.bookings-table tbody');
+    if (!tbody) return;
+    
+    const rows = Array.from(tbody.querySelectorAll('tr:not(.no-bookings-row):not(.no-results-row)'));
+    originalRowOrder = rows.map(row => {
+      // Сохраняем booking ID для идентификации строк
+      const bookingId = row.getAttribute('data-booking-id');
+      return bookingId || null;
+    }).filter(id => id !== null);
+    
+    console.log('Сохранен исходный порядок строк:', originalRowOrder.length, 'записей');
+  }
+  
+  // Восстановление исходного порядка строк
+  function restoreOriginalOrder() {
+    const tbody = document.querySelector('.bookings-table tbody');
+    if (!tbody || originalRowOrder.length === 0) {
+      console.log('Нечего восстанавливать: originalRowOrder пуст или tbody не найден');
+      return;
+    }
+    
+    console.log('Восстановление исходного порядка...');
+    
+    // Сохраняем текущие строки в Map по booking ID
+    const currentRows = Array.from(tbody.querySelectorAll('tr:not(.no-bookings-row):not(.no-results-row)'));
+    const rowsMap = new Map();
+    
+    currentRows.forEach(row => {
+      const bookingId = row.getAttribute('data-booking-id');
+      if (bookingId) {
+        rowsMap.set(bookingId, row);
+      }
+    });
+    
+    // Восстанавливаем порядок на основе сохраненного
+    originalRowOrder.forEach(bookingId => {
+      const row = rowsMap.get(bookingId);
+      if (row && row.parentNode === tbody) {
+        tbody.appendChild(row);
+      }
+    });
+    
+    console.log('Исходный порядок восстановлен');
+  }
+  
+  // Получение уникальных значений колонки
+  function getUniqueColumnValues(columnKey) {
+    const rows = document.querySelectorAll('.bookings-table tbody tr');
+    const values = new Set();
+    
+    rows.forEach(row => {
+      // Используем data-column атрибут вместо nth-child
+      const cell = row.querySelector(`td[data-column="${columnKey}"]`);
+      if (cell) {
+        const text = cell.textContent.trim();
+        if (text) values.add(text);
+      }
+    });
+    
+    return Array.from(values).sort();
+  }
+  
+  // Применение фильтров
+  function applyFilters() {
+    const rows = document.querySelectorAll('.bookings-table tbody tr');
+    
+    rows.forEach(row => {
+      let shouldShow = true;
+      
+      // Применяем все активные фильтры
+      Object.entries(activeFilters).forEach(([columnKey, filterValue]) => {
+        // Используем data-column атрибут вместо nth-child
+        const cell = row.querySelector(`td[data-column="${columnKey}"]`);
+        if (!cell) {
+          shouldShow = false;
+          return;
+        }
+        
+        const cellValue = cell.textContent.trim();
+        
+        if (['vreme', 'broj_osoba', 'muskarci', 'zene', 'uslov'].includes(columnKey)) {
+          // Для числовых колонок фильтрация будет через сортировку
+          // Пока просто пропускаем
+        } else if (columnKey === 'gost') {
+          // Для имени гостя тоже сортировка
+        } else if (columnKey === 'telefon' || columnKey === 'komentar') {
+          if (filterValue === 'has' && !cellValue) {
+            shouldShow = false;
+          } else if (filterValue === 'no' && cellValue) {
+            shouldShow = false;
+          }
+        } else if (['tip_stola', 'lead_source'].includes(columnKey)) {
+          // Множественный выбор - проверяем, входит ли значение в массив
+          if (Array.isArray(filterValue)) {
+            const isEmpty = !cellValue || cellValue === '-';
+            const isEmptySelected = filterValue.includes('');
+            const isValueSelected = filterValue.includes(cellValue);
+            
+            if (!isEmptySelected && !isValueSelected) {
+              shouldShow = false;
+            } else if (isEmpty && !isEmptySelected) {
+              shouldShow = false;
+            } else if (!isEmpty && !isValueSelected) {
+              shouldShow = false;
+            }
+          } else {
+            // Старая логика для обратной совместимости
+            if (filterValue === '' && cellValue) {
+              shouldShow = false;
+            } else if (filterValue !== '' && cellValue !== filterValue) {
+              shouldShow = false;
+            }
+          }
+        }
+      });
+      
+      row.style.display = shouldShow ? '' : 'none';
+    });
+    
+    // Применяем сортировку
+    applySorting();
+    
+    // Обновляем статистику на основе отфильтрованных данных
+    updateFilteredStatistics();
+    
+    // Применяем вертикальное выравнивание после фильтрации
+    setTimeout(() => {
+      adjustVerticalAlignment();
+    }, 50);
+  }
+  
+  // Обновление статистики на основе отфильтрованных строк
+  function updateFilteredStatistics() {
+    const rows = document.querySelectorAll('.bookings-table tbody tr.booking-row:not(.no-bookings-row):not(.no-results-row)');
+    let totalGuests = 0;
+    let totalReservations = 0;
+    
+    // Используем глобальную переменную businessCapacity
+    const currentBusinessCapacity = typeof businessCapacity !== 'undefined' ? businessCapacity : null;
+    
+    // Подсчитываем гостей и резервации только из видимых строк
+    rows.forEach(row => {
+      if (row.style.display !== 'none') {
+        totalReservations++;
+        
+        // Получаем количество гостей из элемента с классом party-size
+        const partySizeCell = row.querySelector('.party-size');
+        if (partySizeCell) {
+          const partySize = parseInt(partySizeCell.textContent) || 0;
+          totalGuests += partySize;
+        }
+      }
+    });
+    
+    // Формируем текст для вместимости
+    let capacityText = '';
+    let percentageText = '';
+    
+    if (currentBusinessCapacity && currentBusinessCapacity > 0) {
+      capacityText = currentBusinessCapacity;
+      const percentage = Math.round((totalGuests / currentBusinessCapacity) * 100);
+      percentageText = `(${percentage}%)`;
+    } else {
+      capacityText = '... <span class="capacity-question" onclick="goToCapacitySettings()">?</span>';
+      percentageText = '';
+    }
+    
+    // Обновляем элементы статистики
+    const guestsInfo = document.getElementById('guestsInfo');
+    const mobileGuestsInfo = document.getElementById('mobileGuestsInfo');
+    const reservationsInfo = document.getElementById('reservationsInfo');
+    const mobileReservationsInfo = document.getElementById('mobileReservationsInfo');
+    
+    if (guestsInfo) {
+      guestsInfo.innerHTML = `Gosti: ${totalGuests} iz ${capacityText} ${percentageText}`;
+    }
+    if (mobileGuestsInfo) {
+      mobileGuestsInfo.innerHTML = `Gosti: ${totalGuests} iz ${capacityText} ${percentageText}`;
+    }
+    if (reservationsInfo) {
+      reservationsInfo.innerHTML = `Rezervacije: ${totalReservations}`;
+    }
+    if (mobileReservationsInfo) {
+      mobileReservationsInfo.innerHTML = `Rezervacije: ${totalReservations}`;
+    }
+  }
+  
+  // Применение сортировки
+  function applySorting() {
+    const tbody = document.querySelector('.bookings-table tbody');
+    if (!tbody) return;
+    
+    const rows = Array.from(tbody.querySelectorAll('tr:not(.no-bookings-row):not(.no-results-row)'));
+    
+    // Находим колонку с активной сортировкой
+    let sortColumn = null;
+    let sortDirection = null;
+    
+    Object.entries(activeFilters).forEach(([columnKey, filterValue]) => {
+      if (['vreme', 'broj_osoba', 'muskarci', 'zene', 'uslov'].includes(columnKey)) {
+        if (filterValue === 'asc' || filterValue === 'desc') {
+          sortColumn = columnKey;
+          sortDirection = filterValue;
+        }
+      } else if (columnKey === 'gost') {
+        if (filterValue === 'a-z' || filterValue === 'z-a') {
+          sortColumn = columnKey;
+          sortDirection = filterValue;
+        }
+      }
+    });
+    
+    // Если нет активных фильтров сортировки, восстанавливаем исходный порядок
+    if (!sortColumn) {
+      restoreOriginalOrder();
+      return;
+    }
+    
+    // Фильтруем только видимые строки для сортировки
+    const visibleRows = rows.filter(row => row.style.display !== 'none');
+    
+    visibleRows.sort((a, b) => {
+      // Используем data-column атрибут вместо nth-child
+      const aCell = a.querySelector(`td[data-column="${sortColumn}"]`);
+      const bCell = b.querySelector(`td[data-column="${sortColumn}"]`);
+      
+      if (!aCell || !bCell) return 0;
+      
+      const aValue = aCell.textContent.trim();
+      const bValue = bCell.textContent.trim();
+      
+      if (sortColumn === 'gost') {
+        // Сортировка по алфавиту
+        const comparison = aValue.localeCompare(bValue, 'sr');
+        return sortDirection === 'a-z' ? comparison : -comparison;
+      } else if (sortColumn === 'vreme') {
+        // Сортировка по времени (формат HH:MM)
+        const aTime = parseTime(aValue);
+        const bTime = parseTime(bValue);
+        return sortDirection === 'asc' ? aTime - bTime : bTime - aTime;
+      } else {
+        // Сортировка по числам
+        const aNum = parseFloat(aValue) || 0;
+        const bNum = parseFloat(bValue) || 0;
+        return sortDirection === 'asc' ? aNum - bNum : bNum - aNum;
+      }
+    });
+    
+    // Применяем сортировку только к видимым строкам
+    visibleRows.forEach(row => {
+      if (row.parentNode === tbody) {
+        tbody.appendChild(row);
+      }
+    });
+  }
+  
+  // Парсинг времени из строки формата HH:MM
+  function parseTime(timeStr) {
+    if (!timeStr) return 0;
+    const parts = timeStr.split(':');
+    if (parts.length !== 2) return 0;
+    const hours = parseInt(parts[0]) || 0;
+    const minutes = parseInt(parts[1]) || 0;
+    return hours * 60 + minutes; // Конвертируем в минуты для сравнения
+  }
+  
+  // Закрытие модального окна при клике вне его
+  document.addEventListener('click', function(e) {
+    const modal = document.getElementById('columnFilterModal');
+    if (modal && modal.classList.contains('show')) {
+      if (e.target === modal) {
+        closeColumnFilterModal();
+      }
+    }
+  });
+  
+  // Загружаем фильтры при загрузке страницы
+  // Пробуем несколько раз, так как таблица может загружаться асинхронно
+  function initFilters() {
+    let attempts = 0;
+    const maxAttempts = 20;
+    const loadFiltersInterval = setInterval(() => {
+      attempts++;
+      const table = document.querySelector('.bookings-table tbody');
+      if (table && table.children.length > 0) {
+        // Сохраняем исходный порядок строк при первой загрузке (если еще не сохранен)
+        if (originalRowOrder.length === 0) {
+          saveOriginalOrder();
+        }
+        // Применяем фильтры сразу
+        applyFiltersImmediately();
+        clearInterval(loadFiltersInterval);
+      } else if (attempts >= maxAttempts) {
+        clearInterval(loadFiltersInterval);
+        console.log('Не удалось загрузить фильтры: таблица не найдена после', maxAttempts, 'попыток');
+      }
+    }, 50); // Уменьшаем интервал с 500ms до 50ms для более быстрой реакции
+  }
+  
+  // Немедленное применение фильтров (без повторной загрузки из localStorage)
+  function applyFiltersImmediately() {
+    if (Object.keys(activeFilters).length === 0) return;
+    
+    // Восстанавливаем индикаторы
+    Object.keys(activeFilters).forEach(columnKey => {
+      updateFilterIndicator(columnKey);
+    });
+    
+    // Применяем фильтры
+    const table = document.querySelector('.bookings-table tbody');
+    if (table && table.children.length > 0) {
+      applyFilters();
+    }
+  }
+  
+  // Инициализируем фильтры при загрузке DOM
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', initFilters);
+  } else {
+    initFilters();
+  }
+  
+  // Также сохраняем исходный порядок при изменении таблицы (если еще не сохранен)
+  const originalOrderObserver = new MutationObserver(function(mutations) {
+    const table = document.querySelector('.bookings-table tbody');
+    if (table && table.children.length > 0 && originalRowOrder.length === 0) {
+      saveOriginalOrder();
+    }
+  });
+  
+  document.addEventListener('DOMContentLoaded', function() {
+    const table = document.querySelector('.bookings-table tbody');
+    if (table) {
+      originalOrderObserver.observe(table, { childList: true });
+      // Сохраняем порядок сразу, если таблица уже загружена
+      if (table.children.length > 0 && originalRowOrder.length === 0) {
+        saveOriginalOrder();
+      }
+    }
+  });
 </script>
 {% endblock %}

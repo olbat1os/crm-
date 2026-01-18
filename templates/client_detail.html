@@ -1,4 +1,4 @@
- {% extends 'clients_base.html' %}
+{% extends 'clients_base.html' %}
 {% block content %}
 <style>
   /* Mobile Header */
@@ -977,6 +977,10 @@
                         <div class="detail-line">
                             <span class="detail-label">Komentar:</span>
                             <span class="detail-value">{{ booking.comment or '-' }}</span>
+                        </div>
+                        <div class="detail-line">
+                            <span class="detail-label">Kreiran:</span>
+                            <span class="detail-value">{% if booking.created_at %}{{ booking.created_at.strftime('%d.%m.%Y %H:%M') }}{% else %}-{% endif %}</span>
                         </div>
                     </div>
                     
@@ -3977,68 +3981,68 @@ function updateField(fieldName, value, element) {
         if (fieldName === 'phone') {
             if (finalValue === '+__________________' || finalValue === '') {
                 finalValue = '';
-            }
         }
-        
-        // Специальная обработка для даты рождения
-        if (fieldName === 'birth_date') {
+    }
+    
+    // Специальная обработка для даты рождения
+    if (fieldName === 'birth_date') {
             if (finalValue === '...' || finalValue === '') {
                 finalValue = '';
             } else if (finalValue.includes('.')) {
-                // Сохраняем оригинальный формат для отображения
+            // Сохраняем оригинальный формат для отображения
                 const displayValue = finalValue;
-                // Конвертируем дату из формата DD.MM.YYYY в YYYY-MM-DD для сервера
+            // Конвертируем дату из формата DD.MM.YYYY в YYYY-MM-DD для сервера
                 const parts = finalValue.split('.');
-                if (parts.length === 3) {
-                    const day = parts[0].padStart(2, '0');
-                    const month = parts[1].padStart(2, '0');
-                    const year = parts[2];
+            if (parts.length === 3) {
+                const day = parts[0].padStart(2, '0');
+                const month = parts[1].padStart(2, '0');
+                const year = parts[2];
                     finalValue = `${year}-${month}-${day}`;
-                    // Сохраняем оригинальный формат для отображения
-                    element.setAttribute('data-display-value', displayValue);
-                }
+                // Сохраняем оригинальный формат для отображения
+                element.setAttribute('data-display-value', displayValue);
             }
         }
-        
+    }
+    
         // console.log('Updating field:', fieldName, 'with value:', finalValue);
-        
-        fetch(`/api/contacts/${contactId}/update`, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-            body: JSON.stringify({ 
+    
+    fetch(`/api/contacts/${contactId}/update`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+        body: JSON.stringify({ 
                 [fieldName]: finalValue 
-            })
         })
-        .then(response => {
-            // console.log('Response status:', response.status);
-            return response.json();
-        })
-        .then(data => {
-            // console.log('Response data:', data);
-          if (data.success) {
+    })
+    .then(response => {
+        // console.log('Response status:', response.status);
+        return response.json();
+    })
+    .then(data => {
+        // console.log('Response data:', data);
+      if (data.success) {
                 // console.log('Field updated successfully:', fieldName, finalValue);
-                // Обновляем отображение для contenteditable полей
-                if (element) {
-                    // Для поля даты используем сохраненный формат отображения
-                    if (fieldName === 'birth_date' && element.getAttribute('data-display-value')) {
-                        element.textContent = element.getAttribute('data-display-value');
-                        element.removeAttribute('data-display-value');
+            // Обновляем отображение для contenteditable полей
+            if (element) {
+                // Для поля даты используем сохраненный формат отображения
+                if (fieldName === 'birth_date' && element.getAttribute('data-display-value')) {
+                    element.textContent = element.getAttribute('data-display-value');
+                    element.removeAttribute('data-display-value');
                     } else if (fieldName === 'phone') {
                         // Для телефона обновляем значение и удаляем атрибут
                         element.textContent = finalValue || '+__________________';
                         if (element.textContent === '+__________________') {
                             element.style.color = '#D9D9D9';
-                        } else {
+                } else {
                             element.style.color = '#000000';
                         }
                         element.removeAttribute('data-original-phone');
                     } else {
                         element.textContent = finalValue;
-                    }
                 }
-          } else {
+            }
+      } else {
                 console.error('Error updating field:', data.error || data.message);
                 // Проверяем, это ошибка дубликата телефона?
                 if (data.error === 'duplicate_phone' || (data.message && data.message.includes('postoji'))) {
@@ -4063,10 +4067,10 @@ function updateField(fieldName, value, element) {
                 } else {
                     alert('Greška pri ažuriranju polja: ' + (data.error || data.message || 'Nepoznata greška'));
                 }
-          }
-        })
-        .catch(error => {
-          console.error('Error:', error);
+      }
+    })
+    .catch(error => {
+      console.error('Error:', error);
             alert('Greška konekcije: ' + error);
         });
     }
@@ -5172,10 +5176,10 @@ function loadTableTypes(tableTypes) {
     // Добавляем типы столов
     filteredTableTypes.forEach(type => {
         // Добавляем в скрытый select для совместимости
-        const option = document.createElement('option');
-        option.value = type;
-        option.textContent = type;
-        tableTypeSelect.appendChild(option);
+            const option = document.createElement('option');
+            option.value = type;
+            option.textContent = type;
+            tableTypeSelect.appendChild(option);
         
         // Добавляем в кастомный dropdown
         const customOption = document.createElement('div');
@@ -5878,7 +5882,7 @@ function openNewBookingModal() {
         }
         if (timeToInput) {
             timeToInput.value = '';
-        }
+    }
     });
     
     // Force update end time after modal is fully loaded (only if timeFrom is set)
@@ -6052,7 +6056,7 @@ window.openEditBookingModal = async function(bookingId, currentStatus) {
     // Load booking data (after settings are loaded)
     // Небольшая задержка, чтобы опции точно загрузились
     setTimeout(() => {
-        loadBookingData(bookingId);
+    loadBookingData(bookingId);
     }, 200);
 }
 
@@ -6154,7 +6158,7 @@ function loadBookingData(bookingId) {
                             }
                         }
                         tableTypeEl.value = booking.table_type;
-                        setTimeout(() => {
+                    setTimeout(() => {
                             if (typeof updateTableTypeDisplay === 'function') {
                                 updateTableTypeDisplay();
                             }
@@ -6943,24 +6947,24 @@ document.addEventListener('click', function(e) {
                 <div class="form-field comment-field">
                     <label class="form-label">Komentar:</label>
                     <textarea class="form-textarea" id="comment" placeholder="..." rows="2"></textarea>
-                </div>
+                        </div>
                 <div class="form-field" style="display: flex; flex-direction: column; gap: 20px; align-items: stretch;">
                     <div class="form-field date-time-field" id="timeFieldContainer" style="width: 100%;">
                         <div class="date-time-container" style="width: 100%;">
                             <div class="time-field-row" style="display: flex; align-items: center; gap: 10px; width: 100%;">
                                 <label class="form-label" style="min-width: 120px; width: 120px; flex-shrink: 0;">Vreme:</label>
-                                <div class="time-inputs">
-                                    <input type="time" class="form-input" id="timeFrom" placeholder="--:--">
-                                    <span>-</span>
-                                    <input type="time" class="form-input" id="timeTo" placeholder="--:--">
-                                </div>
+                            <div class="time-inputs">
+                                <input type="time" class="form-input" id="timeFrom" placeholder="--:--">
+                                <span>-</span>
+                                <input type="time" class="form-input" id="timeTo" placeholder="--:--">
                             </div>
+                        </div>
                         </div>
                     </div>
                     <div class="form-field" id="leadSourceInputField" style="display: none; width: 100%;">
                         <label class="form-label" id="leadSourceInputLabel" style="min-width: 120px; width: 120px; flex-shrink: 0;"></label>
                         <input type="text" class="form-input" id="leadSourceInput" placeholder="...">
-                    </div>
+                </div>
                     <div class="form-field date-time-field" id="timeRowBelow" style="display: none; width: 100%;">
                         <div class="date-time-container" style="width: 100%;">
                             <div class="time-field-row" style="display: flex; align-items: center; gap: 10px; width: 100%;">
