@@ -935,6 +935,18 @@ async def booking_page(request: Request, session: Session = Depends(get_session)
     # Данные для поиска
     contacts, client_stats = get_client_stats(session, business_id) if business_id else ([], {})
 
+    # Словарь: номер стола -> отображаемое название (customName из карты в приоритете, иначе номер)
+    table_display_names = {}
+    if business_id:
+        map_tables = session.exec(
+            select(MapTable).where(MapTable.business_id == business_id)
+        ).all()
+        for mt in map_tables:
+            num_str = str(mt.number)
+            meta = mt.metadata_json or {}
+            custom_name = (meta.get("customName") or meta.get("custom_name") or "").strip()
+            table_display_names[num_str] = custom_name if custom_name else num_str
+
     # Получаем настройки колонок таблицы из бизнеса (для быстрой загрузки без API запроса)
     table_columns = {}
     if business:
@@ -962,6 +974,7 @@ async def booking_page(request: Request, session: Session = Depends(get_session)
         "total_guests_count": total_guests_count,
         "business_capacity": business.capacity if business else None,
         "table_columns": table_columns,  # Передаем настройки колонок прямо в шаблон
+        "table_display_names": table_display_names,  # Номер стола -> customName для отображения
     })
 
 @app.get("/clients", response_class=HTMLResponse)
@@ -1361,6 +1374,182 @@ async def update_map_table(
         session.refresh(table)
 
     return {"success": True, "table": serialize_map_table(table)}
+
+@app.get("/api/map/bookings")
+async def get_map_bookings(
+    request: Request,
+    date: Optional[str] = Query(None),
+    session: Session = Depends(get_session)
+):
+    """Получает резервации для отображения на карте по дате"""
+    user = get_current_user(request)
+    if not user:
+        return JSONResponse({"success": False, "error": "Unauthorized"}, status_code=401)
+
+    business_id = user.get("business_id")
+    if not business_id:
+        return JSONResponse({"success": False, "error": "Business not found"}, status_code=404)
+
+    business, error = check_business_active(request, session)
+    if error:
+        return JSONResponse({"success": False, "error": error}, status_code=403)
+
+    # Определяем дату (по умолчанию сегодня)
+    if date:
+        try:
+            selected_date = datetime.strptime(date, "%Y-%m-%d").date()
+        except ValueError:
+            selected_date = datetime.utcnow().date()
+    else:
+        selected_date = datetime.utcnow().date()
+
+    # Получаем контакты бизнеса
+    contact_ids = session.exec(
+        select(Contact.id).where(Contact.business_id == business_id)
+    ).all()
+    contact_ids = [cid for (cid,) in contact_ids] if contact_ids and isinstance(contact_ids[0], tuple) else contact_ids
+
+    if not contact_ids:
+        return {"success": True, "bookings": []}
+
+    # Получаем резервации на выбранную дату
+    bookings = session.exec(
+        select(Booking)
+        .where(
+            Booking.date == selected_date,
+            Booking.contact_id.in_(contact_ids),
+            Booking.table_type.isnot(None)  # Только резервации с указанным столом
+        )
+        .order_by(Booking.time_from)
+    ).all()
+
+    # Получаем информацию о клиентах
+    contact_ids_in_bookings = {b.contact_id for b in bookings}
+    contacts = {}
+    if contact_ids_in_bookings:
+        contacts_list = session.exec(
+            select(Contact).where(Contact.id.in_(contact_ids_in_bookings))
+        ).all()
+        contacts = {c.id: c for c in contacts_list}
+
+    # Формируем ответ
+    bookings_data = []
+    for booking in bookings:
+        contact = contacts.get(booking.contact_id)
+        # Получаем информацию о столике из резервации
+        table_info = None
+        table_info = None
+        table_display_name = str(booking.table_number) if booking.table_number else None
+        if booking.table_number:
+            table = session.exec(
+                select(MapTable)
+                .where(
+                    MapTable.business_id == business_id,
+                    MapTable.number == booking.table_number
+                )
+                .limit(1)
+            ).first()
+            if table:
+                table_info = {"id": table.id, "number": table.number, "shape": table.shape}
+                meta = (table.metadata_json or {})
+                custom_name = (meta.get("customName") or meta.get("custom_name") or "").strip()
+                table_display_name = custom_name if custom_name else str(table.number)
+        
+        bookings_data.append({
+            "id": booking.id,
+            "contact_id": booking.contact_id,
+            "contact_name": f"{contact.first_name or ''} {contact.last_name or ''}".strip() if contact else "Unknown",
+            "contact_phone": contact.phone if contact else None,
+            "date": str(booking.date),
+            "time_from": str(booking.time_from),
+            "time_to": str(booking.time_to) if booking.time_to else None,
+            "table_type": booking.table_type,
+            "table_number": booking.table_number,
+            "table_info": table_info,
+            "table_display_name": table_display_name,
+            "party_size": booking.party_size,
+            "status": booking.status,
+            "comment": booking.comment,
+            "special_case_note": booking.special_case_note,
+            "final_check_rsd": booking.final_check_rsd,
+            "created_at": booking.created_at.isoformat() if booking.created_at else None,
+        })
+
+    return {"success": True, "bookings": bookings_data, "date": str(selected_date)}
+
+
+# Статусы, при которых стол НЕ считается занятым (отменено / не пришли)
+OCCUPIED_EXCLUDE_STATUSES = {"otkazano", "nisu"}
+
+
+@app.get("/api/map/bookings/occupied-tables")
+async def get_occupied_table_numbers(
+    request: Request,
+    date: str = Query(...),
+    time_from: str = Query(...),
+    time_to: Optional[str] = Query(None),
+    exclude_booking_id: Optional[int] = Query(None),
+    session: Session = Depends(get_session)
+):
+    """Возвращает номера столов, занятых на указанную дату и время (для фильтрации в форме новой резервации)"""
+    user = get_current_user(request)
+    if not user:
+        return JSONResponse({"success": False, "error": "Unauthorized"}, status_code=401)
+
+    business_id = user.get("business_id")
+    if not business_id:
+        return JSONResponse({"success": False, "error": "Business not found"}, status_code=404)
+
+    try:
+        selected_date = datetime.strptime(date, "%Y-%m-%d").date()
+        new_from = datetime.strptime(time_from, "%H:%M").time()
+    except ValueError:
+        return JSONResponse({"success": False, "error": "Invalid date or time format"}, status_code=400)
+
+    new_to = new_from
+    if time_to:
+        try:
+            new_to = datetime.strptime(time_to, "%H:%M").time()
+        except ValueError:
+            pass
+    else:
+        combined = datetime.combine(selected_date, new_from) + timedelta(hours=2)
+        new_to = combined.time()
+
+    contact_ids = session.exec(
+        select(Contact.id).where(Contact.business_id == business_id)
+    ).all()
+    contact_ids = [cid for (cid,) in contact_ids] if contact_ids and isinstance(contact_ids[0], tuple) else contact_ids
+
+    if not contact_ids:
+        return {"success": True, "occupied_table_numbers": []}
+
+    bookings = session.exec(
+        select(Booking)
+        .where(
+            Booking.date == selected_date,
+            Booking.contact_id.in_(contact_ids),
+            Booking.table_number.isnot(None),
+            ~Booking.status.in_(OCCUPIED_EXCLUDE_STATUSES)
+        )
+    ).all()
+
+    occupied = []
+    for b in bookings:
+        if exclude_booking_id and b.id == exclude_booking_id:
+            continue
+        ex_from = b.time_from
+        ex_to = b.time_to
+        if not ex_to:
+            comb = datetime.combine(selected_date, ex_from) + timedelta(hours=2)
+            ex_to = comb.time()
+        if new_from < ex_to and new_to > ex_from:
+            tn = str(b.table_number).strip()
+            if tn and tn not in occupied:
+                occupied.append(tn)
+
+    return {"success": True, "occupied_table_numbers": occupied}
+
 
 @app.delete("/api/map/tables/{table_id}")
 async def delete_map_table(
@@ -2519,7 +2708,24 @@ async def get_business_settings(request: Request, session: Session = Depends(get
             table_columns_value = {}
     
     print(f"📤 Processed table_columns: {table_columns_value}, type: {type(table_columns_value)}")
-    
+
+    # Надёжный парсинг table_types и lead_sources (могут прийти как JSON-строка из БД)
+    def _ensure_list(val, default=None):
+        if val is None:
+            return default or []
+        if isinstance(val, list):
+            return val
+        if isinstance(val, str):
+            try:
+                parsed = json.loads(val)
+                return parsed if isinstance(parsed, list) else (default or [])
+            except Exception:
+                return default or []
+        return default or []
+
+    _table_types = _ensure_list(business.table_types, [])
+    _lead_sources = _ensure_list(business.lead_sources, [])
+
     settings_dict = {
         "business_name": business.business_name,
         "address": business.address,
@@ -2528,8 +2734,8 @@ async def get_business_settings(request: Request, session: Session = Depends(get
         "capacity": business.capacity,
         "booking_duration": business.booking_duration or 2,
         "default_booking_time": fmt_time(business.default_booking_time),
-        "table_types": business.table_types or [],
-        "lead_sources": business.lead_sources or [],
+        "table_types": _table_types,
+        "lead_sources": _lead_sources,
         "working_schedule": business.working_schedule or {},
         "timezone": business.timezone or "Europe/Belgrade",
         "table_columns": table_columns_value
@@ -2597,25 +2803,27 @@ async def update_business_settings(request: Request, session: Session = Depends(
             else:
                 business.default_booking_time = None
         if "table_types" in data:
-            # Фильтруем дефолтные lead sources из типов столов
             default_lead_sources = ['whatsapp', 'phone', 'email', 'instagram']
-            table_types = data["table_types"] if isinstance(data["table_types"], list) else []
-            
-            # Получаем все lead sources для фильтрации
+            raw = data["table_types"]
+            table_types = raw if isinstance(raw, list) else (json.loads(raw) if isinstance(raw, str) else [])
+            if not isinstance(table_types, list):
+                table_types = []
+
             all_lead_sources = set(default_lead_sources)
-            if business.lead_sources:
-                for source in business.lead_sources:
-                    if isinstance(source, dict):
-                        name = source.get('name', '').lower().strip()
-                    else:
-                        name = str(source).lower().strip()
-                    if name:
-                        all_lead_sources.add(name)
-            
-            # Удаляем lead sources из типов столов
-            business.table_types = [t for t in table_types if t.lower().strip() not in all_lead_sources]
+            sources_to_check = data.get("lead_sources") if "lead_sources" in data else (business.lead_sources or [])
+            for source in (sources_to_check if isinstance(sources_to_check, list) else []):
+                if isinstance(source, dict):
+                    name = (source.get('name') or '').lower().strip()
+                else:
+                    name = str(source).lower().strip()
+                if name:
+                    all_lead_sources.add(name)
+
+            business.table_types = [t for t in table_types if isinstance(t, str) and t.lower().strip() not in all_lead_sources]
         if "lead_sources" in data:
-            business.lead_sources = data["lead_sources"] if isinstance(data["lead_sources"], list) else []
+            raw = data["lead_sources"]
+            ls = raw if isinstance(raw, list) else (json.loads(raw) if isinstance(raw, str) else [])
+            business.lead_sources = ls if isinstance(ls, list) else []
         if "working_schedule" in data:
             business.working_schedule = data["working_schedule"]
         if "timezone" in data:
@@ -3687,7 +3895,17 @@ async def client_detail(request: Request, contact_id: int, session: Session = De
             )
     except Exception as e:
         print(f"⚠️ Error loading reactivation lists for contact {contact_id}: {e}")
-    
+
+    # Словарь: номер стола -> отображаемое название (customName из карты в приоритете, иначе номер)
+    table_display_names = {}
+    if business_id:
+        map_tables = session.exec(select(MapTable).where(MapTable.business_id == business_id)).all()
+        for mt in map_tables:
+            num_str = str(mt.number)
+            meta = mt.metadata_json or {}
+            custom_name = (meta.get("customName") or meta.get("custom_name") or "").strip()
+            table_display_names[num_str] = custom_name if custom_name else num_str
+
     response = templates.TemplateResponse("client_detail.html", {
         "request": request,
         "title": f"Klijent: {contact.first_name}",
@@ -3701,6 +3919,7 @@ async def client_detail(request: Request, contact_id: int, session: Session = De
         "all_client_stats": all_client_stats,
         "reactivation_offers": reactivation_offers,
         "reactivation_lists_for_contact": reactivation_lists_for_contact,
+        "table_display_names": table_display_names,
     })
     
     # Добавляем заголовки против кэширования
@@ -5215,6 +5434,7 @@ async def create_new_booking(
         status = data.get("status", "dogovoreno")
         party_size = data.get("party_size", 1)
         table_type = data.get("table_type", "")
+        table_number = data.get("table_number")
         date_str = data.get("date")
         special_case_note = data.get("special_case_note") or data.get("specialOccasion") or ""
         time_from = data.get("time_from", "")
@@ -5266,6 +5486,7 @@ async def create_new_booking(
             status=status,
             party_size=party_size,
             table_type=table_type,
+            table_number=table_number if table_number else None,
             date=booking_date,
             time_from=time_from_obj,
             time_to=time_to_obj,
@@ -5317,6 +5538,7 @@ async def get_booking(booking_id: int, request: Request, session: Session = Depe
             "time_to": fmt_time(booking.time_to),
             "party_size": booking.party_size,
             "table_type": booking.table_type,
+            "table_number": booking.table_number,
             "status": booking.status,
             "special_case_note": booking.special_case_note,
             "comment": booking.comment,
@@ -5385,6 +5607,8 @@ async def update_booking_api(
                 return {"success": False, "error": "Invalid party_size"}
         if "table_type" in data:
             booking.table_type = data["table_type"] or None
+        if "table_number" in data:
+            booking.table_number = data["table_number"] if data["table_number"] else None
         if "special_case_note" in data or "occasion" in data or "specialOccasion" in data:
             booking.special_case_note = data.get("special_case_note") or data.get("occasion") or data.get("specialOccasion") or None
         if "comment" in data:

@@ -2747,11 +2747,11 @@ window.saveBusinessSettings = async function saveBusinessSettings() {
         console.log('Save response:', data);
         
         if (data.success) {
-            // Обновляем сохраненные настройки после успешного сохранения
             if (!window.currentBusinessSettings) {
                 window.currentBusinessSettings = {};
             }
             window.currentBusinessSettings.lead_sources = settings.lead_sources;
+            window.currentBusinessSettings.table_types = settings.table_types;
             return true;
         } else {
             console.error('Failed to save business settings:', data.error);
@@ -3046,7 +3046,15 @@ window.loadBusinessSettings = async function loadBusinessSettings() {
             
             if (data.success) {
                 const settings = data.settings;
-                // Сохраняем настройки для использования в модальном окне
+                const ensureArray = (v) => {
+                    if (Array.isArray(v)) return v;
+                    if (typeof v === 'string') { try { const p = JSON.parse(v); return Array.isArray(p) ? p : []; } catch (e) { return []; } }
+                    return [];
+                };
+                if (settings) {
+                    settings.table_types = ensureArray(settings.table_types);
+                    settings.lead_sources = ensureArray(settings.lead_sources);
+                }
                 window.currentBusinessSettings = settings;
                 
                 // Load business name

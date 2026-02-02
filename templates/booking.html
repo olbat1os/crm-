@@ -1343,6 +1343,56 @@
     scrollbar-color: #2CAB5C #f1f1f1;
   }
   
+  /* Колонка Sto - фиксированная ширина, перенос строк, скролл */
+  .bookings-table thead th[data-column="sto"],
+  .bookings-table tbody td[data-column="sto"] {
+    min-width: 100px !important;
+    max-width: 120px !important;
+    width: 100px !important;
+  }
+  
+  .bookings-table tbody td[data-column="sto"] {
+    height: 65px !important;
+    padding: 0.5rem 0.5rem !important;
+    line-height: 1.4;
+    vertical-align: top;
+    position: relative;
+    overflow: hidden;
+    white-space: normal;
+    word-wrap: break-word;
+  }
+  
+  /* Обертка для содержимого Sto с ограничением до 2 строк */
+  .bookings-table tbody td[data-column="sto"] .sto-content {
+    display: block;
+    max-height: calc(1.4em * 2);
+    overflow-y: auto;
+    overflow-x: hidden;
+    word-wrap: break-word;
+    white-space: normal;
+    line-height: 1.4;
+    scrollbar-width: thin;
+    scrollbar-color: #2CAB5C #f1f1f1;
+  }
+  
+  .bookings-table tbody td[data-column="sto"] .sto-content::-webkit-scrollbar {
+    width: 4px !important;
+  }
+  
+  .bookings-table tbody td[data-column="sto"] .sto-content::-webkit-scrollbar-track {
+    background: #f1f1f1 !important;
+    border-radius: 2px;
+  }
+  
+  .bookings-table tbody td[data-column="sto"] .sto-content::-webkit-scrollbar-thumb {
+    background: #2CAB5C !important;
+    border-radius: 2px;
+  }
+  
+  .bookings-table tbody td[data-column="sto"] .sto-content::-webkit-scrollbar-thumb:hover {
+    background: #11998E !important;
+  }
+
   /* Колонка Komentar - фиксированная ширина, перенос строк, скролл */
   .bookings-table thead th[data-column="komentar"],
   .bookings-table tbody td[data-column="komentar"] {
@@ -1986,7 +2036,7 @@
   .new-booking-modal-content {
     position: relative;
     width: 812px;
-    height: 532px;
+    height: 585px;
     background: #FFFFFF;
     border: 1px solid #D9D9D9;
     border-radius: 19.5px;
@@ -2127,19 +2177,20 @@
   }
   
   .new-booking-close {
-    width: 36px;
-    height: 36px;
+    width: 24px;
+    height: 24px;
     cursor: pointer;
     position: absolute;
     top: 20px;
     right: 20px;
-    filter: brightness(0) saturate(100%) invert(60%) sepia(90%) saturate(400%) hue-rotate(90deg) brightness(95%) contrast(85%);
+    filter: brightness(0) saturate(100%) invert(45%);
+    opacity: 0.7;
     transition: all 0.2s;
   }
   
   .new-booking-close:hover {
-    filter: brightness(0) saturate(100%) invert(55%) sepia(95%) saturate(450%) hue-rotate(100deg) brightness(90%) contrast(90%);
-    transform: scale(1.1);
+    opacity: 1;
+    filter: brightness(0) saturate(100%) invert(30%);
   }
   
   .custom-status-dropdown {
@@ -2626,15 +2677,6 @@
   /* Контейнер с временем и lead source input выравниваем по верху */
   .new-booking-form .form-field[style*="flex-direction: column"] {
     align-items: flex-start;
-  }
-  
-  /* Время внизу (когда есть lead source input) выравнивается по верху */
-  .new-booking-form #timeRowBelow .form-field.date-time-field {
-    align-items: flex-start;
-  }
-  
-  .new-booking-form #timeRowBelow .form-field.date-time-field .form-label {
-    padding-top: 10px;
   }
   
   /* Mobile Form Field */
@@ -4609,7 +4651,7 @@
           <th data-column="broj_osoba" style="min-width: 100px;" onclick="toggleColumnSort('broj_osoba')">Broj osoba</th>
           <th data-column="muskarci" style="min-width: 90px;" onclick="toggleColumnSort('muskarci')">Muškarci</th>
           <th data-column="zene" style="min-width: 60px;" onclick="toggleColumnSort('zene')">Žene</th>
-          <th data-column="sto" style="min-width: 50px;">Sto</th>
+          <th data-column="sto" style="min-width: 100px; max-width: 120px;">Sto</th>
           <th data-column="tip_stola" style="min-width: 200px; max-width: 270px;" onclick="openColumnFilterModal('tip_stola', 'Tip stola')">Tip stola</th>
           <th data-column="lead_source" style="min-width: 200px;" onclick="openColumnFilterModal('lead_source', 'Lead source')">Lead source</th>
           <th data-column="uslov" style="min-width: 80px;" onclick="toggleColumnSort('uslov')">Uslov</th>
@@ -4653,7 +4695,7 @@
             {{ b.females_count or '' }}
           </td>
           <td data-column="sto">
-            {{ b.table_number or '' }}
+            <div class="sto-content">{{ ((table_display_names|default({})).get(b.table_number|string, b.table_number|string) if b.table_number is not none and b.table_number != '' else '') or '' }}</div>
           </td>
           <td data-column="tip_stola">
             <div class="table-type-scrollable">{{ b.table_type or '' }}</div>
@@ -4966,9 +5008,11 @@
       </div>
       
       <div class="form-row">
-        <div class="form-field comment-field">
-          <label class="form-label">Komentar:</label>
-          <textarea class="form-textarea" id="comment" placeholder="..." rows="2"></textarea>
+        <div class="form-field">
+          <label class="form-label">Sto:</label>
+          <select class="form-input" id="tableNumber">
+            <option value="">...</option>
+          </select>
         </div>
         <div class="form-field" style="display: flex; flex-direction: column; gap: 20px; align-items: stretch;">
           <div class="form-field date-time-field" id="timeFieldContainer" style="width: 100%;">
@@ -4987,21 +5031,27 @@
             <label class="form-label" id="leadSourceInputLabel" style="min-width: 120px; width: 120px; flex-shrink: 0;"></label>
             <input type="text" class="form-input" id="leadSourceInput" placeholder="...">
           </div>
-          <div class="form-field date-time-field" id="timeRowBelow" style="display: none; width: 100%;">
-            <div class="date-time-container" style="width: 100%;">
-              <div class="time-field-row" style="display: flex; align-items: center; gap: 10px; width: 100%;">
-                <label class="form-label" style="min-width: 120px; width: 120px; flex-shrink: 0;">Vreme:</label>
-                <div class="time-inputs">
-                  <input type="time" class="form-input" id="timeFromBelow" placeholder="--:--">
-                  <span>-</span>
-                  <input type="time" class="form-input" id="timeToBelow" placeholder="--:--">
-                </div>
+        </div>
+      </div>
+      
+      <div class="form-row">
+        <div class="form-field comment-field">
+          <label class="form-label">Komentar:</label>
+          <textarea class="form-textarea" id="comment" placeholder="..." rows="2"></textarea>
+        </div>
+        <div class="form-field date-time-field" id="timeRowBelow" style="display: none; width: 100%;">
+          <div class="date-time-container" style="width: 100%;">
+            <div class="time-field-row" style="display: flex; align-items: center; gap: 10px; width: 100%;">
+              <label class="form-label" style="min-width: 120px; width: 120px; flex-shrink: 0;">Vreme:</label>
+              <div class="time-inputs">
+                <input type="time" class="form-input" id="timeFromBelow" placeholder="--:--">
+                <span>-</span>
+                <input type="time" class="form-input" id="timeToBelow" placeholder="--:--">
               </div>
             </div>
           </div>
         </div>
       </div>
-      
       
       <!-- Action Button -->
       <div class="form-actions">
@@ -5719,9 +5769,7 @@
     }
   }
   
-  // Функция для обработки изменения Lead Source
   function handleLeadSourceChange() {
-    console.log('handleLeadSourceChange called');
     const leadSourceSelect = document.getElementById('leadSource');
     const leadSourceInputField = document.getElementById('leadSourceInputField');
     const leadSourceInputLabel = document.getElementById('leadSourceInputLabel');
@@ -5733,124 +5781,147 @@
     const timeFromBelow = document.getElementById('timeFromBelow');
     const timeToBelow = document.getElementById('timeToBelow');
     
-    console.log('Elements found:', {
-      leadSourceSelect: !!leadSourceSelect,
-      leadSourceInputField: !!leadSourceInputField,
-      timeFieldContainer: !!timeFieldContainer,
-      timeRowBelow: !!timeRowBelow
-    });
-    
-    if (!leadSourceSelect || !leadSourceInputField) {
-      console.error('Required elements not found');
-      return;
-    }
+    if (!leadSourceSelect || !leadSourceInputField) return;
     
     const selectedOption = leadSourceSelect.options[leadSourceSelect.selectedIndex];
     const requiresInput = selectedOption && selectedOption.dataset.requiresInput === 'true';
     const selectedValue = leadSourceSelect.value;
     
-    console.log('Selected:', {
-      value: selectedValue,
-      requiresInput: requiresInput,
-      text: selectedOption ? selectedOption.textContent : 'none'
-    });
-    
     if (requiresInput && selectedValue) {
-      // Показываем поле ввода имени lead source справа на месте времени
-      const displayName = selectedOption.textContent;
-      leadSourceInputLabel.textContent = displayName + ':';
+      leadSourceInputLabel.textContent = selectedOption.textContent + ':';
       leadSourceInputField.style.display = 'flex';
       leadSourceInput.value = '';
       leadSourceInput.focus();
-      console.log('Showing lead source input field');
-      
-      // Скрываем время в строке с комментарием
-      if (timeFieldContainer) {
-        timeFieldContainer.style.display = 'none';
-        console.log('Hiding time field container');
-      }
-      
-      // Показываем время ниже поля ввода lead source (в той же правой колонке) и синхронизируем значения
+      if (timeFieldContainer) timeFieldContainer.style.display = 'none';
       if (timeRowBelow) {
         timeRowBelow.style.display = 'flex';
-        console.log('Showing time row below');
-        // Синхронизируем значения времени
-        if (timeFrom && timeFromBelow) {
-          timeFromBelow.value = timeFrom.value;
-          // Удаляем старые обработчики, если они есть
-          const oldHandler = timeFromBelow.dataset.syncHandler;
-          if (oldHandler && window[oldHandler]) {
-            timeFromBelow.removeEventListener('input', window[oldHandler]);
-            timeFromBelow.removeEventListener('change', window[oldHandler]);
-          }
-          // Создаем новый обработчик
-          const syncHandler = function() {
-            if (timeFrom) {
-              timeFrom.value = timeFromBelow.value;
-              // Вызываем updateEndTime для автоматического обновления timeTo
-              if (typeof updateEndTime === 'function') {
-                updateEndTime();
-              }
-            }
-          };
-          timeFromBelow.addEventListener('input', syncHandler);
-          timeFromBelow.addEventListener('change', syncHandler);
-          // Сохраняем ссылку на обработчик
-          timeFromBelow.dataset.syncHandler = 'syncTimeFromHandler';
-          window.syncTimeFromHandler = syncHandler;
-        }
-        if (timeTo && timeToBelow) {
-          timeToBelow.value = timeTo.value;
-          // Удаляем старые обработчики, если они есть
-          const oldHandler = timeToBelow.dataset.syncHandler;
-          if (oldHandler && window[oldHandler]) {
-            timeToBelow.removeEventListener('input', window[oldHandler]);
-            timeToBelow.removeEventListener('change', window[oldHandler]);
-          }
-          // Создаем новый обработчик
-          const syncHandler = function() {
-            if (timeTo) timeTo.value = timeToBelow.value;
-          };
-          timeToBelow.addEventListener('input', syncHandler);
-          timeToBelow.addEventListener('change', syncHandler);
-          // Сохраняем ссылку на обработчик
-          timeToBelow.dataset.syncHandler = 'syncTimeToHandler';
-          window.syncTimeToHandler = syncHandler;
-        }
+        if (timeFrom && timeFromBelow) timeFromBelow.value = timeFrom.value;
+        if (timeTo && timeToBelow) timeToBelow.value = timeTo.value;
       }
     } else {
-      // Скрываем поле ввода lead source
       leadSourceInputField.style.display = 'none';
       leadSourceInput.value = '';
-      console.log('Hiding lead source input field');
-      
-      // Показываем время в строке с комментарием
-      if (timeFieldContainer) {
-        timeFieldContainer.style.display = 'flex';
-        console.log('Showing time field container');
-      }
-      
-      // Скрываем время в отдельной строке и синхронизируем значения обратно
-      if (timeRowBelow) {
-        timeRowBelow.style.display = 'none';
-        console.log('Hiding time row below');
-        // Синхронизируем значения времени обратно
-      }
+      if (timeFieldContainer) timeFieldContainer.style.display = 'flex';
+      if (timeRowBelow) timeRowBelow.style.display = 'none';
     }
     
-    // Обновляем отображение выбранного Lead source
     updateLeadSourceDisplay();
   }
   
-  // Делаем функцию доступной глобально
   window.handleLeadSourceChange = handleLeadSourceChange;
+
+  let _populateTableCallId = 0;
+  function populateTableNumberSelect(presetValue) {
+    const select = document.getElementById('tableNumber');
+    if (!select) return Promise.resolve();
+    const callId = ++_populateTableCallId;
+    const dateEl = document.getElementById('bookingDate');
+    const timeFromEl = document.getElementById('timeFrom');
+    const timeToEl = document.getElementById('timeTo');
+    const timeFieldContainer = document.getElementById('timeFieldContainer');
+    const timeFromBelowEl = document.getElementById('timeFromBelow');
+    const timeToBelowEl = document.getElementById('timeToBelow');
+    let timeFrom = (timeFromEl && timeFromEl.value) || '';
+    let timeTo = (timeToEl && timeToEl.value) || '';
+    if (timeFieldContainer && timeFieldContainer.style.display === 'none' && timeFromBelowEl) {
+      timeFrom = timeFromBelowEl.value || timeFrom;
+      timeTo = timeToBelowEl ? timeToBelowEl.value || timeTo : timeTo;
+    }
+    const date = (dateEl && dateEl.value) || '';
+    const modal = document.getElementById('newBookingModal');
+    const excludeBookingId = (modal && modal.dataset.bookingId) ? parseInt(modal.dataset.bookingId, 10) : null;
+
+    const appendOptions = (occupiedSet) => {
+      if (callId !== _populateTableCallId) return;
+      while (select.options.length > 1) select.remove(1);
+      return fetch('/api/map/tables')
+        .then(res => res.json())
+        .then(data => {
+          if (callId !== _populateTableCallId) return;
+          if (!data.success || !Array.isArray(data.tables)) return;
+          const numbered = data.tables.filter(t =>
+            t.number != null && t.number > 0 &&
+            ['square','circle','chair-numbered'].includes((t.shape || '').toLowerCase()) &&
+            !occupiedSet.has(String(t.number))
+          ).sort((a, b) => (a.number || 0) - (b.number || 0));
+          const values = new Set();
+          numbered.forEach(t => {
+            const val = String(t.number);
+            values.add(val);
+            const opt = document.createElement('option');
+            opt.value = val;
+            opt.textContent = (t.metadata && t.metadata.customName) ? t.metadata.customName : val;
+            select.appendChild(opt);
+          });
+          if (presetValue != null && presetValue !== '') {
+            const strVal = String(presetValue).trim();
+            if (values.has(strVal)) {
+              select.value = strVal;
+            } else if (strVal && !occupiedSet.has(strVal)) {
+              const opt = document.createElement('option');
+              opt.value = strVal;
+              opt.textContent = strVal;
+              select.appendChild(opt);
+              select.value = strVal;
+            }
+          }
+        });
+    };
+
+    if (!date || !timeFrom) {
+      return appendOptions(new Set());
+    }
+    const params = new URLSearchParams({ date: date, time_from: timeFrom });
+    if (timeTo) params.set('time_to', timeTo);
+    if (excludeBookingId) params.set('exclude_booking_id', excludeBookingId);
+    return fetch('/api/map/bookings/occupied-tables?' + params.toString())
+      .then(res => res.json())
+      .then(data => {
+        if (callId !== _populateTableCallId) return Promise.resolve();
+        const occupied = new Set((data.success && data.occupied_table_numbers) ? data.occupied_table_numbers.map(String) : []);
+        return appendOptions(occupied);
+      })
+      .catch(() => { if (callId === _populateTableCallId) return appendOptions(new Set()); });
+  }
+  window.populateTableNumberSelect = populateTableNumberSelect;
+
+  function refreshTableNumberSelect() {
+    const select = document.getElementById('tableNumber');
+    const currentVal = (select && select.value) || '';
+    populateTableNumberSelect(currentVal || undefined);
+  }
 
   // Функция для добавления обработчиков событий к полю timeFrom
   function addTimeFromEventListeners() {
-    console.log('addTimeFromEventListeners called');
     const timeFromInput = document.getElementById('timeFrom');
-    console.log('timeFromInput found:', !!timeFromInput);
-    
+    const timeToInput = document.getElementById('timeTo');
+    const bookingDateInput = document.getElementById('bookingDate');
+    if (bookingDateInput && typeof refreshTableNumberSelect === 'function') {
+      if (!bookingDateInput._tableRefreshAdded) {
+        bookingDateInput._tableRefreshAdded = true;
+        bookingDateInput.addEventListener('change', refreshTableNumberSelect);
+      }
+    }
+    if (timeToInput && typeof refreshTableNumberSelect === 'function') {
+      if (!timeToInput._tableRefreshAdded) {
+        timeToInput._tableRefreshAdded = true;
+        timeToInput.addEventListener('change', refreshTableNumberSelect);
+      }
+    }
+    const timeFromBelowEl = document.getElementById('timeFromBelow');
+    const timeToBelowEl = document.getElementById('timeToBelow');
+    if (timeFromBelowEl && typeof refreshTableNumberSelect === 'function') {
+      if (!timeFromBelowEl._tableRefreshAdded) {
+        timeFromBelowEl._tableRefreshAdded = true;
+        timeFromBelowEl.addEventListener('change', refreshTableNumberSelect);
+      }
+    }
+    if (timeToBelowEl && typeof refreshTableNumberSelect === 'function') {
+      if (!timeToBelowEl._tableRefreshAdded) {
+        timeToBelowEl._tableRefreshAdded = true;
+        timeToBelowEl.addEventListener('change', refreshTableNumberSelect);
+      }
+    }
     if (timeFromInput) {
       // Remove existing event listener to avoid duplicates
       timeFromInput.removeEventListener('input', updateEndTime);
@@ -5858,9 +5929,9 @@
       timeFromInput.removeEventListener('keyup', updateEndTime);
       
       // Add new event listeners
-      timeFromInput.addEventListener('input', updateEndTime);
-      timeFromInput.addEventListener('change', updateEndTime);
-      timeFromInput.addEventListener('keyup', updateEndTime);
+      timeFromInput.addEventListener('input', function() { updateEndTime(); refreshTableNumberSelect(); });
+      timeFromInput.addEventListener('change', function() { updateEndTime(); refreshTableNumberSelect(); });
+      timeFromInput.addEventListener('keyup', function() { updateEndTime(); refreshTableNumberSelect(); });
       
       console.log('Event listeners added to timeFrom field');
       
@@ -5870,8 +5941,8 @@
       
       // Also add a manual trigger for testing
       timeFromInput.addEventListener('blur', function() {
-        console.log('timeFrom blur event triggered');
         updateEndTime();
+        refreshTableNumberSelect();
       });
     } else {
       console.error('timeFromInput element not found!');
@@ -8228,8 +8299,25 @@
     });
   });
   
+  // Функция для обертки содержимого Sto в div для ограничения до 2 строк
+  function wrapStoContent() {
+    const stoCells = document.querySelectorAll('.bookings-table tbody td[data-column="sto"]');
+    stoCells.forEach(cell => {
+      if (cell.querySelector('.sto-content')) return;
+      const htmlContent = cell.innerHTML.trim();
+      if (htmlContent) {
+        cell.innerHTML = '';
+        const wrapper = document.createElement('div');
+        wrapper.className = 'sto-content';
+        wrapper.innerHTML = htmlContent;
+        cell.appendChild(wrapper);
+      }
+    });
+  }
+
   // Функция для обертки содержимого комментариев в span для ограничения до 2 строк
   function wrapCommentContent() {
+    wrapStoContent();
     const commentCells = document.querySelectorAll('.bookings-table tbody td[data-column="komentar"]');
     commentCells.forEach(cell => {
       // Проверяем, не обернуто ли уже содержимое
@@ -8252,14 +8340,14 @@
   
   // Функция для проверки вертикального выравнивания для колонок с многострочным текстом
   function adjustVerticalAlignment() {
-    const columns = ['gost', 'komentar', 'tip_stola', 'lead_source'];
+    const columns = ['gost', 'komentar', 'tip_stola', 'lead_source', 'sto'];
     
     columns.forEach(columnKey => {
       const cells = document.querySelectorAll(`.bookings-table tbody td[data-column="${columnKey}"]`);
       
       cells.forEach(cell => {
         // Получаем содержимое ячейки (либо напрямую, либо из обертки)
-        const contentWrapper = cell.querySelector('.comment-content, .guest-name, .guest-name-link, .table-type-scrollable, .lead-source-scrollable');
+        const contentWrapper = cell.querySelector('.comment-content, .guest-name, .guest-name-link, .table-type-scrollable, .lead-source-scrollable, .sto-content');
         const contentElement = contentWrapper || cell;
         
         // Получаем вычисленные стили
@@ -8856,7 +8944,7 @@
     
     // Устанавливаем стандартную высоту модального окна
     if (modalContent) {
-      modalContent.style.height = '532px';
+      modalContent.style.height = '585px';
     }
   };
 
@@ -8878,6 +8966,10 @@
     if (leadSourceInputField) leadSourceInputField.style.display = 'none';
     if (timeFieldContainer) timeFieldContainer.style.display = 'flex';
     if (timeRowBelow) timeRowBelow.style.display = 'none';
+    const timeFromBelow = document.getElementById('timeFromBelow');
+    const timeToBelow = document.getElementById('timeToBelow');
+    if (timeFromBelow) timeFromBelow.value = '';
+    if (timeToBelow) timeToBelow.value = '';
     
     // Закрываем все открытые dropdown
     closeAllDropdowns();
@@ -8909,6 +9001,9 @@
           if (typeof updateLeadSourceDisplay === 'function') {
             updateLeadSourceDisplay();
           }
+          if (typeof populateTableNumberSelect === 'function') {
+            populateTableNumberSelect();
+          }
         }, 100);
         
       // Set default time if configured, otherwise clear
@@ -8931,10 +9026,9 @@
     });
     }, 100);
     
-    // Force update end time after modal is fully loaded (only if timeFrom is set)
     setTimeout(() => {
-      console.log('Forcing updateEndTime after modal load');
-      updateEndTime();
+      if (typeof updateEndTime === 'function') updateEndTime();
+      if (typeof refreshTableNumberSelect === 'function') refreshTableNumberSelect();
     }, 1000);
     
     // Set default date to selected date
@@ -8961,7 +9055,7 @@
     // Устанавливаем начальную высоту модального окна
     const modalContent = modal.querySelector('.new-booking-modal-content');
     if (modalContent) {
-      modalContent.style.height = '532px';
+      modalContent.style.height = '585px';
     }
   }
 
@@ -8995,12 +9089,10 @@
     if (timeFrom) timeFrom.value = '';
     const timeTo = document.getElementById('timeTo');
     if (timeTo) timeTo.value = '';
-    const timeFromBelow = document.getElementById('timeFromBelow');
-    if (timeFromBelow) timeFromBelow.value = '';
-    const timeToBelow = document.getElementById('timeToBelow');
-    if (timeToBelow) timeToBelow.value = '';
     const comment = document.getElementById('comment');
     if (comment) comment.value = '';
+    const tableNumber = document.getElementById('tableNumber');
+    if (tableNumber) tableNumber.value = '';
     const malesCount = document.getElementById('malesCount');
     if (malesCount) malesCount.value = '0';
     
@@ -9011,6 +9103,10 @@
     if (leadSourceInputField) leadSourceInputField.style.display = 'none';
     if (timeFieldContainer) timeFieldContainer.style.display = 'flex';
     if (timeRowBelow) timeRowBelow.style.display = 'none';
+    const timeFromBelow = document.getElementById('timeFromBelow');
+    const timeToBelow = document.getElementById('timeToBelow');
+    if (timeFromBelow) timeFromBelow.value = '';
+    if (timeToBelow) timeToBelow.value = '';
     
     // Сбрасываем lead source
     const leadSource = document.getElementById('leadSource');
@@ -9025,7 +9121,7 @@
     // Возвращаем стандартную высоту модального окна
     const modalContent = modal.querySelector('.new-booking-modal-content');
     if (modalContent) {
-      modalContent.style.height = '532px';
+      modalContent.style.height = '585px';
     }
     
     // Reset status to default
@@ -9252,20 +9348,16 @@
           }
           
           if (booking.time_from) {
-            // console.log('Setting time_from:', booking.time_from);
             const timeFromEl = document.getElementById('timeFrom');
-            if (timeFromEl) timeFromEl.value = booking.time_from;
-            // Также обновляем время внизу, если оно видимо
             const timeFromBelowEl = document.getElementById('timeFromBelow');
+            if (timeFromEl) timeFromEl.value = booking.time_from;
             if (timeFromBelowEl) timeFromBelowEl.value = booking.time_from;
           }
           
           if (booking.time_to) {
-            // console.log('Setting time_to:', booking.time_to);
             const timeToEl = document.getElementById('timeTo');
-            if (timeToEl) timeToEl.value = booking.time_to;
-            // Также обновляем время внизу, если оно видимо
             const timeToBelowEl = document.getElementById('timeToBelow');
+            if (timeToEl) timeToEl.value = booking.time_to;
             if (timeToBelowEl) timeToBelowEl.value = booking.time_to;
           }
           
@@ -9318,6 +9410,13 @@
           if (booking.comment) {
             const commentEl = document.getElementById('comment');
             if (commentEl) commentEl.value = booking.comment;
+          }
+          
+          if (typeof populateTableNumberSelect === 'function') {
+            populateTableNumberSelect(booking.table_number);
+          } else if (booking.table_number !== undefined && booking.table_number !== null) {
+            const tableNumberEl = document.getElementById('tableNumber');
+            if (tableNumberEl) tableNumberEl.value = booking.table_number;
           }
           
           if (booking.deposit !== undefined && booking.deposit !== null) {
@@ -9471,7 +9570,7 @@
     
     // Устанавливаем стандартную высоту модального окна
     if (modalContent) {
-      modalContent.style.height = '532px';
+      modalContent.style.height = '585px';
     }
   }
 
@@ -9495,6 +9594,9 @@
     const bookingDateEl = document.getElementById('bookingDate');
     const timeFromEl = document.getElementById('timeFrom');
     const timeToEl = document.getElementById('timeTo');
+    const timeFieldContainer = document.getElementById('timeFieldContainer');
+    const timeFromBelowEl = document.getElementById('timeFromBelow');
+    const timeToBelowEl = document.getElementById('timeToBelow');
     const partySizeEl = document.getElementById('partySize');
     const tableTypeEl = document.getElementById('tableType');
     const specialOccasionEl = document.getElementById('specialOccasion');
@@ -9506,16 +9608,22 @@
     const depositEl = document.getElementById('deposit');
     const leadSourceEl = document.getElementById('leadSource');
     const leadSourceInputEl = document.getElementById('leadSourceInput');
+    const tableNumberEl = document.getElementById('tableNumber');
     
     const name = clientNameEl ? clientNameEl.value : '';
     const phone = clientPhoneEl ? clientPhoneEl.value : '';
     const date = bookingDateEl ? bookingDateEl.value : '';
-    const timeFrom = timeFromEl ? timeFromEl.value : '';
-    const timeTo = timeToEl ? timeToEl.value : '';
+    let timeFrom = timeFromEl ? timeFromEl.value : '';
+    let timeTo = timeToEl ? timeToEl.value : '';
+    if (timeFieldContainer && timeFieldContainer.style.display === 'none' && timeFromBelowEl) {
+      timeFrom = timeFromBelowEl.value || timeFrom;
+      timeTo = timeToBelowEl ? timeToBelowEl.value || timeTo : timeTo;
+    }
     const partySize = partySizeEl ? partySizeEl.value : '';
     const tableType = tableTypeEl ? tableTypeEl.value : '';
     const occasion = specialOccasionEl ? specialOccasionEl.value : '';
     const comment = commentEl ? commentEl.value : '';
+    const tableNumber = tableNumberEl ? tableNumberEl.value.trim() : '';
     const malesCount = malesCountEl ? malesCountEl.value : '';
     const femalesCount = femalesCountEl ? femalesCountEl.value : '';
     const initialCheckRsd = initialCheckRsdEl ? initialCheckRsdEl.value : '';
@@ -9546,6 +9654,7 @@
         table_type: tableType,
         special_case_note: occasion,
         comment: comment,
+        table_number: tableNumber || null,
         status: selectedStatus,
         males_count: malesCount ? Number(malesCount) : null,
         females_count: femalesCount ? Number(femalesCount) : null,
@@ -9565,18 +9674,18 @@
       // Поля обратной связи не нужны при создании новой резервации
       const feedback = null;
       const foodDrink = null;
-      createNewBooking(name, phone, date, timeFrom, timeTo, partySize, tableType, occasion, comment, malesCount, femalesCount, initialCheckRsd, finalCheckRsd, deposit, leadSource, feedback, foodDrink);
+      createNewBooking(name, phone, date, timeFrom, timeTo, partySize, tableType, occasion, comment, tableNumber, malesCount, femalesCount, initialCheckRsd, finalCheckRsd, deposit, leadSource, feedback, foodDrink);
     }
   }
   
-  function createNewBooking(name, phone, date, timeFrom, timeTo, partySize, tableType, occasion, comment, malesCount, femalesCount, initialCheckRsd, finalCheckRsd, deposit, leadSource, feedback, foodDrink) {
+  function createNewBooking(name, phone, date, timeFrom, timeTo, partySize, tableType, occasion, comment, tableNumber, malesCount, femalesCount, initialCheckRsd, finalCheckRsd, deposit, leadSource, feedback, foodDrink) {
     console.log('createNewBooking called, selectedContactId:', selectedContactId);
     // If contact was selected from search, use its ID directly
     if (selectedContactId) {
       console.log('Using selected contact ID:', selectedContactId);
       // Use selected contact ID
       const contactId = selectedContactId;
-      createBookingWithContactId(contactId, date, timeFrom, timeTo, partySize, tableType, occasion, comment, malesCount, femalesCount, initialCheckRsd, finalCheckRsd, deposit, leadSource, feedback, foodDrink);
+      createBookingWithContactId(contactId, date, timeFrom, timeTo, partySize, tableType, occasion, comment, tableNumber, malesCount, femalesCount, initialCheckRsd, finalCheckRsd, deposit, leadSource, feedback, foodDrink);
       return;
     }
     
@@ -9618,7 +9727,7 @@
         return contactId;
       })
       .then(contactId => {
-        createBookingWithContactId(contactId, date, timeFrom, timeTo, partySize, tableType, occasion, comment, malesCount, femalesCount, initialCheckRsd, finalCheckRsd, deposit, leadSource, feedback, foodDrink);
+        createBookingWithContactId(contactId, date, timeFrom, timeTo, partySize, tableType, occasion, comment, tableNumber, malesCount, femalesCount, initialCheckRsd, finalCheckRsd, deposit, leadSource, feedback, foodDrink);
       })
       .catch(error => {
         isSavingBooking = false; // Reset flag on error
@@ -9640,7 +9749,7 @@
       .then(response => response.json())
       .then(result => {
         if (result.contact_id) {
-          createBookingWithContactId(result.contact_id, date, timeFrom, timeTo, partySize, tableType, occasion, comment, malesCount, femalesCount, initialCheckRsd, finalCheckRsd, deposit, leadSource, feedback, foodDrink);
+          createBookingWithContactId(result.contact_id, date, timeFrom, timeTo, partySize, tableType, occasion, comment, tableNumber, malesCount, femalesCount, initialCheckRsd, finalCheckRsd, deposit, leadSource, feedback, foodDrink);
         } else {
           throw new Error('Failed to create contact');
         }
@@ -9653,7 +9762,7 @@
     }
   }
   
-  function createBookingWithContactId(contactId, date, timeFrom, timeTo, partySize, tableType, occasion, comment, malesCount, femalesCount, initialCheckRsd, finalCheckRsd, deposit, leadSource, feedback, foodDrink) {
+  function createBookingWithContactId(contactId, date, timeFrom, timeTo, partySize, tableType, occasion, comment, tableNumber, malesCount, femalesCount, initialCheckRsd, finalCheckRsd, deposit, leadSource, feedback, foodDrink) {
     console.log('createBookingWithContactId called with contactId:', contactId);
     // Create booking with the correct contact ID
     return fetch('/api/bookings/new', {
@@ -9667,6 +9776,7 @@
         party_size: Number(partySize || 0),
         status: selectedStatus,
         table_type: tableType || '',
+        table_number: tableNumber || null,
         special_case_note: occasion || '',
         comment: comment || '',
         males_count: malesCount ? Number(malesCount) : null,
@@ -10938,8 +11048,12 @@
             // Жене - прямой текст
             cellText = cell.textContent.trim();
           } else if (key === 'sto') {
-            // Стол - прямой текст
-            cellText = cell.textContent.trim();
+            const stoDiv = cell.querySelector('.sto-content');
+            if (stoDiv) {
+              cellText = stoDiv.textContent.trim();
+            } else {
+              cellText = cell.textContent.trim();
+            }
           } else if (key === 'tip_stola') {
             const tableTypeDiv = cell.querySelector('.table-type-scrollable');
             if (tableTypeDiv) {

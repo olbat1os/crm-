@@ -383,45 +383,62 @@
     background: #555 !important;
   }
   
-  /* Предупреждение для экранов меньше 900px */
+  /* Предупреждение для экранов меньше 900px — размеры как в мапе */
   .screen-size-warning {
     display: none !important;
     position: fixed;
-    top: 120px;
-    left: 120px;
-    right: 25px;
-    z-index: 100;
-    pointer-events: none;
+    top: 70px;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    width: 100%;
+    height: calc(100vh - 70px);
+    background: #f3f4f6;
+    align-items: center;
+    justify-content: center;
+    z-index: 500;
+    padding: 20px;
+    box-sizing: border-box;
   }
   
   .screen-size-warning.show {
-    display: block !important;
+    display: flex !important;
   }
   
-  .screen-size-warning-content {
+  /* Оформление как в мапе */
+  .mobile-unavailable-content {
     background: #FFFFFF;
-    border: 1px solid #E5E7EB;
-    border-radius: 20px;
-    padding: 30px;
-    max-width: 500px;
+    border-radius: 16px;
+    padding: 40px 24px;
+    max-width: 400px;
+    width: 100%;
     text-align: center;
-    box-shadow: 0 7px 30px rgba(0, 0, 0, 0.1);
-    pointer-events: auto;
+    box-shadow: 0px 4px 20px rgba(0, 0, 0, 0.1);
   }
-  
-  .screen-size-warning-content h2 {
+  .mobile-unavailable-icon {
+    width: 64px;
+    height: 64px;
+    margin: 0 auto 24px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: linear-gradient(179.27deg, #2CAB5C 0%, #11998E 100%);
+    border-radius: 50%;
+  }
+  .mobile-unavailable-title {
     font-family: 'Manrope', sans-serif;
     font-size: 24px;
     font-weight: 700;
-    color: #000000;
-    margin-bottom: 16px;
+    color: #111827;
+    margin: 0 0 16px;
   }
-  
-  .screen-size-warning-content p {
+  .mobile-unavailable-message {
     font-family: 'Manrope', sans-serif;
     font-size: 16px;
-    color: #6B7280;
+    font-weight: 400;
+    color: #6b7280;
     line-height: 1.5;
+    margin: 0;
   }
 
   /* Mobile Responsive Styles */
@@ -532,11 +549,16 @@
   <img src="/static/images/logo_login.svg.png" alt="Logo" class="mobile-sidebar-logo">
 </div>
 
-<!-- Предупреждение о размере экрана -->
+<!-- Предупреждение о размере экрана (оформление как в мапе) -->
 <div class="screen-size-warning" id="screenSizeWarning" style="display: none;">
-  <div class="screen-size-warning-content">
-    <h2>Stranica još nije spremna</h2>
-    <p>Za vaš uređaj stranica još nije spremna. Molimo koristite veći ekran.</p>
+  <div class="mobile-unavailable-content">
+    <div class="mobile-unavailable-icon">
+      <svg width="32" height="32" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-2h2v2zm0-4h-2V7h2v6z" fill="white"></path>
+      </svg>
+    </div>
+    <h2 class="mobile-unavailable-title">Stranica privremeno nedostupna</h2>
+    <p class="mobile-unavailable-message">Ova stranica je privremeno nedostupna za mobilne uređaje. Molimo vas koristite desktop verziju.</p>
   </div>
 </div>
 

@@ -1,0 +1,36 @@
+# Команды для выполнения НА СЕРВЕРЕ
+# Вы уже подключены: root@srv1037394:~/crm-#
+
+# 1. Перейдите в папку проекта
+cd crm-
+
+# 2. Остановите nginx (временно)
+docker-compose stop nginx
+
+# 3. Установите certbot (если еще не установлен)
+apt-get update
+apt-get install -y certbot
+
+# 4. Получите/обновите SSL сертификат
+# ЗАМЕНИТЕ yourdomain.com и your@email.com на ваши данные!
+certbot certonly --standalone \
+    --non-interactive \
+    --agree-tos \
+    --email your@email.com \
+    -d yourdomain.com
+
+# 5. Скопируйте сертификаты в папку ssl
+mkdir -p ssl
+cp /etc/letsencrypt/live/yourdomain.com/fullchain.pem ssl/cert.pem
+cp /etc/letsencrypt/live/yourdomain.com/privkey.pem ssl/key.pem
+chmod 644 ssl/cert.pem
+chmod 600 ssl/key.pem
+
+# 6. Запустите nginx обратно
+docker-compose start nginx
+
+# 7. Проверьте сертификат
+openssl x509 -in ssl/cert.pem -noout -dates
+
+# 8. Проверьте статус контейнеров
+docker-compose ps

@@ -1,0 +1,32 @@
+# Команды для исправления проблемы с nginx на сервере
+# Выполните эти команды на сервере (root@srv1037394:~/crm-#)
+
+# 1. Проверьте наличие SSL сертификатов
+ls -la ssl/
+
+# 2. Если сертификатов НЕТ, создайте временные самоподписанные (для теста)
+# Или получите настоящие через certbot:
+mkdir -p ssl
+# Временные сертификаты (только для теста, потом замените на настоящие):
+openssl req -x509 -nodes -days 365 -newkey rsa:2048 \
+    -keyout ssl/key.pem \
+    -out ssl/cert.pem \
+    -subj "/C=RS/ST=Serbia/L=Belgrade/O=CRM/CN=lovacrm.rs"
+
+chmod 644 ssl/cert.pem
+chmod 600 ssl/key.pem
+
+# 3. Проверьте конфигурацию nginx
+cat nginx.conf | grep -A 5 "server_name"
+
+# 4. Перезапустите nginx контейнер
+docker-compose restart nginx
+
+# 5. Проверьте логи
+docker-compose logs nginx | tail -20
+
+# 6. Проверьте, что конфигурация загружена правильно
+docker exec crm--nginx-1 nginx -t
+
+# 7. Если есть ошибки, проверьте монтирование volumes
+docker inspect crm--nginx-1 | grep -A 10 Mounts

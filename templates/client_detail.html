@@ -971,6 +971,10 @@
                             <span class="detail-value">{{ booking.table_type or '-' }}</span>
                         </div>
                         <div class="detail-line">
+                            <span class="detail-label">Sto:</span>
+                            <span class="detail-value">{{ ((table_display_names|default({})).get(booking.table_number|string, booking.table_number|string) if booking.table_number is not none and booking.table_number != '' else '') or '-' }}</span>
+                        </div>
+                        <div class="detail-line">
                             <span class="detail-label">Poseban povod:</span>
                             <span class="detail-value">{{ booking.special_case_note or '-' }}</span>
                         </div>
@@ -3225,7 +3229,7 @@
 .new-booking-modal-content {
     position: relative;
     width: 812px;
-    height: 532px;
+    height: 585px;
     background: #FFFFFF;
     border: 1px solid #D9D9D9;
     border-radius: 19.5px;
@@ -3253,12 +3257,20 @@
 }
 
 .new-booking-close {
-    width: 20px;
-    height: 20px;
+    width: 24px;
+    height: 24px;
     cursor: pointer;
     position: absolute;
     top: 20px;
     right: 20px;
+    filter: brightness(0) saturate(100%) invert(45%);
+    opacity: 0.7;
+    transition: all 0.2s;
+}
+
+.new-booking-close:hover {
+    opacity: 1;
+    filter: brightness(0) saturate(100%) invert(30%);
 }
 
 .custom-status-dropdown {
@@ -3577,6 +3589,44 @@
     align-items: center;
     gap: 10px;
     min-height: 40px;
+}
+
+/* Form styles matching booking modal */
+.new-booking-form .form-field {
+    align-items: flex-start;
+}
+.new-booking-form .form-field:not(.comment-field):not(.date-time-field):not([style*="flex-direction: column"]) {
+    align-items: center;
+}
+.new-booking-form .form-label {
+    min-width: 120px !important;
+    width: 120px !important;
+    flex-shrink: 0;
+}
+.new-booking-form .form-label[style*="min-width: 65px"],
+.new-booking-form .form-label[style*="min-width: 45px"] {
+    min-width: auto !important;
+    width: auto !important;
+}
+.new-booking-form #leadSourceInputLabel {
+    min-width: 120px !important;
+    width: 120px !important;
+}
+.new-booking-form .form-field.comment-field {
+    align-items: flex-start;
+}
+.new-booking-form .form-field.comment-field > .form-label {
+    padding-top: 8px;
+}
+.new-booking-form .form-field.date-time-field {
+    align-items: flex-start;
+}
+.new-booking-form .form-field.date-time-field > .form-label,
+.new-booking-form .date-time-field .form-label {
+    padding-top: 0;
+}
+.new-booking-form .form-field[style*="flex-direction: column"] {
+    align-items: flex-start;
 }
 
 .form-field.comment-field {
@@ -5487,7 +5537,6 @@ function updateLeadSourceDisplay() {
 
 // Функция для обработки изменения Lead source
 function handleLeadSourceChange() {
-    console.log('handleLeadSourceChange called');
     const leadSourceSelect = document.getElementById('leadSource');
     const leadSourceInputField = document.getElementById('leadSourceInputField');
     const leadSourceInputLabel = document.getElementById('leadSourceInputLabel');
@@ -5499,117 +5548,106 @@ function handleLeadSourceChange() {
     const timeFromBelow = document.getElementById('timeFromBelow');
     const timeToBelow = document.getElementById('timeToBelow');
     
-    console.log('Elements found:', {
-        leadSourceSelect: !!leadSourceSelect,
-        leadSourceInputField: !!leadSourceInputField,
-        timeFieldContainer: !!timeFieldContainer,
-        timeRowBelow: !!timeRowBelow
-    });
-    
-    if (!leadSourceSelect || !leadSourceInputField) {
-        console.error('Required elements not found');
-        return;
-    }
+    if (!leadSourceSelect || !leadSourceInputField) return;
     
     const selectedOption = leadSourceSelect.options[leadSourceSelect.selectedIndex];
     const requiresInput = selectedOption && selectedOption.dataset.requiresInput === 'true';
     const selectedValue = leadSourceSelect.value;
     
-    console.log('Selected:', {
-        value: selectedValue,
-        text: selectedOption ? selectedOption.textContent : '',
-        requiresInput: requiresInput
-    });
-    
     if (requiresInput && selectedValue) {
-        // Показываем поле ввода имени lead source справа на месте времени
-        const displayName = selectedOption.textContent;
-        leadSourceInputLabel.textContent = displayName + ':';
+        leadSourceInputLabel.textContent = selectedOption.textContent + ':';
         leadSourceInputField.style.display = 'flex';
         leadSourceInput.value = '';
         leadSourceInput.focus();
-        console.log('Showing lead source input field');
-        
-        // Скрываем время в строке с комментарием
-        if (timeFieldContainer) {
-            timeFieldContainer.style.display = 'none';
-            console.log('Hiding time field container');
-        }
-        
-        // Показываем время в отдельной строке ниже
+        if (timeFieldContainer) timeFieldContainer.style.display = 'none';
         if (timeRowBelow) {
             timeRowBelow.style.display = 'flex';
-            console.log('Showing time row below');
-            
-            // Синхронизируем значения времени
-            if (timeFrom && timeFromBelow) {
-                timeFromBelow.value = timeFrom.value;
-            }
-            if (timeTo && timeToBelow) {
-                timeToBelow.value = timeTo.value;
-            }
-            
-            // Добавляем обработчики для синхронизации времени
-            if (timeFrom && timeFromBelow) {
-                const syncHandler = () => {
-                    if (timeFromBelow) timeFromBelow.value = timeFrom.value;
-                };
-                timeFrom.removeEventListener('input', window.syncTimeFromHandler);
-                timeFrom.removeEventListener('change', window.syncTimeFromHandler);
-                timeFrom.addEventListener('input', syncHandler);
-                timeFrom.addEventListener('change', syncHandler);
-                window.syncTimeFromHandler = syncHandler;
-            }
-            
-            if (timeTo && timeToBelow) {
-                const syncHandler = () => {
-                    if (timeToBelow) timeToBelow.value = timeTo.value;
-                };
-                timeTo.removeEventListener('input', window.syncTimeToHandler);
-                timeTo.removeEventListener('change', window.syncTimeToHandler);
-                timeTo.addEventListener('input', syncHandler);
-                timeTo.addEventListener('change', syncHandler);
-                window.syncTimeToHandler = syncHandler;
-            }
+            if (timeFrom && timeFromBelow) timeFromBelow.value = timeFrom.value;
+            if (timeTo && timeToBelow) timeToBelow.value = timeTo.value;
         }
     } else {
-        // Скрываем поле ввода lead source
         leadSourceInputField.style.display = 'none';
         leadSourceInput.value = '';
-        console.log('Hiding lead source input field');
-        
-        // Показываем время в строке с комментарием
-        if (timeFieldContainer) {
-            timeFieldContainer.style.display = 'flex';
-            console.log('Showing time field container');
-        }
-        
-        // Скрываем время в отдельной строке и синхронизируем значения обратно
-        if (timeRowBelow) {
-            timeRowBelow.style.display = 'none';
-            console.log('Hiding time row below');
-            
-            // Синхронизируем значения обратно в основное поле времени
-            if (timeFromBelow && timeFrom) {
-                timeFrom.value = timeFromBelow.value;
-            }
-            if (timeToBelow && timeTo) {
-                timeTo.value = timeToBelow.value;
-            }
-            
-            // Удаляем обработчики синхронизации
-            if (timeFrom && window.syncTimeFromHandler) {
-                timeFrom.removeEventListener('input', window.syncTimeFromHandler);
-                timeFrom.removeEventListener('change', window.syncTimeFromHandler);
-                window.syncTimeFromHandler = null;
-            }
-            if (timeTo && window.syncTimeToHandler) {
-                timeTo.removeEventListener('input', window.syncTimeToHandler);
-                timeTo.removeEventListener('change', window.syncTimeToHandler);
-                window.syncTimeToHandler = null;
-            }
-        }
+        if (timeFieldContainer) timeFieldContainer.style.display = 'flex';
+        if (timeRowBelow) timeRowBelow.style.display = 'none';
     }
+    
+    updateLeadSourceDisplay();
+}
+
+let _populateTableCallId = 0;
+function populateTableNumberSelect(presetValue) {
+    const select = document.getElementById('tableNumber');
+    if (!select) return Promise.resolve();
+    const callId = ++_populateTableCallId;
+    const dateEl = document.getElementById('bookingDate');
+    const timeFromEl = document.getElementById('timeFrom');
+    const timeToEl = document.getElementById('timeTo');
+    const timeFieldContainer = document.getElementById('timeFieldContainer');
+    const timeFromBelowEl = document.getElementById('timeFromBelow');
+    const timeToBelowEl = document.getElementById('timeToBelow');
+    let timeFrom = (timeFromEl && timeFromEl.value) || '';
+    let timeTo = (timeToEl && timeToEl.value) || '';
+    if (timeFieldContainer && timeFieldContainer.style.display === 'none' && timeFromBelowEl) {
+        timeFrom = timeFromBelowEl.value || timeFrom;
+        timeTo = timeToBelowEl ? timeToBelowEl.value || timeTo : timeTo;
+    }
+    const date = (dateEl && dateEl.value) || '';
+    const modal = document.getElementById('newBookingModal');
+    const excludeBookingId = (modal && modal.dataset.bookingId) ? parseInt(modal.dataset.bookingId, 10) : null;
+
+    const appendOptions = (occupiedSet) => {
+        if (callId !== _populateTableCallId) return;
+        while (select.options.length > 1) select.remove(1);
+        return fetch('/api/map/tables')
+          .then(res => res.json())
+          .then(data => {
+            if (callId !== _populateTableCallId) return;
+            if (!data.success || !Array.isArray(data.tables)) return;
+            const numbered = data.tables.filter(t =>
+              t.number != null && t.number > 0 &&
+              ['square','circle','chair-numbered'].includes((t.shape || '').toLowerCase()) &&
+              !occupiedSet.has(String(t.number))
+            ).sort((a, b) => (a.number || 0) - (b.number || 0));
+            const values = new Set();
+            numbered.forEach(t => {
+              const val = String(t.number);
+              values.add(val);
+              const opt = document.createElement('option');
+              opt.value = val;
+              opt.textContent = (t.metadata && t.metadata.customName) ? t.metadata.customName : val;
+              select.appendChild(opt);
+            });
+            if (presetValue != null && presetValue !== '') {
+              const strVal = String(presetValue).trim();
+              if (values.has(strVal)) select.value = strVal;
+              else if (strVal && !occupiedSet.has(strVal)) {
+                const opt = document.createElement('option');
+                opt.value = strVal; opt.textContent = strVal;
+                select.appendChild(opt); select.value = strVal;
+              }
+            }
+          });
+    };
+    if (!date || !timeFrom) return appendOptions(new Set());
+    const params = new URLSearchParams({ date: date, time_from: timeFrom });
+    if (timeTo) params.set('time_to', timeTo);
+    if (excludeBookingId) params.set('exclude_booking_id', excludeBookingId);
+    return fetch('/api/map/bookings/occupied-tables?' + params.toString())
+      .then(res => res.json())
+      .then(data => {
+        if (callId !== _populateTableCallId) return Promise.resolve();
+        const occupied = new Set((data.success && data.occupied_table_numbers) ? data.occupied_table_numbers.map(String) : []);
+        return appendOptions(occupied);
+      })
+      .catch(() => { if (callId === _populateTableCallId) return appendOptions(new Set()); });
+}
+window.populateTableNumberSelect = populateTableNumberSelect;
+
+function refreshTableNumberSelect() {
+    const select = document.getElementById('tableNumber');
+    const currentVal = (select && select.value) || '';
+    populateTableNumberSelect(currentVal || undefined);
 }
 
 // Функция для закрытия всех dropdown
@@ -5651,19 +5689,25 @@ document.addEventListener('click', function(event) {
     }
 });
 
-// Функция для добавления обработчиков событий к полю timeFrom
+let _tableRefreshListenersAdded = false;
 function addTimeFromEventListeners() {
     const timeFromInput = document.getElementById('timeFrom');
+    const timeToInput = document.getElementById('timeTo');
+    const bookingDateInput = document.getElementById('bookingDate');
+    const timeFromBelowEl = document.getElementById('timeFromBelow');
+    const timeToBelowEl = document.getElementById('timeToBelow');
+    if (!_tableRefreshListenersAdded && typeof refreshTableNumberSelect === 'function') {
+        _tableRefreshListenersAdded = true;
+        if (bookingDateInput) bookingDateInput.addEventListener('change', refreshTableNumberSelect);
+        if (timeToInput) timeToInput.addEventListener('change', refreshTableNumberSelect);
+        if (timeFromBelowEl) timeFromBelowEl.addEventListener('change', refreshTableNumberSelect);
+        if (timeToBelowEl) timeToBelowEl.addEventListener('change', refreshTableNumberSelect);
+    }
     if (timeFromInput) {
-        // Remove existing event listener to avoid duplicates
         timeFromInput.removeEventListener('input', updateEndTime);
         timeFromInput.removeEventListener('change', updateEndTime);
-        
-        // Add new event listeners
-        timeFromInput.addEventListener('input', updateEndTime);
-        timeFromInput.addEventListener('change', updateEndTime);
-        
-        console.log('Event listeners added to timeFrom field');
+        timeFromInput.addEventListener('input', function() { updateEndTime(); if (typeof refreshTableNumberSelect === 'function') refreshTableNumberSelect(); });
+        timeFromInput.addEventListener('change', function() { updateEndTime(); if (typeof refreshTableNumberSelect === 'function') refreshTableNumberSelect(); });
     }
 }
 
@@ -5805,7 +5849,7 @@ window.selectStatus = function(status) {
             }
             // Уменьшаем высоту модального окна когда скрываем поле
             if (modalContent) {
-                modalContent.style.height = '532px';
+                modalContent.style.height = '585px';
             }
         }
     }
@@ -5842,6 +5886,10 @@ function openNewBookingModal() {
     if (leadSourceInputField) leadSourceInputField.style.display = 'none';
     if (timeFieldContainer) timeFieldContainer.style.display = 'flex';
     if (timeRowBelow) timeRowBelow.style.display = 'none';
+    const timeFromBelow = document.getElementById('timeFromBelow');
+    const timeToBelow = document.getElementById('timeToBelow');
+    if (timeFromBelow) timeFromBelow.value = '';
+    if (timeToBelow) timeToBelow.value = '';
     
     // Закрываем все открытые dropdown
     closeAllDropdowns();
@@ -5861,6 +5909,9 @@ function openNewBookingModal() {
             }
             if (typeof updateLeadSourceDisplay === 'function') {
                 updateLeadSourceDisplay();
+            }
+            if (typeof populateTableNumberSelect === 'function') {
+                populateTableNumberSelect();
             }
         }, 100);
         
@@ -5885,12 +5936,9 @@ function openNewBookingModal() {
     }
     });
     
-    // Force update end time after modal is fully loaded (only if timeFrom is set)
     setTimeout(() => {
-        console.log('Forcing updateEndTime after modal load');
-        if (typeof updateEndTime === 'function') {
-            updateEndTime();
-        }
+        if (typeof updateEndTime === 'function') updateEndTime();
+        if (typeof refreshTableNumberSelect === 'function') refreshTableNumberSelect();
     }, 1000);
     
     // Set default date to selected date
@@ -5921,7 +5969,7 @@ function openNewBookingModal() {
     // Устанавливаем начальную высоту модального окна
     const modalContent = newBookingModal.querySelector('.new-booking-modal-content');
     if (modalContent) {
-        modalContent.style.height = '532px';
+        modalContent.style.height = '585px';
     }
 }
 
@@ -5949,12 +5997,10 @@ function closeNewBookingModal() {
     if (timeFrom) timeFrom.value = '';
     const timeTo = document.getElementById('timeTo');
     if (timeTo) timeTo.value = '';
-    const timeFromBelow = document.getElementById('timeFromBelow');
-    if (timeFromBelow) timeFromBelow.value = '';
-    const timeToBelow = document.getElementById('timeToBelow');
-    if (timeToBelow) timeToBelow.value = '';
     const comment = document.getElementById('comment');
     if (comment) comment.value = '';
+    const tableNumber = document.getElementById('tableNumber');
+    if (tableNumber) tableNumber.value = '';
     const malesCount = document.getElementById('malesCount');
     if (malesCount) malesCount.value = '0';
     
@@ -5965,6 +6011,10 @@ function closeNewBookingModal() {
     if (leadSourceInputField) leadSourceInputField.style.display = 'none';
     if (timeFieldContainer) timeFieldContainer.style.display = 'flex';
     if (timeRowBelow) timeRowBelow.style.display = 'none';
+    const timeFromBelow = document.getElementById('timeFromBelow');
+    const timeToBelow = document.getElementById('timeToBelow');
+    if (timeFromBelow) timeFromBelow.value = '';
+    if (timeToBelow) timeToBelow.value = '';
     
     // Сбрасываем lead source
     const leadSourceSelect = document.getElementById('leadSource');
@@ -6002,7 +6052,7 @@ function closeNewBookingModal() {
     // Возвращаем стандартную высоту модального окна
     const modalContent = newBookingModal ? newBookingModal.querySelector('.new-booking-modal-content') : null;
     if (modalContent) {
-        modalContent.style.height = '532px';
+        modalContent.style.height = '585px';
     }
     
     // Reset status to default
@@ -6094,11 +6144,17 @@ function loadBookingData(bookingId) {
                 }
                 
                 if (booking.time_from) {
-                    document.getElementById('timeFrom').value = booking.time_from;
+                    const tf = document.getElementById('timeFrom');
+                    const tfb = document.getElementById('timeFromBelow');
+                    if (tf) tf.value = booking.time_from;
+                    if (tfb) tfb.value = booking.time_from;
                 }
                 
                 if (booking.time_to) {
-                    document.getElementById('timeTo').value = booking.time_to;
+                    const tt = document.getElementById('timeTo');
+                    const ttb = document.getElementById('timeToBelow');
+                    if (tt) tt.value = booking.time_to;
+                    if (ttb) ttb.value = booking.time_to;
                 }
                 
                 if (booking.party_size) {
@@ -6172,6 +6228,13 @@ function loadBookingData(bookingId) {
                 
                 if (booking.comment) {
                     document.getElementById('comment').value = booking.comment;
+                }
+                
+                if (typeof populateTableNumberSelect === 'function') {
+                    populateTableNumberSelect(booking.table_number);
+                } else if (booking.table_number !== undefined && booking.table_number !== null) {
+                    const tn = document.getElementById('tableNumber');
+                    if (tn) tn.value = booking.table_number;
                 }
                 
                 if (booking.deposit !== undefined && booking.deposit !== null) {
@@ -6422,7 +6485,7 @@ function updateNewReservationStatus(status, text) {
                 }
                 // Уменьшаем высоту модального окна когда скрываем поле
                 if (modalContent) {
-                    modalContent.style.height = '532px';
+                    modalContent.style.height = '585px';
                 }
             }
         }
@@ -6532,8 +6595,6 @@ function saveNewBooking() {
     const specialOccasionEl = document.getElementById('specialOccasion');
     const timeFromEl = document.getElementById('timeFrom');
     const timeToEl = document.getElementById('timeTo');
-    const timeFromBelowEl = document.getElementById('timeFromBelow');
-    const timeToBelowEl = document.getElementById('timeToBelow');
     const commentEl = document.getElementById('comment');
     const malesCountEl = document.getElementById('malesCount');
     const femalesCountEl = document.getElementById('femalesCount');
@@ -6542,25 +6603,23 @@ function saveNewBooking() {
     const depositEl = document.getElementById('deposit');
     const leadSourceEl = document.getElementById('leadSource');
     const leadSourceInputEl = document.getElementById('leadSourceInput');
+    const tableNumberEl = document.getElementById('tableNumber');
     
     const partySize = partySizeEl ? partySizeEl.value : '';
     const tableType = tableTypeEl ? tableTypeEl.value : '';
     const bookingDate = bookingDateEl ? bookingDateEl.value : '';
     const specialOccasion = specialOccasionEl ? specialOccasionEl.value : '';
-    // Используем timeFromBelow, если timeFieldContainer скрыт, иначе timeFrom
-    const timeFieldContainer = document.getElementById('timeFieldContainer');
     let timeFrom = timeFromEl ? timeFromEl.value : '';
     let timeTo = timeToEl ? timeToEl.value : '';
-    // Если timeFieldContainer скрыт, используем значения из timeFromBelow/timeToBelow
-    if (timeFieldContainer && timeFieldContainer.style.display === 'none') {
-        if (timeFromBelowEl && timeFromBelowEl.value) {
-            timeFrom = timeFromBelowEl.value;
-        }
-        if (timeToBelowEl && timeToBelowEl.value) {
-            timeTo = timeToBelowEl.value;
-        }
+    const timeFieldContainer = document.getElementById('timeFieldContainer');
+    const timeFromBelowEl = document.getElementById('timeFromBelow');
+    const timeToBelowEl = document.getElementById('timeToBelow');
+    if (timeFieldContainer && timeFieldContainer.style.display === 'none' && timeFromBelowEl) {
+        timeFrom = timeFromBelowEl.value || timeFrom;
+        timeTo = timeToBelowEl ? timeToBelowEl.value || timeTo : timeTo;
     }
     const comment = commentEl ? commentEl.value : '';
+    const tableNumber = tableNumberEl ? tableNumberEl.value.trim() : '';
     const malesCount = malesCountEl ? malesCountEl.value : '';
     const femalesCount = femalesCountEl ? femalesCountEl.value : '';
     const initialCheckRsd = initialCheckRsdEl ? initialCheckRsdEl.value : '';
@@ -6590,6 +6649,7 @@ function saveNewBooking() {
             table_type: tableType,
             special_case_note: specialOccasion,
             comment: comment,
+            table_number: tableNumber || null,
             status: status,
             males_count: malesCount ? Number(malesCount) : null,
             females_count: femalesCount ? Number(femalesCount) : null,
@@ -6610,6 +6670,7 @@ function saveNewBooking() {
         time_from: timeFrom,
         time_to: timeTo,
         comment: comment,
+        table_number: tableNumber || null,
         males_count: malesCount ? Number(malesCount) : null,
         females_count: femalesCount ? Number(femalesCount) : null,
         initial_check_rsd: initialCheckRsd ? Number(initialCheckRsd) : null,
@@ -6944,36 +7005,45 @@ document.addEventListener('click', function(e) {
             </div>
             
             <div class="form-row">
-                <div class="form-field comment-field">
-                    <label class="form-label">Komentar:</label>
-                    <textarea class="form-textarea" id="comment" placeholder="..." rows="2"></textarea>
-                        </div>
+                <div class="form-field">
+                    <label class="form-label">Sto:</label>
+                    <select class="form-input" id="tableNumber">
+                        <option value="">...</option>
+                    </select>
+                </div>
                 <div class="form-field" style="display: flex; flex-direction: column; gap: 20px; align-items: stretch;">
                     <div class="form-field date-time-field" id="timeFieldContainer" style="width: 100%;">
                         <div class="date-time-container" style="width: 100%;">
                             <div class="time-field-row" style="display: flex; align-items: center; gap: 10px; width: 100%;">
                                 <label class="form-label" style="min-width: 120px; width: 120px; flex-shrink: 0;">Vreme:</label>
-                            <div class="time-inputs">
-                                <input type="time" class="form-input" id="timeFrom" placeholder="--:--">
-                                <span>-</span>
-                                <input type="time" class="form-input" id="timeTo" placeholder="--:--">
+                                <div class="time-inputs">
+                                    <input type="time" class="form-input" id="timeFrom" placeholder="--:--">
+                                    <span>-</span>
+                                    <input type="time" class="form-input" id="timeTo" placeholder="--:--">
+                                </div>
                             </div>
-                        </div>
                         </div>
                     </div>
                     <div class="form-field" id="leadSourceInputField" style="display: none; width: 100%;">
                         <label class="form-label" id="leadSourceInputLabel" style="min-width: 120px; width: 120px; flex-shrink: 0;"></label>
                         <input type="text" class="form-input" id="leadSourceInput" placeholder="...">
+                    </div>
                 </div>
-                    <div class="form-field date-time-field" id="timeRowBelow" style="display: none; width: 100%;">
-                        <div class="date-time-container" style="width: 100%;">
-                            <div class="time-field-row" style="display: flex; align-items: center; gap: 10px; width: 100%;">
-                                <label class="form-label" style="min-width: 120px; width: 120px; flex-shrink: 0;">Vreme:</label>
-                                <div class="time-inputs">
-                                    <input type="time" class="form-input" id="timeFromBelow" placeholder="--:--">
-                                    <span>-</span>
-                                    <input type="time" class="form-input" id="timeToBelow" placeholder="--:--">
-                                </div>
+            </div>
+            
+            <div class="form-row">
+                <div class="form-field comment-field">
+                    <label class="form-label">Komentar:</label>
+                    <textarea class="form-textarea" id="comment" placeholder="..." rows="2"></textarea>
+                </div>
+                <div class="form-field date-time-field" id="timeRowBelow" style="display: none; width: 100%;">
+                    <div class="date-time-container" style="width: 100%;">
+                        <div class="time-field-row" style="display: flex; align-items: center; gap: 10px; width: 100%;">
+                            <label class="form-label" style="min-width: 120px; width: 120px; flex-shrink: 0;">Vreme:</label>
+                            <div class="time-inputs">
+                                <input type="time" class="form-input" id="timeFromBelow" placeholder="--:--">
+                                <span>-</span>
+                                <input type="time" class="form-input" id="timeToBelow" placeholder="--:--">
                             </div>
                         </div>
                     </div>

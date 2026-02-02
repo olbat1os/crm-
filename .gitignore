@@ -83,3 +83,10 @@ tests/
 *_backup.*
 *_old.*
 *_copy.*
+
+# SSL сертификаты - НЕ коммитить в репозиторий!
+ssl/
+ssl_backup_*/
+*.pem
+*.key
+*.crt

@@ -1,0 +1,15 @@
+# Пошаговая инструкция для загрузки SSL скриптов
+
+# ШАГ 1: Перейдите в папку проекта в PowerShell
+cd "C:\Users\Борода\OneDrive\Рабочий стол\crm1.2"
+
+# ШАГ 2: Проверьте, что файлы есть
+dir renew_ssl.sh
+dir setup_ssl_auto_renew.sh
+
+# ШАГ 3: Загрузите файлы на сервер
+scp renew_ssl.sh root@72.60.182.59:/root/crm-/
+scp setup_ssl_auto_renew.sh root@72.60.182.59:/root/crm-/
+
+# ШАГ 4: Установите права на выполнение
+ssh root@72.60.182.59 "cd crm- && chmod +x renew_ssl.sh setup_ssl_auto_renew.sh"

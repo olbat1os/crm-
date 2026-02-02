@@ -144,6 +144,7 @@ class Booking(SQLModel, table=True):
     end_date: Optional[date] = None  # Дата окончания (для резерваций через полночь)
 
     table_type: Optional[str] = None  # VIP/Bar/Standard
+    table_number: Optional[str] = None  # Номер стола (sto)
     party_size: Optional[int] = None
     booking_source: Optional[str] = None  # WhatsApp, Instagram, Viber, Phone
 
