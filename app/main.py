@@ -6,7 +6,7 @@ from sqlmodel import Session, select
 from typing import Optional, Dict, Any, List
 from datetime import timedelta
 from pydantic import BaseModel
-from sqlalchemy import func, case, or_
+from sqlalchemy import func, case, or_, cast, String
 from app.db import get_session, create_db_and_tables
 from app.models import Business, Admin, AdminRole, BusinessStatus
 from app.config import settings
@@ -1460,7 +1460,7 @@ async def get_map_bookings(
                 select(MapTable)
                 .where(
                     MapTable.business_id == business_id,
-                    MapTable.number == booking.table_number
+                    cast(MapTable.number, String) == booking.table_number
                 )
                 .limit(1)
             ).first()
