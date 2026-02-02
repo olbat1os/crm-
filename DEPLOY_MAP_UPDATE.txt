@@ -1,0 +1,58 @@
+# Залив обновления карты (map.html) на сервер
+
+## Что залито в git
+- templates/map.html — подсветка при перетаскивании шкалы, сортировка резерваций, фикс потери резервации при смене стола в букинге
+
+---
+
+## Вариант 1: С локального ПК — загрузить файл на сервер и скопировать в контейнер
+
+### Шаг 1. Загрузить map.html на сервер (из PowerShell в папке проекта)
+```powershell
+scp templates/map.html root@72.60.182.59:/root/crm-/templates/map.html
+```
+*(Замените root@72.60.182.59 на ваш сервер, если другой.)*
+
+### Шаг 2. На сервере — скопировать в контейнер и перезапустить
+Подключитесь по SSH и выполните:
+```bash
+ssh root@72.60.182.59
+```
+
+На сервере:
+```bash
+cd /root/crm-/
+CONTAINER="crm--crm-app-1"
+
+# Копируем обновлённый шаблон в контейнер
+docker cp templates/map.html ${CONTAINER}:/app/templates/map.html
+
+# Перезапуск приложения
+docker-compose restart crm-app
+
+# Проверка
+docker exec ${CONTAINER} ls -lh /app/templates/map.html
+docker-compose logs --tail=30 crm-app
+```
+
+---
+
+## Вариант 2: На сервере — pull из git и копирование в контейнер
+
+На сервере:
+```bash
+cd /root/crm-/
+git pull
+
+CONTAINER="crm--crm-app-1"
+docker cp templates/map.html ${CONTAINER}:/app/templates/map.html
+docker-compose restart crm-app
+docker-compose logs --tail=30 crm-app
+```
+
+---
+
+## Кратко (одной строкой на сервере после git pull)
+```bash
+cd /root/crm-/ && git pull && docker cp templates/map.html crm--crm-app-1:/app/templates/map.html && docker-compose restart crm-app
+```
