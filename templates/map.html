@@ -2209,6 +2209,11 @@
 
 <script src="https://cdn.jsdelivr.net/npm/fabric@5.3.0/dist/fabric.min.js"></script>
 <script>
+  // Патч Fabric.js: 'alphabetical' устарел в Canvas API, нужен 'alphabetic'
+  if (typeof fabric !== 'undefined') {
+    if (fabric.Text) fabric.Text.prototype.textBaseline = 'alphabetic';
+    if (fabric.Textbox) fabric.Textbox.prototype.textBaseline = 'alphabetic';
+  }
   // Глобальные переменные для canvas и container
   let canvas = null;
   let container = null;
@@ -3267,7 +3272,7 @@
 
     const truncateTextToFit = (fullText, maxWidth, fontSize, fontFamily) => {
       if (!fullText) return '';
-      const t = new fabric.Text(fullText, { fontSize, fontFamily: fontFamily || 'Manrope, sans-serif', fontWeight: '700' });
+      const t = new fabric.Text(fullText, { fontSize, fontFamily: fontFamily || 'Manrope, sans-serif', fontWeight: '700', textBaseline: 'alphabetic' });
       if (t.width <= maxWidth) return fullText;
       let base = fullText;
       while (base.length > 0) {
@@ -5595,8 +5600,21 @@
     
     try {
       const response = await fetch(`/api/map/bookings?date=${date}`);
-      const data = await response.json();
+      const data = await response.json().catch(() => ({}));
       
+      if (!response.ok && data.error === 'DB_MIGRATION_REQUIRED') {
+        console.error('Требуется миграция БД:', data.message);
+        if (typeof alert !== 'undefined') alert('На сервере нужно выполнить миграцию БД. Подробности в консоли (F12).');
+        bookingsData = [];
+        if (typeof renderBookings === 'function') renderBookings([]);
+        return;
+      }
+      if (!response.ok) {
+        console.error('Ошибка загрузки резерваций:', response.status, data);
+        bookingsData = [];
+        if (typeof renderBookings === 'function') renderBookings([]);
+        return;
+      }
       if (data.success) {
         bookingsData = data.bookings;
         console.log('Загружены резервации:', {

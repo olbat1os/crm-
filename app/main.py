@@ -1412,16 +1412,32 @@ async def get_map_bookings(
     if not contact_ids:
         return {"success": True, "bookings": []}
 
-    # Получаем резервации на выбранную дату
-    bookings = session.exec(
-        select(Booking)
-        .where(
-            Booking.date == selected_date,
-            Booking.contact_id.in_(contact_ids),
-            Booking.table_type.isnot(None)  # Только резервации с указанным столом
-        )
-        .order_by(Booking.time_from)
-    ).all()
+    try:
+        # Получаем резервации на выбранную дату (с указанным типом стола ИЛИ номером стола)
+        bookings = session.exec(
+            select(Booking)
+            .where(
+                Booking.date == selected_date,
+                Booking.contact_id.in_(contact_ids),
+                or_(
+                    Booking.table_type.isnot(None),
+                    Booking.table_number.isnot(None),
+                )
+            )
+            .order_by(Booking.time_from)
+        ).all()
+    except Exception as e:
+        err_msg = str(getattr(e, "orig", e))
+        if "table_number" in err_msg or ("column" in err_msg.lower() and "does not exist" in err_msg.lower()):
+            return JSONResponse(
+                status_code=503,
+                content={
+                    "success": False,
+                    "error": "DB_MIGRATION_REQUIRED",
+                    "message": "На сервере выполните: docker-compose exec db psql -U crm_user -d crm_db -c \"ALTER TABLE booking ADD COLUMN IF NOT EXISTS table_number TEXT;\", затем docker-compose restart crm-app",
+                },
+            )
+        raise
 
     # Получаем информацию о клиентах
     contact_ids_in_bookings = {b.contact_id for b in bookings}
@@ -1437,7 +1453,6 @@ async def get_map_bookings(
     for booking in bookings:
         contact = contacts.get(booking.contact_id)
         # Получаем информацию о столике из резервации
-        table_info = None
         table_info = None
         table_display_name = str(booking.table_number) if booking.table_number else None
         if booking.table_number:
