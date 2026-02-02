@@ -5656,6 +5656,15 @@
       return name.includes(searchTerm) || table.includes(searchTerm) || sto.includes(searchTerm);
     });
 
+    // Сортируем по дате и времени (все резервации, включая несколько на один стол)
+    const sortedBookings = [...filteredBookings].sort((a, b) => {
+      const d = (a.date || '').localeCompare(b.date || '');
+      if (d !== 0) return d;
+      const tA = (a.time_from || '').replace(':', '');
+      const tB = (b.time_from || '').replace(':', '');
+      return tA.localeCompare(tB);
+    });
+
     const statusLabels = { dogovoreno: 'Dogovoreno', potvrdjeno: 'Potvrđeno', otkazano: 'Otkazano', nisu: 'Nisu došli', dosli: 'Došli', 'na_cekaju': 'Na čekanju', nacekanju: 'Na čekanju', waitlist: 'Waitlist', zavrseno: 'Završeno' };
     const formatDate = (d) => {
       if (!d) return '';
@@ -5676,7 +5685,7 @@
       } catch (e) { return '-'; }
     };
 
-    bookingsList.innerHTML = filteredBookings.length > 0 ? filteredBookings.map(booking => {
+    bookingsList.innerHTML = sortedBookings.length > 0 ? sortedBookings.map(booking => {
       const isExpanded = expandedBookingId === booking.id;
       const isSelected = selectedBookingId === booking.id;
       return `
@@ -5842,6 +5851,8 @@
       timeScaleStartOffset = timeScaleOffset;
       timeScaleStartX = clientX;
       updateTimeDisplay();
+      // Обновляем подсветку столов во время перетаскивания, чтобы красный/зелёный был актуален
+      updateTableHighlights();
     }
     function onPointerUp() {
       if (timeScaleDragging) {
@@ -7158,11 +7169,13 @@
             }
           }
           
+          // Сразу выставляем номер стола в поле, чтобы при сохранении не терять значение (populateTableNumberSelect асинхронный)
+          const tableNumberEl = document.getElementById('tableNumber');
+          if (tableNumberEl && booking.table_number != null && booking.table_number !== '') {
+            tableNumberEl.value = String(booking.table_number).trim();
+          }
           if (typeof window.populateTableNumberSelect === 'function') {
             window.populateTableNumberSelect(booking.table_number);
-          } else if (booking.table_number) {
-            const tableNumberEl = document.getElementById('tableNumber');
-            if (tableNumberEl) tableNumberEl.value = booking.table_number;
           }
           
           if (booking.special_case_note) {
