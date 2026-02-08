@@ -249,6 +249,33 @@
     color: #000000;
     flex: 1;
   }
+  .reservation-name-time {
+    flex: 1;
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+  }
+  .reservation-name {
+    font-family: 'Manrope', sans-serif;
+    font-weight: 700;
+    font-size: 16px;
+    line-height: 1.35;
+    color: #000000;
+    word-break: break-word;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  .reservation-time {
+    font-family: 'Manrope', sans-serif;
+    font-weight: 600;
+    font-size: 14px;
+    line-height: 1.3;
+    color: #6B7280;
+  }
   .reservation-edit-btn {
     width: 20px;
     height: 20px;
@@ -5688,13 +5715,21 @@
     bookingsList.innerHTML = sortedBookings.length > 0 ? sortedBookings.map(booking => {
       const isExpanded = expandedBookingId === booking.id;
       const isSelected = selectedBookingId === booking.id;
+      const firstName = (booking.first_name || '').trim();
+      const lastName = (booking.last_name || '').trim();
+      const displayName = [firstName, lastName].filter(Boolean).join(' ') || (booking.contact_name || '–');
+      const escapeHtml = (s) => String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+      const escapedName = escapeHtml(displayName);
       return `
       <div class="reservation-item ${isSelected ? 'selected' : ''} ${isExpanded ? 'expanded' : ''}" 
            data-booking-id="${booking.id}"
            onclick="toggleMapReservationExpand(${booking.id})">
         <div class="reservation-main">
-          <div class="reservation-date-time">${formatDate(booking.date)} | ${(booking.time_from || '').substring(0,5)}</div>
-          <img src="/static/images/karandash.png" alt="Edit" class="reservation-edit-btn" onclick="event.stopPropagation(); window.openEditBookingModal && window.openEditBookingModal(${booking.id}, '${booking.status || 'dogovoreno'}')">
+          <div class="reservation-name-time">
+            <div class="reservation-name" title="${escapedName}">${escapedName}</div>
+            <div class="reservation-time">${(booking.time_from || '').substring(0, 5) || '–'}</div>
+          </div>
+          <img src="/static/images/karandash.png" alt="Edit" class="reservation-edit-btn" onclick="event.stopPropagation(); window.openEditBookingModal && window.openEditBookingModal(${booking.id}, '${(booking.status || 'dogovoreno').replace(/'/g, "\\'")}')">
           <img src="/static/images/strelka vniz 2.png" alt="Expand" class="expand-arrow" onclick="event.stopPropagation(); toggleMapReservationExpand(${booking.id})">
         </div>
         <div class="reservation-details" style="display: ${isExpanded ? 'block' : 'none'};">

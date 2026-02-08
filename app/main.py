@@ -463,7 +463,10 @@ async def dashboard(request: Request, period: Optional[str] = Query("current_mon
                 "has_retention_data": False,
                 "has_marketing_data": False,
                 "has_occupancy_data": False,
-                "has_novi_stalni_data": False
+                "has_novi_stalni_data": False,
+                "has_avg_spend_data": False,
+                "has_total_spend_data": False,
+                "has_guests_data": False,
             })
         
         # Получаем бизнес из базы
@@ -538,23 +541,47 @@ async def dashboard(request: Request, period: Optional[str] = Query("current_mon
         marketing_data = {}
         source_counts = {}
         for booking in bookings:
-            contact = next((c for c in contacts if c.id == booking.contact_id), None)
-            if contact:
-                source = contact.preferences.get("communication_method", "random") if contact.preferences else "random"
+            # Используем lead_source из бронирования, а не из preferences контакта
+            source = booking.lead_source
+            
+            if source:
+                # Нормализуем значение источника (приводим к нижнему регистру и убираем пробелы)
+                source_lower = source.lower().strip()
+                
+                # Если источник содержит дополнительный текст (например, "whatsapp +123456"), берем только первую часть
+                source_parts = source_lower.split()
+                base_source = source_parts[0] if source_parts else source_lower
+                
                 # Классификация источников
-                if source.lower() in ["instagram", "инстаграм"]:
+                if base_source in ["instagram", "инстаграм"]:
                     source = "instagram"
-                elif source.lower() in ["telefon", "phone", "calls"]:
+                elif base_source in ["telefon", "phone", "calls", "call"]:
                     source = "calls"
-                elif source.lower() in ["wa", "whatsapp", "whats app"]:
+                elif base_source in ["wa", "whatsapp", "whats app", "whats"]:
                     source = "whatsapp"
-                elif source.lower() in ["email", "e-mail"]:
+                elif base_source in ["email", "e-mail", "mail"]:
                     source = "email"
-                elif contact.promoter_id or (contact.preferences and contact.preferences.get("promoter_name")):
+                elif base_source in ["promoter", "промоутер"]:
+                    source = "promoter"
+                elif base_source in ["random", "random guest", "случайный", "гость"]:
+                    source = "random"
+                else:
+                    # Если источник не распознан, проверяем наличие promoter_id у контакта
+                    contact = next((c for c in contacts if c.id == booking.contact_id), None)
+                    if contact and contact.promoter_id:
+                        source = "promoter"
+                    else:
+                        # Если источник не распознан, используем "random"
+                        source = "random"
+            else:
+                # Если lead_source не указан, проверяем наличие promoter_id у контакта
+                contact = next((c for c in contacts if c.id == booking.contact_id), None)
+                if contact and contact.promoter_id:
                     source = "promoter"
                 else:
                     source = "random"
-                source_counts[source] = source_counts.get(source, 0) + 1
+            
+            source_counts[source] = source_counts.get(source, 0) + 1
         
         total_bookings_for_marketing = sum(source_counts.values())
         for source, count in source_counts.items():
@@ -1474,6 +1501,8 @@ async def get_map_bookings(
             "id": booking.id,
             "contact_id": booking.contact_id,
             "contact_name": f"{contact.first_name or ''} {contact.last_name or ''}".strip() if contact else "Unknown",
+            "first_name": contact.first_name or "" if contact else "",
+            "last_name": contact.last_name or "" if contact else "",
             "contact_phone": contact.phone if contact else None,
             "date": str(booking.date),
             "time_from": str(booking.time_from),
