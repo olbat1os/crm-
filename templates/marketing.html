@@ -441,7 +441,7 @@
     margin: 0;
   }
 
-  /* Mobile Responsive Styles */
+  /* Mobile Responsive Styles — маркетинг доступен на мобильных */
   @media (max-width: 768px) {
     .mobile-header {
       display: flex;
@@ -467,7 +467,72 @@
       display: none !important;
     }
 
-    /* Mobile search results */
+    /* Отступ под мобильный хедер */
+    .main {
+      margin: 0 !important;
+      padding-top: 80px !important;
+      padding-left: 0 !important;
+    }
+
+    /* Кнопка Nova akcija — на всю ширину с отступами */
+    button[onclick="openNewReactivationModal()"] {
+      position: relative !important;
+      left: auto !important;
+      top: auto !important;
+      width: calc(100% - 32px) !important;
+      max-width: none !important;
+      margin: 0 16px 16px !important;
+      display: flex !important;
+    }
+
+    /* Блок со списком акций */
+    .clients-card {
+      position: relative !important;
+      left: auto !important;
+      top: auto !important;
+      right: auto !important;
+      margin: 0 16px 24px !important;
+      width: calc(100% - 32px) !important;
+      max-width: none !important;
+      border-radius: 16px;
+      overflow: hidden;
+    }
+    .clients-card .scroll-container {
+      overflow-x: auto;
+      -webkit-overflow-scrolling: touch;
+      max-height: calc(100vh - 220px);
+    }
+    /* На мобильных скроллбар привязан к правому краю экрана, не уезжает при горизонтальном скролле таблицы */
+    .clients-card .scroll-track {
+      position: fixed !important;
+      right: 16px !important;
+      top: 50% !important;
+      transform: translateY(-50%) !important;
+      height: 50vh !important;
+      left: auto !important;
+      border-radius: 20px;
+    }
+    .clients-card .scroll-thumb {
+      border-radius: 20px;
+    }
+    .clients-card .scroll-content {
+      min-width: 560px;
+    }
+    .clients-table {
+      font-size: 13px;
+    }
+    .clients-table thead th {
+      padding: 10px 8px !important;
+      white-space: nowrap;
+    }
+    .clients-table tbody td {
+      padding: 12px 8px !important;
+    }
+    .clients-table .row-arrow {
+      padding-right: 12px !important;
+    }
+
+    /* Результаты поиска */
     #search-results {
       position: fixed !important;
       top: 130px !important;
@@ -475,11 +540,28 @@
       right: 20px !important;
       width: auto !important;
       height: 250px !important;
+      max-height: 50vh;
     }
+  }
 
-    /* Mobile main margin */
-    .main {
-      margin: 0 !important;
+  /* Планшеты и узкий десктоп — контент в потоке, без absolute */
+  @media (max-width: 900px) {
+    button[onclick="openNewReactivationModal()"] {
+      position: relative !important;
+      left: auto !important;
+      top: auto !important;
+      margin: 0 16px 16px !important;
+      width: calc(100% - 32px) !important;
+      max-width: 400px !important;
+    }
+    .clients-card {
+      position: relative !important;
+      left: auto !important;
+      top: auto !important;
+      right: auto !important;
+      margin: 0 16px 24px !important;
+      width: calc(100% - 32px) !important;
+      max-width: none !important;
     }
   }
 </style>
@@ -547,19 +629,6 @@
     </a>
   </div>
   <img src="/static/images/logo_login.svg.png" alt="Logo" class="mobile-sidebar-logo">
-</div>
-
-<!-- Предупреждение о размере экрана (оформление как в мапе) -->
-<div class="screen-size-warning" id="screenSizeWarning" style="display: none;">
-  <div class="mobile-unavailable-content">
-    <div class="mobile-unavailable-icon">
-      <svg width="32" height="32" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-        <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-2h2v2zm0-4h-2V7h2v6z" fill="white"></path>
-      </svg>
-    </div>
-    <h2 class="mobile-unavailable-title">Stranica privremeno nedostupna</h2>
-    <p class="mobile-unavailable-message">Ova stranica je privremeno nedostupna za mobilne uređaje. Molimo vas koristite desktop verziju.</p>
-  </div>
 </div>
 
 <!-- Результаты поиска -->
@@ -1856,36 +1925,6 @@
     }
   });
   
-  // Проверка ширины экрана
-  function checkScreenSize() {
-    const warning = document.getElementById('screenSizeWarning');
-    const clientsCard = document.querySelector('.clients-card');
-    const novaAkcijaBtn = document.querySelector('button[onclick="openNewReactivationModal()"]');
-    
-    if (!warning) return;
-    
-    if (window.innerWidth <= 900) {
-      warning.style.display = 'block';
-      warning.classList.add('show');
-      // Скрываем только контент страницы, но оставляем меню
-      if (clientsCard) clientsCard.style.display = 'none';
-      if (novaAkcijaBtn) novaAkcijaBtn.style.display = 'none';
-    } else {
-      warning.style.display = 'none';
-      warning.classList.remove('show');
-      // Показываем контент страницы
-      if (clientsCard) clientsCard.style.display = '';
-      if (novaAkcijaBtn) novaAkcijaBtn.style.display = '';
-    }
-  }
-  
-  // Проверка при загрузке и изменении размера окна
-  if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', checkScreenSize);
-  } else {
-    // DOM уже загружен
-    checkScreenSize();
-  }
-  window.addEventListener('resize', checkScreenSize);
+  // Мобильная версия маркетинга включена — контент всегда виден
 </script>
 {% endblock %}

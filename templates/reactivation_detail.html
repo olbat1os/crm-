@@ -14,45 +14,32 @@
     right: 25px;
   }
   
-  /* Предупреждение для экранов меньше 900px */
-  .screen-size-warning {
-    display: none !important;
-    position: fixed;
-    top: 120px;
-    left: 120px;
-    right: 25px;
-    z-index: 100;
-    pointer-events: none;
-  }
-  
-  .screen-size-warning.show {
-    display: block !important;
-  }
-  
-  .screen-size-warning-content {
-    background: #FFFFFF;
-    border: 1px solid #E5E7EB;
-    border-radius: 20px;
-    padding: 30px;
-    max-width: 500px;
-    text-align: center;
-    box-shadow: 0 7px 30px rgba(0, 0, 0, 0.1);
-    pointer-events: auto;
-  }
-  
-  .screen-size-warning-content h2 {
-    font-family: 'Manrope', sans-serif;
-    font-size: 24px;
-    font-weight: 700;
-    color: #000000;
-    margin-bottom: 16px;
-  }
-  
-  .screen-size-warning-content p {
-    font-family: 'Manrope', sans-serif;
-    font-size: 16px;
-    color: #6B7280;
-    line-height: 1.5;
+  /* Мобильная версия: хедер и сайдбар */
+  .mobile-header { position: absolute; top: 0; left: 0; right: 0; height: 70px; background: #FFFFFF; display: none; align-items: center; z-index: 1000; }
+  .mobile-logo { position: absolute; width: 109px; height: 24px; top: 23px; left: 20px; }
+  .mobile-search-btn, .mobile-notification-btn, .mobile-menu-btn { position: absolute; width: 22px; height: 22px; top: 20px; cursor: pointer; }
+  .mobile-search-btn { right: 84px; }
+  .mobile-notification-btn { right: 52px; }
+  .mobile-menu-btn { right: 20px; }
+  .mobile-search-modal { position: fixed; top: 70px; left: 0; right: 0; background: #FFF; border-top: 1px solid #D9D9D9; padding: 20px; z-index: 999; display: none; }
+  .mobile-search-input { width: 100%; height: 40px; border: 1px solid #D9D9D9; border-radius: 20px; padding: 0 20px; font-family: 'Manrope', sans-serif; font-size: 16px; outline: none; }
+  .mobile-sidebar { position: fixed; top: 0; right: 0; width: 235px; height: 100vh; background: linear-gradient(179.27deg, #2CAB5C 0%, #11998E 100%); transition: transform 0.3s ease; z-index: 2000; overflow-y: auto; transform: translateX(100%); }
+  .mobile-sidebar.open { transform: translateX(0); }
+  .mobile-sidebar-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 1500; display: none; }
+  .mobile-sidebar-overlay.show { display: block; }
+  .mobile-sidebar-content { padding: 20px; color: #FFF; }
+  .mobile-sidebar-item { display: flex; align-items: center; justify-content: space-between; height: 60px; padding: 0 20px; cursor: pointer; color: #FFF; text-decoration: none; font-family: 'Manrope', sans-serif; }
+  .mobile-sidebar-item:hover { background: rgba(255,255,255,0.1); }
+  .mobile-sidebar-arrow { width: 7px; height: 14px; }
+  @media (max-width: 768px) {
+    .mobile-header { display: flex; }
+    .sidebar { display: none !important; }
+    .logo-home { display: none !important; }
+    .search-icon { display: none !important; }
+    .notification-icon { display: none !important; }
+    .top-right { display: none !important; }
+    .main { margin: 0 !important; padding-top: 80px !important; padding-left: 0 !important; }
+    .reactivation-detail-container { position: relative !important; left: auto !important; top: auto !important; right: auto !important; margin: 0 16px 24px !important; width: calc(100% - 32px) !important; }
   }
 
   /* White background for main area on reactivation pages */
@@ -919,12 +906,27 @@
    }
  </style>
 
-<!-- Предупреждение о размере экрана -->
-<div class="screen-size-warning" id="screenSizeWarning" style="display: none;">
-  <div class="screen-size-warning-content">
-    <h2>Stranica još nije spremna</h2>
-    <p>Za vaš uređaj stranica još nije spremna. Molimo koristite veći ekran.</p>
+<!-- Mobile Header (виден только при max-width: 768px) -->
+<div class="mobile-header">
+  <img src="/static/images/logo home.png" alt="LOVACRM" class="mobile-logo">
+  <img src="/static/images/poisk.png" alt="Search" class="mobile-search-btn" onclick="toggleMobileSearchReactivation()">
+  <img src="/static/images/kolokolchik logo.png" alt="Notifications" class="mobile-notification-btn">
+  <img src="/static/images/menu.png" alt="Menu" class="mobile-menu-btn" onclick="toggleMobileSidebarReactivation()">
+</div>
+<div class="mobile-search-modal" id="mobileSearchModalReactivation">
+  <input type="text" class="mobile-search-input" placeholder="Search..." id="mobileSearchInputReactivation">
+</div>
+<div class="mobile-sidebar-overlay" id="mobileSidebarOverlayReactivation" onclick="closeMobileSidebarReactivation()"></div>
+<div class="mobile-sidebar" id="mobileSidebarReactivation">
+  <div class="mobile-sidebar-content">
+    <a href="/dashboard" class="mobile-sidebar-item"><div style="display: flex; align-items: center;"><img src="/static/images/logo dashbord.png" alt="Dashboard" style="width: 20px; height: 20px; margin-right: 15px;">Dashboard</div><img src="/static/images/strelka logo.png" alt="" class="mobile-sidebar-arrow"></a>
+    <a href="/booking" class="mobile-sidebar-item"><div style="display: flex; align-items: center;"><img src="/static/images/booking logo.png" alt="Booking" style="width: 20px; height: 20px; margin-right: 15px;">Booking</div><img src="/static/images/strelka logo.png" alt="" class="mobile-sidebar-arrow"></a>
+    <a href="/clients" class="mobile-sidebar-item"><div style="display: flex; align-items: center;"><img src="/static/images/klijenti logo.png" alt="Klijenti" style="width: 20px; height: 20px; margin-right: 15px;">Klijenti</div><img src="/static/images/strelka logo.png" alt="" class="mobile-sidebar-arrow"></a>
+    <a href="/map" class="mobile-sidebar-item"><div style="display: flex; align-items: center;"><img src="/static/images/mapa logo.png" alt="Mapa" style="width: 20px; height: 20px; margin-right: 15px;">Mapa</div><img src="/static/images/strelka logo.png" alt="" class="mobile-sidebar-arrow"></a>
+    <a href="/marketing" class="mobile-sidebar-item"><div style="display: flex; align-items: center;"><img src="/static/images/marketing logo.png" alt="Marketing" style="width: 20px; height: 20px; margin-right: 15px;">Marketing</div><img src="/static/images/strelka logo.png" alt="" class="mobile-sidebar-arrow"></a>
+    <a href="/settings" class="mobile-sidebar-item"><div style="display: flex; align-items: center;"><img src="/static/images/setting logo.png" alt="Podešavanja" style="width: 20px; height: 20px; margin-right: 15px;">Podešavanja</div><img src="/static/images/strelka logo.png" alt="" class="mobile-sidebar-arrow"></a>
   </div>
+  <img src="/static/images/logo_login.svg.png" alt="Logo" class="mobile-sidebar-logo" style="position: absolute; bottom: 20px; left: 20px; width: 136px; height: 30px;">
 </div>
 
 <div class="reactivation-detail-container">
@@ -1639,32 +1641,34 @@
 </div>
 
 <script>
-  // Проверка ширины экрана
-  function checkScreenSize() {
-    const warning = document.getElementById('screenSizeWarning');
-    const container = document.querySelector('.reactivation-detail-container');
-    
-    if (!warning) return;
-    
-    if (window.innerWidth <= 900) {
-      warning.style.display = 'block';
-      warning.classList.add('show');
-      if (container) container.style.display = 'none';
-    } else {
-      warning.style.display = 'none';
-      warning.classList.remove('show');
-      if (container) container.style.display = '';
+  function openMobileSidebarReactivation() {
+    var sb = document.getElementById('mobileSidebarReactivation');
+    var ov = document.getElementById('mobileSidebarOverlayReactivation');
+    if (sb) sb.classList.add('open');
+    if (ov) { ov.style.display = 'block'; ov.classList.add('show'); }
+  }
+  function closeMobileSidebarReactivation() {
+    var sb = document.getElementById('mobileSidebarReactivation');
+    var ov = document.getElementById('mobileSidebarOverlayReactivation');
+    if (sb) sb.classList.remove('open');
+    if (ov) { ov.style.display = 'none'; ov.classList.remove('show'); }
+  }
+  function toggleMobileSidebarReactivation() {
+    var sb = document.getElementById('mobileSidebarReactivation');
+    if (sb && sb.classList.contains('open')) closeMobileSidebarReactivation();
+    else openMobileSidebarReactivation();
+  }
+  function toggleMobileSearchReactivation() {
+    var m = document.getElementById('mobileSearchModalReactivation');
+    if (m) {
+      m.style.display = m.style.display === 'block' ? 'none' : 'block';
+      var inp = document.getElementById('mobileSearchInputReactivation');
+      if (inp) inp.focus();
     }
   }
-  
-  // Проверка при загрузке и изменении размера окна
-  if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', checkScreenSize);
-  } else {
-    // DOM уже загружен
-    checkScreenSize();
-  }
-  window.addEventListener('resize', checkScreenSize);
+  window.toggleMobileSidebarReactivation = toggleMobileSidebarReactivation;
+  window.closeMobileSidebarReactivation = closeMobileSidebarReactivation;
+  window.toggleMobileSearchReactivation = toggleMobileSearchReactivation;
 </script>
 {% endblock %}
 
