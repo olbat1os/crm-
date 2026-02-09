@@ -260,7 +260,7 @@
     }
     
     .new-booking-modal-content {
-        transition: height 0.3s ease;
+      transition: height 0.3s ease;
       position: fixed !important;
       top: 20px !important;
       left: 20px !important;
@@ -269,10 +269,13 @@
       transform: none !important;
       width: auto !important;
       height: auto !important;
+      max-height: calc(100vh - 40px) !important;
       background: #FFFFFF !important;
       border-radius: 16px !important;
       padding: 20px !important;
       overflow-y: auto !important;
+      overflow-x: hidden !important;
+      -webkit-overflow-scrolling: touch;
     }
     
     .new-booking-header {
@@ -327,8 +330,69 @@
       font-family: 'Manrope', sans-serif !important;
       font-size: 14px !important;
       min-width: auto !important;
-      margin-bottom: 5px !important;
+      margin: 0 !important;
+      padding-left: 0 !important;
+      text-align: left !important;
+      align-self: flex-start;
       color: #000000 !important;
+    }
+    
+    /* Лейбл привязан к левому краю */
+    .new-booking-form .form-label,
+    .new-booking-form .form-field > .form-label,
+    .new-booking-form .form-field > div > .form-label,
+    .new-booking-form .time-field-row > .form-label,
+    .new-booking-form #leadSourceInputLabel {
+      margin: 0 !important;
+      padding-left: 0 !important;
+      text-align: left !important;
+      align-self: flex-start;
+    }
+    
+    /* Поле ввода под лейблом — на всю ширину */
+    .new-booking-form .form-field > .form-input,
+    .new-booking-form .form-field > .form-textarea,
+    .new-booking-form .form-field > select.form-input,
+    .new-booking-form .form-field > div:not([style*="flex-direction: column"]),
+    .new-booking-form .form-field .custom-table-type-dropdown,
+    .new-booking-form .form-field .custom-lead-source-dropdown {
+      width: 100% !important;
+      max-width: 100% !important;
+      min-width: 0 !important;
+      box-sizing: border-box !important;
+    }
+    
+    .form-field[style*="flex: 0 0 348px"] {
+      width: 100% !important;
+      max-height: none !important;
+    }
+    .form-field[style*="flex: 0 0 348px"] > div {
+      width: 100% !important;
+    }
+    .form-field[style*="flex: 0 0 348px"] .counter-input {
+      width: 100% !important;
+    }
+    
+    /* Muškarci / Žene: на мобильных в колонку, чтобы помещались в ширину */
+    .new-booking-form .form-field:has(#malesCount) > div {
+      flex-direction: column !important;
+      gap: 8px !important;
+      width: 100% !important;
+    }
+    .new-booking-form .form-field:has(#malesCount) > div > div {
+      width: 100% !important;
+      min-width: 0 !important;
+      flex: none !important;
+    }
+    .new-booking-form .form-field:has(#malesCount) .form-input,
+    .new-booking-form .form-field:has(#femalesCount) .form-input {
+      width: 100% !important;
+      max-width: 100% !important;
+    }
+    .new-booking-form .form-field:has(#malesCount) .form-label,
+    .new-booking-form .form-field:has(#femalesCount) .form-label {
+      align-self: center !important;
+      min-width: 0 !important;
     }
     
     .form-input {
@@ -678,8 +742,11 @@
     background: #FFFFFF;
   }
 
-  .new-booking-modal-content {
-    overflow: visible !important;
+  /* Скролл только на десктопе отключаем (в мобильном @media включаем overflow-y: auto) */
+  @media (min-width: 769px) {
+    .new-booking-modal-content {
+      overflow: visible;
+    }
   }
 </style>
 
@@ -1642,6 +1709,7 @@
 
 .stats-header {
     width: 100%;
+    min-height: 100px;
     height: 163px;
     background: linear-gradient(270deg, #11998E 0%, #2CAB5C 100%);
     border-radius: 20px;
@@ -1651,6 +1719,8 @@
     margin-bottom: 20px;
     position: relative;
     overflow: hidden;
+    padding: 16px 12px;
+    box-sizing: border-box;
 }
 
 .stats-vector {
@@ -1669,6 +1739,8 @@
     text-align: center;
     position: relative;
     z-index: 2;
+    flex: 1;
+    min-width: 0;
   }
   
   .stat-number {
@@ -1676,9 +1748,10 @@
     font-style: normal;
     font-weight: 400;
     font-size: 60px;
-    line-height: 82px;
+    line-height: 1.2;
     color: #FFFFFF;
-    margin-bottom: 10px;
+    margin-bottom: 6px;
+    word-break: break-word;
   }
   
   .stat-label {
@@ -1686,9 +1759,10 @@
     font-style: normal;
     font-weight: 400;
     font-size: 20px;
-    line-height: 27px;
+    line-height: 1.25;
     color: #FFFFFF;
     position: relative;
+    word-break: break-word;
 }
 
 .stat-label::after {
@@ -1699,6 +1773,34 @@
     width: 100%;
     height: 1px;
     background-color: #FFFFFF;
+  }
+  
+  /* stats-header на мобильных — компактнее, подчёркивание уже */
+  @media (max-width: 768px) {
+    .stats-header {
+      height: auto;
+      min-height: 80px;
+      padding: 12px 6px;
+      flex-wrap: nowrap;
+    }
+    .stats-header .stat-number {
+      font-size: 20px;
+      line-height: 1.2;
+      margin-bottom: 2px;
+    }
+    .stats-header .stat-label {
+      font-size: 10px;
+      line-height: 1.2;
+    }
+    /* Подчёркивание под подписью — уже по ширине на мобильных */
+    .stats-header .stat-label::after {
+      left: 50%;
+      width: 70%;
+      transform: translateX(-50%);
+    }
+    .stats-vector {
+      object-fit: cover;
+    }
   }
   
 .reservations-list {
