@@ -1,5 +1,11 @@
 {% extends 'map_base.html' %}
 {% block content %}
+<script>
+  if (/[?&]embed=1(?=&|$)/.test(window.location.search || '')) {
+    document.body.classList.add('map-embed-mode');
+    window.mapEmbedMode = true;
+  }
+</script>
 <style>
   .main-inner {
     margin: 0 !important;
@@ -127,6 +133,10 @@
   .map-view-mode .board { display: none; }
   .map-edit-mode .panel-view { display: none; }
   .map-edit-mode .board-view { display: none; }
+  body.map-embed-mode .panel-view { display: none !important; }
+  body.map-embed-mode .board-header { display: none !important; }
+  body.map-embed-mode .map-wrap { margin-top: 0; height: 100%; min-height: 0; width: 100%; }
+  body.map-embed-mode .board-view { flex: 1; min-height: 0; min-width: 0; width: 100%; }
   
   .panel-view {
     width: 300px;
@@ -1359,6 +1369,19 @@
     box-sizing: border-box;
   }
   
+  /* Sto select — треугольник как у Tip stola и Lead source */
+  .new-booking-form #tableNumber {
+    appearance: none;
+    -webkit-appearance: none;
+    -moz-appearance: none;
+    padding-right: 40px;
+    padding-left: 16px;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%236B7280' d='M6 8L1 3h10z'/%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: right 16px center;
+    background-size: 10px;
+  }
+  
   /* Mobile Form Input — под лейблом на всю ширину */
   @media (max-width: 768px) {
     .form-input {
@@ -1638,7 +1661,7 @@
     width: 100%;
     height: 40px;
     padding: 8px 16px;
-    padding-right: 40px;
+    padding-right: 20px;
     border-radius: 40px;
     font-family: 'Manrope', sans-serif;
     font-size: 16px;
@@ -1767,7 +1790,7 @@
     width: 100%;
     height: 40px;
     padding: 8px 16px;
-    padding-right: 40px;
+    padding-right: 20px;
     border-radius: 40px;
     font-family: 'Manrope', sans-serif;
     font-size: 16px;
@@ -2570,10 +2593,10 @@
     
     // Формы, которые специфичны для каждого этажа (включая столики и текстовые подписи)
     // НО нумерация столиков общая для всех этажей
-    const FLOOR_SPECIFIC_SHAPES = ['square', 'circle', 'chair-numbered', 'wall', 'zone', 'sofa-double', 'sofa-straight', 'sofa-corner', 'chair-decor', 'text'];
+    const FLOOR_SPECIFIC_SHAPES = ['square', 'circle', 'ellipse', 'chair-numbered', 'wall', 'zone', 'sofa-double', 'sofa-straight', 'sofa-corner', 'chair-decor', 'text'];
     
     // Формы, которые имеют общую нумерацию (столики)
-    const NUMBERED_SHAPES = ['square', 'circle', 'chair-numbered'];
+    const NUMBERED_SHAPES = ['square', 'circle', 'ellipse', 'chair-numbered'];
     
     // Ключ для localStorage
     const FLOORS_STORAGE_KEY = 'map_floors_list';
@@ -2820,6 +2843,7 @@
     const TABLE_DEFAULTS = {
       square: { width: 80, height: 80 },
       circle: { radius: 40, width: 80, height: 80 },
+      ellipse: { width: 80, height: 60 },
       "chair-numbered": { radius: 17, width: 34, height: 34 },
       "chair-decor": { radius: 17, width: 34, height: 34 },
       "zone": { width: 200, height: 100 }
@@ -3481,25 +3505,63 @@
 
     const createTableGroup = (table) => {
       const shapeType = table.shape || 'square';
-      if (!['square', 'circle', 'chair-numbered'].includes(shapeType)) {
+      if (!['square', 'circle', 'ellipse', 'chair-numbered'].includes(shapeType)) {
         return null;
       }
       const shapeDefaults = TABLE_DEFAULTS[shapeType] || TABLE_DEFAULTS.square;
       const width = table.width || shapeDefaults.width || (shapeDefaults.radius ? shapeDefaults.radius * 2 : TABLE_DEFAULTS.square.width);
       const height = table.height || shapeDefaults.height || (shapeDefaults.radius ? shapeDefaults.radius * 2 : TABLE_DEFAULTS.square.height);
       const radius = table.radius || shapeDefaults.radius || Math.max(width, height) / 2;
+      const isEllipse = shapeType === 'ellipse' || 
+        (shapeType === 'circle' && Math.abs(width - height) > 0.5) ||
+        (shapeType === 'chair-numbered' && Math.abs(width - height) > 0.5);
 
       let baseShape;
-      if (shapeType === 'circle' || shapeType === 'chair-numbered') {
+      if (shapeType === 'chair-numbered' && isEllipse) {
+        const rx = width / 2, ry = height / 2;
+        baseShape = new fabric.Ellipse({
+          rx, ry,
+          fill: '#1EA276',
+          stroke: '#1EA276',
+          strokeWidth: 0,
+          originX: 'center',
+          originY: 'center',
+          selectable: false,
+          evented: false
+        });
+      } else if (shapeType === 'chair-numbered') {
         const effectiveRadius = radius;
-        const fillColor = shapeType === 'chair-numbered' ? '#1EA276' : TABLE_COLORS.fill;
-        const strokeColor = shapeType === 'chair-numbered' ? '#1EA276' : TABLE_COLORS.stroke;
-        const strokeWidth = shapeType === 'chair-numbered' ? 0 : TABLE_COLORS.strokeWidth;
         baseShape = new fabric.Circle({
           radius: effectiveRadius,
-          fill: fillColor,
-          stroke: strokeColor,
-          strokeWidth,
+          fill: '#1EA276',
+          stroke: '#1EA276',
+          strokeWidth: 0,
+          originX: 'center',
+          originY: 'center',
+          selectable: false,
+          evented: false
+        });
+      } else if (isEllipse) {
+        const rx = width / 2;
+        const ry = height / 2;
+        baseShape = new fabric.Ellipse({
+          rx,
+          ry,
+          fill: TABLE_COLORS.fill,
+          stroke: TABLE_COLORS.stroke,
+          strokeWidth: TABLE_COLORS.strokeWidth,
+          originX: 'center',
+          originY: 'center',
+          selectable: false,
+          evented: false
+        });
+      } else if (shapeType === 'circle') {
+        const effectiveRadius = radius;
+        baseShape = new fabric.Circle({
+          radius: effectiveRadius,
+          fill: TABLE_COLORS.fill,
+          stroke: TABLE_COLORS.stroke,
+          strokeWidth: TABLE_COLORS.strokeWidth,
           originX: 'center',
           originY: 'center',
           selectable: false,
@@ -3574,15 +3636,15 @@
 
       group.mapTableMeta = {
         id: table.id,
-        shape: shapeType,
+        shape: (isEllipse && shapeType !== 'chair-numbered') ? 'ellipse' : shapeType,
         number: table.number,
         metadata: table.metadata || {}
       };
       group.numberLabel = numberLabel;
       group.capacityLabel = capacityLabel;
       group.lockScalingFlip = true;
-      if (shapeType === 'circle' || shapeType === 'chair-numbered') {
-        group.lockScalingUniform = true;
+      if (shapeType === 'chair-numbered' || shapeType === 'circle' || shapeType === 'ellipse') {
+        group.lockScalingUniform = false;
       }
       group.perPixelTargetFind = true;
 
@@ -3594,29 +3656,45 @@
 
     const createDecorChair = (table) => {
       const shapeDefaults = TABLE_DEFAULTS["chair-decor"];
-      const radius = table.radius || shapeDefaults.radius;
-      const circle = new fabric.Circle({
-        radius,
-        fill: '#1EA276',
-        originX: 'center',
-        originY: 'center',
-        selectable: true,
-        evented: true
-      });
-      circle.set({
+      const width = table.width || (shapeDefaults.radius ? shapeDefaults.radius * 2 : 34);
+      const height = table.height || (shapeDefaults.radius ? shapeDefaults.radius * 2 : 34);
+      const isEllipse = Math.abs(width - height) > 0.5;
+      let obj;
+      if (isEllipse) {
+        obj = new fabric.Ellipse({
+          rx: width / 2,
+          ry: height / 2,
+          fill: '#1EA276',
+          originX: 'center',
+          originY: 'center',
+          selectable: true,
+          evented: true
+        });
+      } else {
+        const radius = table.radius || shapeDefaults.radius || Math.min(width, height) / 2;
+        obj = new fabric.Circle({
+          radius,
+          fill: '#1EA276',
+          originX: 'center',
+          originY: 'center',
+          selectable: true,
+          evented: true
+        });
+      }
+      obj.set({
         left: table.x,
         top: table.y,
         angle: table.angle || 0
       });
-      circle.lockScalingFlip = true;
-      circle.lockScalingUniform = true;
-      circle.mapTableMeta = {
+      obj.lockScalingFlip = true;
+      obj.lockScalingUniform = false;
+      obj.mapTableMeta = {
         id: table.id,
         shape: 'chair-decor',
         metadata: table.metadata || {}
       };
-      mapTableObjects.set(table.id, circle);
-      return circle;
+      mapTableObjects.set(table.id, obj);
+      return obj;
     };
 
     const createZoneGroup = (table) => {
@@ -4087,17 +4165,28 @@
         angle: obj.angle || 0
       };
  
-      if (shape === 'square' || shape === 'circle' || shape === 'chair-numbered') {
+      if (shape === 'square' || shape === 'circle' || shape === 'ellipse' || shape === 'chair-numbered') {
          payload.width = obj.getScaledWidth();
          payload.height = obj.getScaledHeight();
        }
-       if (shape === 'circle' || shape === 'chair-numbered') {
-         payload.radius = Math.max(obj.getScaledWidth(), obj.getScaledHeight()) / 2;
+       const scaledW = obj.getScaledWidth();
+       const scaledH = obj.getScaledHeight();
+       if (shape === 'circle' && Math.abs(scaledW - scaledH) > 0.5) {
+         payload.shape = 'ellipse';
+         payload.radius = null;
+       } else if (shape === 'ellipse') {
+         payload.radius = null;
+       } else if (shape === 'chair-numbered') {
+         payload.radius = Math.abs(scaledW - scaledH) > 0.5 ? null : Math.max(scaledW, scaledH) / 2;
+       } else if (shape === 'circle') {
+         payload.radius = Math.max(scaledW, scaledH) / 2;
        }
        if (shape === 'chair-decor') {
          payload.width = obj.getScaledWidth();
          payload.height = obj.getScaledHeight();
-         payload.radius = obj.getScaledWidth() / 2;
+         const cdW = obj.getScaledWidth();
+         const cdH = obj.getScaledHeight();
+         payload.radius = Math.abs(cdW - cdH) > 0.5 ? null : Math.min(cdW, cdH) / 2;
        }
       if (shape === 'zone') {
         payload.width = obj.getScaledWidth();
@@ -4225,6 +4314,8 @@
             mapTableObjects.delete(oldId);
             mapTableObjects.set(data.table.id, obj);
           }
+          // Обновляем shape (напр. circle → ellipse после растягивания)
+          if (data.table.shape) meta.shape = data.table.shape;
           // Обновляем метаданные из ответа сервера для всех элементов
           if (data.table.metadata) {
             meta.metadata = data.table.metadata;
@@ -4457,16 +4548,18 @@
         y: (obj.top || 0) + offset,
         angle: obj.angle || 0
       };
-      if (['square', 'circle', 'chair-numbered'].includes(meta.shape)) {
+      if (['square', 'circle', 'ellipse', 'chair-numbered'].includes(meta.shape)) {
         payload.width = obj.getScaledWidth();
         payload.height = obj.getScaledHeight();
-        if (meta.shape !== 'square') payload.radius = Math.max(payload.width, payload.height) / 2;
+        if (meta.shape === 'ellipse') payload.radius = null;
+        else if (meta.shape !== 'square') payload.radius = Math.max(payload.width, payload.height) / 2;
         payload.metadata = { ...(meta.metadata || {}), capacity: meta.metadata?.capacity };
         delete payload.metadata.customName;
       } else if (meta.shape === 'chair-decor') {
         payload.width = obj.getScaledWidth();
         payload.height = obj.getScaledHeight();
-        payload.radius = obj.getScaledWidth() / 2;
+        const cdW = obj.getScaledWidth(), cdH = obj.getScaledHeight();
+        payload.radius = Math.abs(cdW - cdH) > 0.5 ? null : Math.min(cdW, cdH) / 2;
         payload.metadata = {};
       } else if (meta.shape === 'zone') {
         payload.width = obj.getScaledWidth();
@@ -6481,34 +6574,60 @@
     
     let obj;
     
-    // Обрабатываем chair-decor (декоративные стулья) — не кликабельные, курсор по умолчанию
+    const isEllipseView = shapeType === 'ellipse' || Math.abs(width - height) > 0.5;
+    
+    // Обрабатываем chair-decor (декоративные стулья) — не кликабельные
     if (shapeType === 'chair-decor') {
-      const circle = new fabric.Circle({
-        radius: radius,
-        left: table.x,
-        top: table.y,
-        fill: '#1EA276',
-        originX: 'center',
-        originY: 'center',
-        selectable: false,
-        evented: false
-      });
-      circle.mapTableMeta = {
-        id: table.id,
-        shape: shapeType,
-        number: table.number,
-        metadata: table.metadata || {}
-      };
-      circle._tableData = table;
-      viewCanvas.add(circle);
+      let decorObj;
+      if (isEllipseView) {
+        decorObj = new fabric.Ellipse({
+          rx: width / 2,
+          ry: height / 2,
+          left: table.x,
+          top: table.y,
+          fill: '#1EA276',
+          originX: 'center',
+          originY: 'center',
+          selectable: false,
+          evented: false
+        });
+      } else {
+        decorObj = new fabric.Circle({
+          radius: radius,
+          left: table.x,
+          top: table.y,
+          fill: '#1EA276',
+          originX: 'center',
+          originY: 'center',
+          selectable: false,
+          evented: false
+        });
+      }
+      decorObj.mapTableMeta = { id: table.id, shape: shapeType, number: table.number, metadata: table.metadata || {} };
+      decorObj._tableData = table;
+      viewCanvas.add(decorObj);
       return;
     }
     
     // Обрабатываем разные типы форм
-    if (shapeType === 'square' || shapeType === 'circle' || shapeType === 'chair-numbered') {
+    if (shapeType === 'square' || shapeType === 'circle' || shapeType === 'ellipse' || shapeType === 'chair-numbered') {
       // Объекты в группе должны иметь координаты относительно центра группы (0, 0)
-      if (shapeType === 'circle' || shapeType === 'chair-numbered') {
-        // Круглые столы и стулья с номером - используем Circle
+      if ((shapeType === 'circle' || shapeType === 'chair-numbered' || shapeType === 'ellipse') && isEllipseView) {
+        // Овальные столы и стулья — fabric.Ellipse
+        obj = new fabric.Ellipse({
+          rx: width / 2,
+          ry: height / 2,
+          left: 0,
+          top: 0,
+          fill: shapeType === 'chair-numbered' ? '#1EA276' : '#ECFDF3',
+          stroke: shapeType === 'chair-numbered' ? '#1EA276' : '#16A34A',
+          strokeWidth: shapeType === 'chair-numbered' ? 0 : 2,
+          originX: 'center',
+          originY: 'center',
+          selectable: false,
+          evented: true
+        });
+      } else if (shapeType === 'circle' || shapeType === 'chair-numbered') {
         obj = new fabric.Circle({
           radius: radius,
           left: 0,
@@ -6518,9 +6637,9 @@
           strokeWidth: shapeType === 'chair-numbered' ? 0 : 2,
           originX: 'center',
           originY: 'center',
-        selectable: false,
-        evented: true // Разрешаем клики
-      });
+          selectable: false,
+          evented: true
+        });
       } else {
         // Квадратные столы - используем Rect
         obj = new fabric.Rect({
@@ -7373,6 +7492,15 @@
         interactive: true // Включаем интерактивность для кликов по столикам
       });
       
+      // Режим выбора столика (iframe из букинга): отправить номер в parent и выйти
+      function trySendEmbedTableSelection(t) {
+        if (!window.mapEmbedMode || !t || (t.number == null && t.number !== 0)) return false;
+        var num = t.number;
+        var displayName = (t.metadata && t.metadata.customName) ? t.metadata.customName : String(num);
+        try { window.parent.postMessage({ type: 'TABLE_SELECTED', tableNumber: num, tableDisplayName: displayName }, '*'); } catch (e) {}
+        return true;
+      }
+      
       // Добавляем обработчик клика на уровне canvas для всех объектов
       viewCanvas.on('mouse:up', (opt) => {
         console.log('mouse:up на canvas:', opt.target, 'mapTableMeta:', opt.target?.mapTableMeta, '_tableData:', opt.target?._tableData);
@@ -7426,6 +7554,7 @@
             const meta = opt.target._tableData;
             if (isTable(meta)) {
               console.log('✅ Клик по столику (используем _tableData):', opt.target._tableData);
+              if (trySendEmbedTableSelection(opt.target._tableData)) return;
               if (typeof window.openBookingModalForTable === 'function') {
                 window.openBookingModalForTable(opt.target._tableData);
               } else {
@@ -7447,7 +7576,7 @@
               y: opt.target.top,
               metadata: tableMeta.metadata || {}
             };
-            
+            if (trySendEmbedTableSelection(table)) return;
             if (typeof window.openBookingModalForTable === 'function') {
               window.openBookingModalForTable(table);
             } else {
@@ -7461,6 +7590,7 @@
             const group = opt.target;
             if (group._tableData && isTable(group._tableData)) {
               console.log('✅ Клик по группе столика (используем _tableData):', group._tableData);
+              if (trySendEmbedTableSelection(group._tableData)) return;
               if (typeof window.openBookingModalForTable === 'function') {
                 window.openBookingModalForTable(group._tableData);
               }
@@ -7479,6 +7609,7 @@
                   metadata: tableMeta.metadata || {}
                 };
                 console.log('✅ Клик по столику в группе:', table);
+                if (trySendEmbedTableSelection(table)) return;
                 if (typeof window.openBookingModalForTable === 'function') {
                   window.openBookingModalForTable(table);
                 }
@@ -7624,6 +7755,26 @@
   
   // Initialize view mode
   document.addEventListener('DOMContentLoaded', () => {
+    // Режим встраивания (выбор столика из букинга): дата/время из URL, скрыть кнопку редактирования
+    if (window.mapEmbedMode) {
+      const params = new URLSearchParams(window.location.search || '');
+      const dateParam = params.get('date');
+      const timeFromParam = params.get('time_from');
+      const dateInput = document.getElementById('selectedDate');
+      if (dateInput && dateParam) {
+        dateInput.value = dateParam;
+      }
+      if (timeFromParam && typeof selectedTime !== 'undefined') {
+        const m = timeFromParam.match(/^(\d{1,2}):(\d{2})/);
+        if (m) {
+          selectedTime = parseInt(m[1], 10) * 60 + parseInt(m[2], 10);
+          if (selectedTime < 0) selectedTime = 0;
+          if (selectedTime >= 1440) selectedTime = 1439;
+          if (typeof updateTimeScale === 'function') updateTimeScale();
+        }
+      }
+    }
+    
     // Проверяем, в каком режиме мы находимся
     const mapWrap = document.getElementById('mapWrap');
     const isViewMode = mapWrap && mapWrap.classList.contains('map-view-mode');
@@ -7643,7 +7794,7 @@
     
     const dateInput = document.getElementById('selectedDate');
     if (dateInput) {
-      dateInput.value = new Date().toISOString().split('T')[0];
+      if (!window.mapEmbedMode) dateInput.value = new Date().toISOString().split('T')[0];
       dateInput.addEventListener('change', loadBookings);
     }
     

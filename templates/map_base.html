@@ -144,6 +144,12 @@
       pointer-events: none;
     }
     .search-icon img { width: 100%; height: 100%; object-fit: contain; filter: brightness(0) saturate(100%) invert(35%) sepia(0%) saturate(0%) hue-rotate(0deg) brightness(100%) contrast(100%); }
+    /* Режим встраивания карты (выбор столика из букинга) */
+    body.map-embed-mode .sidebar { display: none !important; }
+    body.map-embed-mode .main { margin-left: 0 !important; height: 100vh !important; min-height: 100vh !important; }
+    body.map-embed-mode .logo-home { display: none !important; }
+    body.map-embed-mode .top-right { display: none !important; }
+    body.map-embed-mode .main-inner { margin: 0; padding: 0; max-width: none; width: 100%; height: 100%; box-sizing: border-box; }
   </style>
   <style>
     /* Интенсивность подсветки для Map */

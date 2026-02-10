@@ -1061,6 +1061,7 @@ async def map_page(request: Request, session: Session = Depends(get_session)):
 ALLOWED_MAP_TABLE_SHAPES = {
     "square",
     "circle",
+    "ellipse",
     "chair-numbered",
     "chair-decor",
     "zone",
@@ -1070,7 +1071,7 @@ ALLOWED_MAP_TABLE_SHAPES = {
     "sofa-corner",
     "text",
 }
-AUTO_NUMBER_SHAPES = {"square", "circle", "chair-numbered"}
+AUTO_NUMBER_SHAPES = {"square", "circle", "ellipse", "chair-numbered"}
 SERVICE_SHAPES = {"zone", "chair-decor", "wall", "sofa-double", "sofa-straight", "sofa-corner", "text"}
 SOFA_DOUBLE_DEFAULTS = {
     "width": 220.0,
@@ -1293,6 +1294,11 @@ async def create_map_table(
     elif shape == "chair-decor":
         if radius is None:
             radius = 6.0
+    elif shape == "ellipse":
+        if width is None:
+            width = 80.0
+        if height is None:
+            height = 60.0
     elif shape == "sofa-straight":
         if width is None:
             width = 160.0

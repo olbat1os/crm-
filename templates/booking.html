@@ -2046,6 +2046,79 @@
     overflow: visible;
   }
 
+  /* Map table picker modal */
+  .map-table-picker-modal {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    z-index: 2500;
+    align-items: center;
+    justify-content: center;
+  }
+  .map-table-picker-modal[style*="flex"] {
+    display: flex !important;
+  }
+  .map-table-picker-backdrop {
+    position: absolute;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.5);
+  }
+  .map-table-picker-content {
+    position: relative;
+    width: 90vw;
+    max-width: 1000px;
+    height: 85vh;
+    max-height: 700px;
+    background: #fff;
+    border-radius: 16px;
+    box-shadow: 0 8px 32px rgba(0,0,0,0.2);
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+  }
+  .map-table-picker-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 8px 12px;
+    border-bottom: 1px solid #e5e7eb;
+    flex-shrink: 0;
+  }
+  .map-table-picker-title {
+    margin: 0;
+    font-family: 'Manrope', sans-serif;
+    font-size: 14px;
+    font-weight: 700;
+    color: #111827;
+  }
+  .map-table-picker-close {
+    width: 32px;
+    height: 32px;
+    border: none;
+    background: transparent;
+    font-size: 20px;
+    line-height: 1;
+    color: #6b7280;
+    cursor: pointer;
+    border-radius: 8px;
+    padding: 0;
+  }
+  .map-table-picker-close:hover {
+    background: #f3f4f6;
+    color: #111827;
+  }
+  .map-table-picker-iframe-wrap {
+    flex: 1;
+    min-height: 0;
+  }
+  .map-table-picker-iframe-wrap iframe {
+    width: 100%;
+    height: 100%;
+    border: none;
+  }
+
   /* Contact Search Results Dropdown */
   .contact-search-results {
     position: absolute;
@@ -2461,6 +2534,19 @@
     box-sizing: border-box;
   }
   
+  /* Sto select — треугольник как у Tip stola и Lead source, выравнивание как у других полей */
+  .new-booking-form #tableNumber {
+    appearance: none;
+    -webkit-appearance: none;
+    -moz-appearance: none;
+    padding-right: 40px;
+    padding-left: 16px;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%236B7280' d='M6 8L1 3h10z'/%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: right 16px center;
+    background-size: 10px;
+  }
+  
   /* Фиксированная ширина для поля Lead source, чтобы не расширялось при длинном тексте */
   #leadSource {
     flex: 1;
@@ -2478,10 +2564,9 @@
     text-overflow: ellipsis;
   }
   
-  /* Ограничиваем расширение form-field для Lead source */
+  /* Form-field для Lead source — flex как у остальных, без ограничения ширины */
   .form-field:has(#leadSource) {
     min-width: 0;
-    max-width: 50%; /* Ограничиваем до половины ширины строки (как Uslov) */
   }
   
   /* Стили для leadSourceInput - такой же как lead-source-button */
@@ -2886,20 +2971,18 @@
     display: none !important;
   }
 
-  /* Кастомный dropdown для типа стола */
+  /* Кастомный dropdown для типа стола — растягивается как Sto и Lead source */
   .custom-table-type-dropdown {
     position: relative;
-    flex: 0 0 auto;
-    width: 222.08px;
-    max-width: 222.08px;
-    min-width: 222.08px;
+    flex: 1;
+    min-width: 0;
   }
 
   .table-type-button {
     width: 100%;
     height: 40px;
     padding: 8px 16px;
-    padding-right: 40px;
+    padding-right: 20px;
     border-radius: 40px;
     font-family: 'Manrope', sans-serif;
     font-size: 16px;
@@ -3018,19 +3101,18 @@
     }
   }
   
-  /* Custom Lead Source Dropdown - аналогично типу стола */
+  /* Custom Lead Source Dropdown — растягивается как Tip stola и Sto, прижат к правому краю */
   .custom-lead-source-dropdown {
     position: relative;
     flex: 1;
     min-width: 0;
-    width: 0;
   }
   
   .lead-source-button {
     width: 100%;
     height: 40px;
     padding: 8px 16px;
-    padding-right: 40px;
+    padding-right: 20px;
     border-radius: 40px;
     font-family: 'Manrope', sans-serif;
     font-size: 16px;
@@ -3152,41 +3234,106 @@
   .form-actions {
     display: flex;
     justify-content: center;
+    align-items: center;
+    gap: 12px;
     margin-top: 15px;
   }
 
-  .save-btn {
-    width: 752px;
-    height: 40px;
-    background: linear-gradient(270deg, #11998E 0%, #2CAB5C 100%), #FFF0BF;
+  .save-btn,
+  .select-table-map-btn {
+    flex: 1;
+    min-width: 0;
+    max-width: 376px;
+    height: 48px;
     border-radius: 30px;
-    border: none;
     font-family: 'Manrope', sans-serif;
-    font-style: normal;
-    font-weight: 400;
+    font-weight: 600;
     font-size: 16px;
     line-height: 22px;
     display: flex;
     align-items: center;
     justify-content: center;
     text-align: center;
-    color: #FFFFFF;
     cursor: pointer;
+    transition: opacity 0.2s ease, background 0.2s ease, box-shadow 0.2s ease;
   }
-  
-  /* Mobile Save Button */
-  @media (max-width: 768px) {
-    .save-btn {
-      width: 100%;
-      height: 45px;
-      font-family: 'Manrope', sans-serif !important;
-      font-size: 16px;
-      border-radius: 40px;
-    }
+
+  .save-btn {
+    border: none;
+    background: linear-gradient(270deg, #11998E 0%, #2CAB5C 100%);
+    color: #FFFFFF;
+    box-shadow: 0 2px 8px rgba(17, 153, 142, 0.25);
   }
 
   .save-btn:hover {
-    opacity: 0.8;
+    opacity: 0.9;
+    box-shadow: 0 4px 12px rgba(17, 153, 142, 0.35);
+  }
+
+  .select-table-map-btn {
+    border: 2px solid #11998E;
+    background: #FFFFFF;
+    color: #11998E;
+  }
+
+  .select-table-map-btn:hover {
+    background: linear-gradient(270deg, rgba(17, 153, 142, 0.08) 0%, rgba(44, 171, 92, 0.08) 100%);
+    border-color: #2CAB5C;
+    color: #0d7a70;
+  }
+  
+  /* Mobile: status button и lead-source button на всю ширину */
+  @media (max-width: 768px) {
+    .new-booking-form .custom-status-dropdown,
+    .new-booking-form .status-button {
+      width: 100% !important;
+      max-width: 100% !important;
+      box-sizing: border-box;
+    }
+    .new-booking-form .custom-lead-source-dropdown,
+    .new-booking-form .lead-source-button {
+      width: 100% !important;
+      max-width: 100% !important;
+      box-sizing: border-box;
+    }
+  }
+
+  /* Mobile Save / Select table buttons — как в client_detail */
+  @media (max-width: 768px) {
+    .form-actions {
+      flex-direction: column;
+    }
+    .select-table-map-btn {
+      display: none !important;
+    }
+    .save-btn {
+      width: 100% !important;
+      height: 50px !important;
+      font-family: 'Manrope', sans-serif !important;
+      font-size: 16px !important;
+      border-radius: 40px !important;
+      background: linear-gradient(270deg, #11998E 0%, #2CAB5C 100%) !important;
+      border: none !important;
+      color: #FFFFFF !important;
+      cursor: pointer !important;
+      box-shadow: none !important;
+    }
+    .save-btn:hover {
+      opacity: 0.8;
+    }
+  }
+
+  /* Mobile: Lead source input на всю ширину */
+  @media (max-width: 768px) {
+    .form-field:has(#leadSourceInput),
+    #leadSourceInputField {
+      width: 100% !important;
+      max-width: 100% !important;
+    }
+    #leadSourceInput {
+      width: 100% !important;
+      box-sizing: border-box;
+    }
   }
   
   /* Counter Input Styles */
@@ -5099,10 +5246,25 @@
         </div>
       </div>
       
-      <!-- Action Button -->
+      <!-- Action Buttons -->
       <div class="form-actions">
+        <button type="button" class="select-table-map-btn" id="selectTableOnMapBtn" onclick="openMapTablePickerModal()">Izaberi sto na mapi</button>
         <button class="save-btn" onclick="saveNewBooking()">Sačuvati</button>
       </div>
+    </div>
+  </div>
+</div>
+
+<!-- Map table picker modal (iframe to map in embed mode) -->
+<div id="mapTablePickerModal" class="map-table-picker-modal" style="display: none;">
+  <div class="map-table-picker-backdrop" onclick="closeMapTablePickerModal()"></div>
+  <div class="map-table-picker-content">
+    <div class="map-table-picker-header">
+      <h3 class="map-table-picker-title">Izaberite sto na mapi</h3>
+      <button type="button" class="map-table-picker-close" onclick="closeMapTablePickerModal()" aria-label="Закрыть">×</button>
+    </div>
+    <div class="map-table-picker-iframe-wrap">
+      <iframe id="mapPickerIframe" src="" title="Карта столиков"></iframe>
     </div>
   </div>
 </div>
@@ -5120,6 +5282,46 @@
       modal.style.display = 'flex';
     }
   };
+
+  window.openMapTablePickerModal = function() {
+    const dateEl = document.getElementById('bookingDate');
+    const timeFromEl = document.getElementById('timeFrom');
+    const timeFromBelowEl = document.getElementById('timeFromBelow');
+    const timeFieldContainer = document.getElementById('timeFieldContainer');
+    let timeFrom = (timeFromEl && timeFromEl.value) || '';
+    if (timeFieldContainer && timeFieldContainer.style.display === 'none' && timeFromBelowEl) {
+      timeFrom = timeFromBelowEl.value || timeFrom;
+    }
+    const date = (dateEl && dateEl.value) || new Date().toISOString().split('T')[0];
+    const params = new URLSearchParams({ embed: '1', date: date });
+    if (timeFrom) params.set('time_from', timeFrom);
+    const iframe = document.getElementById('mapPickerIframe');
+    const modal = document.getElementById('mapTablePickerModal');
+    if (iframe && modal) {
+      iframe.src = '/map?' + params.toString();
+      modal.style.display = 'flex';
+    }
+  };
+
+  window.closeMapTablePickerModal = function() {
+    const modal = document.getElementById('mapTablePickerModal');
+    const iframe = document.getElementById('mapPickerIframe');
+    if (modal) modal.style.display = 'none';
+    if (iframe) iframe.src = 'about:blank';
+  };
+
+  function updateSelectTableButtonText() {
+    const btn = document.getElementById('selectTableOnMapBtn');
+    const select = document.getElementById('tableNumber');
+    if (!btn) return;
+    const val = (select && select.value) || '';
+    const displayName = (select && select.options[select.selectedIndex]) ? select.options[select.selectedIndex].textContent : val;
+    if (val) {
+      btn.textContent = 'Izabrali ste sto br. ' + (displayName || val);
+    } else {
+      btn.textContent = 'Izaberi sto na mapi';
+    }
+  }
   
   window.toggleTableSettingsMenu = function() {
     const menu = document.getElementById('tableSettingsMenu');
@@ -9188,6 +9390,7 @@
     if (title) {
       title.textContent = 'Nova rezervacija';
     }
+    if (typeof updateSelectTableButtonText === 'function') updateSelectTableButtonText();
     
     // Clear booking ID for editing
     delete modal.dataset.bookingId;
@@ -9462,10 +9665,13 @@
           }
           
           if (typeof populateTableNumberSelect === 'function') {
-            populateTableNumberSelect(booking.table_number);
+            populateTableNumberSelect(booking.table_number).then(function() {
+              if (typeof updateSelectTableButtonText === 'function') updateSelectTableButtonText();
+            });
           } else if (booking.table_number !== undefined && booking.table_number !== null) {
             const tableNumberEl = document.getElementById('tableNumber');
             if (tableNumberEl) tableNumberEl.value = booking.table_number;
+            if (typeof updateSelectTableButtonText === 'function') updateSelectTableButtonText();
           }
           
           if (booking.deposit !== undefined && booking.deposit !== null) {
@@ -10376,6 +10582,38 @@
   document.addEventListener('DOMContentLoaded', function() {
     toggleNoBookingsMessage();
     setTimeout(centerNoBookingsMessage, 100);
+
+    // Сообщение от iframe карты (режим выбора столика): установить столик и закрыть модалку
+    window.addEventListener('message', function(event) {
+      if (event.data && event.data.type === 'TABLE_SELECTED' && event.data.tableNumber != null) {
+        const select = document.getElementById('tableNumber');
+        if (select) {
+          const val = String(event.data.tableNumber);
+          let found = false;
+          for (var i = 0; i < select.options.length; i++) {
+            if (select.options[i].value === val) { found = true; break; }
+          }
+          if (found) {
+            select.value = val;
+          } else {
+            const opt = document.createElement('option');
+            opt.value = val;
+            opt.textContent = event.data.tableDisplayName || val;
+            select.appendChild(opt);
+            select.value = val;
+          }
+        }
+        if (typeof closeMapTablePickerModal === 'function') closeMapTablePickerModal();
+        if (typeof updateSelectTableButtonText === 'function') updateSelectTableButtonText();
+      }
+    });
+
+    var tableNumberSelect = document.getElementById('tableNumber');
+    if (tableNumberSelect) {
+      tableNumberSelect.addEventListener('change', function() {
+        if (typeof updateSelectTableButtonText === 'function') updateSelectTableButtonText();
+      });
+    }
     
     // Search functionality
     const searchBox = document.querySelector('.search-box');
