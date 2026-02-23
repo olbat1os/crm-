@@ -5482,21 +5482,24 @@
     }
   }
   
-  // Фильтры по статусам: пустой Set = режим "Все", иначе показываем только выбранные статусы
+  // Фильтры: filterShowAll + пустой selectedFilters = "Все" горят, показываем все
+  // filterShowAll = false + пустой selectedFilters = все галочки потушены, ничего не показываем
   let currentFilter = 'all';
   let selectedFilters = new Set();
+  let filterShowAll = true; // true = режим "все включено", false = "все выключено" (галочки потушены)
   const STATUS_ORDER = ['dogovoreno', 'potvrdjeno', 'otkazano', 'nisu', 'nacekanju', 'dosli'];
 
   function syncStatusCheckboxes() {
-    const isAllMode = selectedFilters.size === 0;
+    const noFiltersSelected = selectedFilters.size === 0;
+    const allCheckmarksOn = noFiltersSelected && filterShowAll;
     document.querySelectorAll('.filters-container').forEach(container => {
       const allCb = container.querySelector('.filter-group:first-child .filter-checkbox');
       if (allCb) {
-        if (isAllMode) allCb.classList.add('checked');
+        if (allCheckmarksOn) allCb.classList.add('checked');
         else allCb.classList.remove('checked');
       }
       container.querySelectorAll('.filter-group:not(:first-child) .filter-checkbox').forEach((cb, i) => {
-        if (isAllMode || selectedFilters.has(STATUS_ORDER[i])) cb.classList.add('checked');
+        if (allCheckmarksOn || selectedFilters.has(STATUS_ORDER[i])) cb.classList.add('checked');
         else cb.classList.remove('checked');
       });
     });
@@ -5504,8 +5507,8 @@
 
   function applyFilter() {
     if (selectedFilters.size === 0) {
-      currentFilter = 'all';
-      filterBookings('all');
+      currentFilter = filterShowAll ? 'all' : 'none';
+      filterBookings(filterShowAll ? 'all' : 'none');
     } else {
       currentFilter = 'multiple';
       filterBookingsMultiple();
@@ -6636,38 +6639,61 @@
   }
   
   
-  // Кнопка "Все": включить режим "показать все"
+  // Кнопка "Все": если все горят — тушим все; иначе — зажигаем все
   window.toggleAllFilter = function(checkbox) {
-    if (selectedFilters.size === 0) return; // уже режим "Все"
-    selectedFilters.clear();
+    if (selectedFilters.size === 0 && filterShowAll) {
+      // Сейчас все горят — по нажатию "Все" тушим все галочки, ничего не показываем
+      filterShowAll = false;
+    } else {
+      // Включаем режим "все": галочки у "Все" и у всех статусов, показываем все
+      filterShowAll = true;
+      selectedFilters.clear();
+    }
     syncStatusCheckboxes();
     applyFilter();
   }
 
-  // Клик по статусу: снял галочку = исключить этот статус из показа; поставил = включить
+  // Клик по статусу: снял галочку = исключить этот статус; поставил = включить. Все 6 выбраны = как "Все"
   window.toggleStatusFilter = function(checkbox, status) {
-    if (selectedFilters.size === 0) {
-      // Режим "Все": сняли галочку с одного статуса — показываем все остальные (исключаем только его)
+    if (selectedFilters.size === 0 && filterShowAll) {
       selectedFilters = new Set(STATUS_ORDER.filter(s => s !== status));
+    } else if (selectedFilters.size === 0 && !filterShowAll) {
+      selectedFilters.add(status);
     } else {
       if (selectedFilters.has(status)) selectedFilters.delete(status);
       else selectedFilters.add(status);
     }
+    if (selectedFilters.size === 6) {
+      // Все шесть статусов выбраны — считаем как "Все", зажигаем и "Все"
+      selectedFilters.clear();
+      filterShowAll = true;
+    }
+    if (selectedFilters.size === 0 && !filterShowAll) filterShowAll = true;
     syncStatusCheckboxes();
     applyFilter();
   }
   
   window.filterBookings = function(status) {
-    // console.log('filterBookings called with:', status);
     const rows = document.querySelectorAll('.booking-row');
-    // console.log('Found rows:', rows.length);
-    
+    if (status === 'none') {
+      rows.forEach(row => {
+        row.style.display = 'none';
+        row.classList.add('hidden-row');
+      });
+      const capacityText = businessCapacity && businessCapacity > 0 ? businessCapacity : '... <span class="capacity-question" onclick="goToCapacitySettings()">?</span>';
+      const percentageText = '';
+      document.getElementById('guestsInfo').innerHTML = `Gosti: 0 iz ${capacityText} ${percentageText}`;
+      document.getElementById('mobileGuestsInfo').innerHTML = `Gosti: 0 iz ${capacityText} ${percentageText}`;
+      document.getElementById('reservationsInfo').innerHTML = 'Rezervacije: 0';
+      document.getElementById('mobileReservationsInfo').innerHTML = 'Rezervacije: 0';
+      toggleNoBookingsMessage();
+      createNoResultsMessage();
+      if (typeof updateStatusCounters === 'function') updateStatusCounters(currentShift);
+      return;
+    }
     let visibleCount = 0;
-    
     rows.forEach(row => {
       let shouldShow = false;
-      
-      // Check status filter
       if (status === 'all' || row.dataset.status === status) {
         shouldShow = true;
         // console.log(`Row ${row.dataset.status} matches status filter ${status}`);
