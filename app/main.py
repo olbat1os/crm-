@@ -1137,7 +1137,10 @@ def normalize_sofa_metadata(metadata: Optional[Dict[str, Any]]) -> Dict[str, flo
 
 def serialize_map_table(table: MapTable) -> Dict[str, Any]:
     metadata: Dict[str, Any] = dict(table.metadata_json or {})
-    if table.shape == "sofa-double":
+    # Для новой системы диванов (parts) сохраняем metadata как есть
+    if table.shape in ("sofa-straight", "sofa-corner", "sofa-double") and metadata.get("parts"):
+        pass  # metadata уже в нужном формате
+    elif table.shape == "sofa-double":
         normalized = normalize_sofa_metadata(metadata)
         metadata = {
             **normalized,
@@ -1310,9 +1313,18 @@ async def create_map_table(
         if height is None:
             height = 120.0
     elif shape == "sofa-double":
-        metadata = normalize_sofa_metadata({**metadata, "width": width, "height": height})
-        width = metadata["width"]
-        height = metadata["height"]
+        if metadata.get("parts"):
+            # Новая система диванов (parts) — сохраняем metadata как есть, только подставляем width/height
+            if width is not None:
+                metadata["width"] = width
+            if height is not None:
+                metadata["height"] = height
+            width = width or metadata.get("width") or SOFA_DOUBLE_DEFAULTS["width"]
+            height = height or metadata.get("height") or SOFA_DOUBLE_DEFAULTS["height"]
+        else:
+            metadata = normalize_sofa_metadata({**metadata, "width": width, "height": height})
+            width = metadata["width"]
+            height = metadata["height"]
 
     table = MapTable(
         business_id=business_id,
@@ -1378,27 +1390,19 @@ async def update_map_table(
         table.radius = payload.radius
         updated = True
     if payload.metadata is not None:
-        metadata_payload = payload.metadata
-        if table.shape == "sofa-double":
+        table.metadata_json = payload.metadata
+        updated = True
+    elif table.shape == "sofa-double" and (payload.width is not None or payload.height is not None):
+        # Только для старого формата без parts — обновляем через normalize
+        current_metadata = table.metadata_json or {}
+        if not current_metadata.get("parts"):
             metadata_payload = normalize_sofa_metadata({
-                **metadata_payload,
+                **current_metadata,
                 "width": payload.width if payload.width is not None else table.width,
                 "height": payload.height if payload.height is not None else table.height,
             })
-            table.width = metadata_payload["width"]
-            table.height = metadata_payload["height"]
-        table.metadata_json = metadata_payload
-        updated = True
-    elif table.shape == "sofa-double" and (payload.width is not None or payload.height is not None):
-        # Обновляем метаданные при изменении размеров даже без явного обновления metadata
-        current_metadata = table.metadata_json or {}
-        metadata_payload = normalize_sofa_metadata({
-            **current_metadata,
-            "width": payload.width if payload.width is not None else table.width,
-            "height": payload.height if payload.height is not None else table.height,
-        })
-        table.metadata_json = metadata_payload
-        updated = True
+            table.metadata_json = metadata_payload
+            updated = True
 
     if updated:
         table.updated_at = datetime.utcnow()

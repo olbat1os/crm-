@@ -2627,6 +2627,11 @@
     align-items: flex-start;
     padding-left: 0;
     margin-left: 0;
+    min-width: 0;
+  }
+  .new-booking-form .form-row {
+    min-width: 0;
+    overflow: hidden;
   }
   
   /* Mobile Form Layout: лейбл сверху (слева по смыслу), под ним поле на всю ширину */
@@ -2971,15 +2976,31 @@
     display: none !important;
   }
 
-  /* Кастомный dropdown для типа стола — растягивается как Sto и Lead source */
+  /* Кастомный dropdown для типа стола — фиксированная ширина, длинное название обрезается с ... */
   .custom-table-type-dropdown {
     position: relative;
-    flex: 1;
+    flex: 0 0 222px;
+    width: 222px;
+    max-width: 222px;
+    min-width: 222px;
+    overflow: hidden;
+  }
+  .new-booking-form .form-field .custom-table-type-dropdown {
+    flex: 0 0 222px;
+    width: 222px;
+    max-width: 222px;
+    min-width: 222px;
+    overflow: hidden;
+  }
+  .new-booking-form .form-field:has(#tableTypeDropdown) {
+    flex: 0 0 auto;
     min-width: 0;
   }
 
   .table-type-button {
-    width: 100%;
+    width: 222px;
+    min-width: 0;
+    max-width: 222px;
     height: 40px;
     padding: 8px 16px;
     padding-right: 20px;
@@ -2996,6 +3017,7 @@
     justify-content: space-between;
     box-sizing: border-box;
     transition: border-color 0.2s;
+    overflow: hidden;
   }
 
   .table-type-button:hover {
@@ -3008,6 +3030,7 @@
 
   .table-type-text {
     flex: 1;
+    min-width: 0;
     text-align: left;
     white-space: nowrap;
     overflow: hidden;
@@ -3092,12 +3115,17 @@
     margin-bottom: 0;
   }
 
-  /* Мобильная версия для поля типа стола */
+  /* Мобильная версия для поля типа стола — на всю ширину */
   @media (max-width: 768px) {
     .custom-table-type-dropdown {
       width: 100%;
       max-width: 100%;
-      min-width: 100%;
+      min-width: 0;
+      flex: 1 1 auto;
+    }
+    .table-type-button {
+      width: 100%;
+      max-width: 100%;
     }
   }
   
@@ -4630,27 +4658,27 @@
       <span class="filter-label" id="allCounter">Sve ({{ bookings|length }})</span>
     </div>
     <div class="filter-group">
-      <div class="filter-checkbox" onclick="toggleStatusFilter(this, 'dogovoreno')"></div>
+      <div class="filter-checkbox checked" onclick="toggleStatusFilter(this, 'dogovoreno')"></div>
       <span class="status-badge status-dogovoreno" id="dogovorenoCounter">Dogovoreno - {{ bookings|selectattr('status', 'equalto', 'dogovoreno')|list|length }}</span>
     </div>
     <div class="filter-group">
-      <div class="filter-checkbox" onclick="toggleStatusFilter(this, 'potvrdjeno')"></div>
+      <div class="filter-checkbox checked" onclick="toggleStatusFilter(this, 'potvrdjeno')"></div>
       <span class="status-badge status-potvrdjeno" id="potvrdjenoCounter">Potvrđeno - {{ bookings|selectattr('status', 'equalto', 'potvrdjeno')|list|length }}</span>
     </div>
     <div class="filter-group">
-      <div class="filter-checkbox" onclick="toggleStatusFilter(this, 'otkazano')"></div>
+      <div class="filter-checkbox checked" onclick="toggleStatusFilter(this, 'otkazano')"></div>
       <span class="status-badge status-otkazano" id="otkazanoCounter">Otkazano - {{ bookings|selectattr('status', 'equalto', 'otkazano')|list|length }}</span>
     </div>
     <div class="filter-group">
-      <div class="filter-checkbox" onclick="toggleStatusFilter(this, 'nisu')"></div>
+      <div class="filter-checkbox checked" onclick="toggleStatusFilter(this, 'nisu')"></div>
       <span class="status-badge status-nisu" id="nisuCounter">Nisu došli - {{ bookings|selectattr('status', 'equalto', 'nisu')|list|length }}</span>
     </div>
     <div class="filter-group">
-      <div class="filter-checkbox" onclick="toggleStatusFilter(this, 'nacekanju')"></div>
+      <div class="filter-checkbox checked" onclick="toggleStatusFilter(this, 'nacekanju')"></div>
       <span class="status-badge status-nacekanju" id="nacekanjuCounter">Na čekanju - {{ bookings|selectattr('status', 'equalto', 'nacekanju')|list|length }}</span>
     </div>
     <div class="filter-group">
-      <div class="filter-checkbox" onclick="toggleStatusFilter(this, 'dosli')"></div>
+      <div class="filter-checkbox checked" onclick="toggleStatusFilter(this, 'dosli')"></div>
       <span class="status-badge status-dosli" id="dosliCounter">Došli - {{ bookings|selectattr('status', 'equalto', 'dosli')|list|length }}</span>
     </div>
   </div>
@@ -4785,32 +4813,32 @@
     </div>
     
     <div class="filter-group" onclick="toggleStatusFilter(this.querySelector('.filter-checkbox'), 'dogovoreno')">
-      <div class="filter-checkbox"></div>
+      <div class="filter-checkbox checked"></div>
       <div class="status-badge status-dogovoreno" id="mobileDogovorenoCounter">Dogovoreno - {{ bookings|selectattr('status', 'equalto', 'dogovoreno')|list|length }}</div>
     </div>
     
     <div class="filter-group" onclick="toggleStatusFilter(this.querySelector('.filter-checkbox'), 'potvrdjeno')">
-      <div class="filter-checkbox"></div>
+      <div class="filter-checkbox checked"></div>
       <div class="status-badge status-potvrdjeno" id="mobilePotvrdjenoCounter">Potvrđeno - {{ bookings|selectattr('status', 'equalto', 'potvrdjeno')|list|length }}</div>
     </div>
     
     <div class="filter-group" onclick="toggleStatusFilter(this.querySelector('.filter-checkbox'), 'otkazano')">
-      <div class="filter-checkbox"></div>
+      <div class="filter-checkbox checked"></div>
       <div class="status-badge status-otkazano" id="mobileOtkazanoCounter">Otkazano - {{ bookings|selectattr('status', 'equalto', 'otkazano')|list|length }}</div>
     </div>
     
     <div class="filter-group" onclick="toggleStatusFilter(this.querySelector('.filter-checkbox'), 'nisu')">
-      <div class="filter-checkbox"></div>
+      <div class="filter-checkbox checked"></div>
       <div class="status-badge status-nisu" id="mobileNisuCounter">Nisu došli - {{ bookings|selectattr('status', 'equalto', 'nisu')|list|length }}</div>
     </div>
     
     <div class="filter-group" onclick="toggleStatusFilter(this.querySelector('.filter-checkbox'), 'nacekanju')">
-      <div class="filter-checkbox"></div>
+      <div class="filter-checkbox checked"></div>
       <div class="status-badge status-nacekanju" id="mobileNacekanjuCounter">Na čekanju - {{ bookings|selectattr('status', 'equalto', 'nacekanju')|list|length }}</div>
     </div>
     
     <div class="filter-group" onclick="toggleStatusFilter(this.querySelector('.filter-checkbox'), 'dosli')">
-      <div class="filter-checkbox"></div>
+      <div class="filter-checkbox checked"></div>
       <div class="status-badge status-dosli" id="mobileDosliCounter">Došli - {{ bookings|selectattr('status', 'equalto', 'dosli')|list|length }}</div>
     </div>
     
@@ -5454,8 +5482,36 @@
     }
   }
   
+  // Фильтры по статусам: пустой Set = режим "Все", иначе показываем только выбранные статусы
   let currentFilter = 'all';
-  let selectedFilters = new Set(); // Для множественного выбора фильтров
+  let selectedFilters = new Set();
+  const STATUS_ORDER = ['dogovoreno', 'potvrdjeno', 'otkazano', 'nisu', 'nacekanju', 'dosli'];
+
+  function syncStatusCheckboxes() {
+    const isAllMode = selectedFilters.size === 0;
+    document.querySelectorAll('.filters-container').forEach(container => {
+      const allCb = container.querySelector('.filter-group:first-child .filter-checkbox');
+      if (allCb) {
+        if (isAllMode) allCb.classList.add('checked');
+        else allCb.classList.remove('checked');
+      }
+      container.querySelectorAll('.filter-group:not(:first-child) .filter-checkbox').forEach((cb, i) => {
+        if (isAllMode || selectedFilters.has(STATUS_ORDER[i])) cb.classList.add('checked');
+        else cb.classList.remove('checked');
+      });
+    });
+  }
+
+  function applyFilter() {
+    if (selectedFilters.size === 0) {
+      currentFilter = 'all';
+      filterBookings('all');
+    } else {
+      currentFilter = 'multiple';
+      filterBookingsMultiple();
+    }
+  }
+
   const businessCapacity = {{ business_capacity or 'null' }}; // Вместимость заведения
   
   // Функция для перехода к настройкам вместимости
@@ -6580,61 +6636,25 @@
   }
   
   
-  // Функция для кнопки "Все"
+  // Кнопка "Все": включить режим "показать все"
   window.toggleAllFilter = function(checkbox) {
-    // console.log('=== TOGGLE ALL FILTER CALLED ===');
-    
-    // Очистить все выбранные фильтры
+    if (selectedFilters.size === 0) return; // уже режим "Все"
     selectedFilters.clear();
-    
-    // Убрать checked со всех чекбоксов
-    document.querySelectorAll('.filter-checkbox').forEach(cb => {
-      cb.classList.remove('checked');
-    });
-    
-    // Добавить checked к кнопке "Все"
-    checkbox.classList.add('checked');
-    
-    // Установить фильтр на "all"
-    currentFilter = 'all';
-    
-    // Применить фильтр
-    filterBookings('all');
-    // console.log('=== TOGGLE ALL FILTER COMPLETED ===');
+    syncStatusCheckboxes();
+    applyFilter();
   }
-  
-  // Функция для отдельных статусов
+
+  // Клик по статусу: снял галочку = исключить этот статус из показа; поставил = включить
   window.toggleStatusFilter = function(checkbox, status) {
-    // console.log('=== TOGGLE STATUS FILTER CALLED ===');
-    // console.log('Status:', status);
-    // console.log('Checkbox:', checkbox);
-    
-    // Убрать checked с кнопки "Все"
-    const allCheckboxes = document.querySelectorAll('.filter-group:first-child .filter-checkbox');
-    allCheckboxes.forEach(cb => cb.classList.remove('checked'));
-    
-    // Переключить состояние чекбокса
-    if (checkbox.classList.contains('checked')) {
-      checkbox.classList.remove('checked');
-      selectedFilters.delete(status);
-    } else {
-      checkbox.classList.add('checked');
-      selectedFilters.add(status);
-    }
-    
-    // console.log('Selected filters:', Array.from(selectedFilters));
-    
-    // Если нет выбранных фильтров, показать все
     if (selectedFilters.size === 0) {
-      currentFilter = 'all';
-      allCheckboxes.forEach(cb => cb.classList.add('checked'));
-      filterBookings('all');
+      // Режим "Все": сняли галочку с одного статуса — показываем все остальные (исключаем только его)
+      selectedFilters = new Set(STATUS_ORDER.filter(s => s !== status));
     } else {
-      currentFilter = 'multiple';
-      filterBookingsMultiple();
+      if (selectedFilters.has(status)) selectedFilters.delete(status);
+      else selectedFilters.add(status);
     }
-    
-    // console.log('=== TOGGLE STATUS FILTER COMPLETED ===');
+    syncStatusCheckboxes();
+    applyFilter();
   }
   
   window.filterBookings = function(status) {
@@ -8656,6 +8676,7 @@
   
   // Start observing when DOM is ready
   document.addEventListener('DOMContentLoaded', function() {
+    if (typeof syncStatusCheckboxes === 'function') syncStatusCheckboxes();
     const table = document.querySelector('.bookings-table');
     if (table) {
       observer.observe(table, { childList: true, subtree: true });

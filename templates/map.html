@@ -1,4 +1,4 @@
-{% extends 'map_base.html' %}
+E{% extends 'map_base.html' %}
 {% block content %}
 <script>
   if (/[?&]embed=1(?=&|$)/.test(window.location.search || '')) {
@@ -944,6 +944,7 @@
   .new-booking-modal-content {
     position: relative;
     width: 812px;
+    max-width: 812px;
     height: 585px;
     background: #FFFFFF;
     border: 1px solid #D9D9D9;
@@ -951,7 +952,7 @@
     padding: 20px 40px 40px 40px;
     box-sizing: border-box;
     transition: height 0.3s ease;
-    overflow: visible;
+    overflow: hidden;
   }
 
   /* Contact Search Results Dropdown */
@@ -1053,7 +1054,7 @@
       border-radius: 16px;
       padding: 20px;
       box-sizing: border-box;
-      overflow-y: auto;
+      overflow: hidden;
     }
   }
   
@@ -1651,14 +1652,28 @@
 
   .custom-table-type-dropdown {
     position: relative;
-    flex: 0 0 auto;
+    flex: 0 0 222.08px;
     width: 222.08px;
     max-width: 222.08px;
     min-width: 222.08px;
+    overflow: hidden;
+  }
+  .new-booking-form .form-field .custom-table-type-dropdown {
+    flex: 0 0 222.08px;
+    min-width: 222.08px;
+    width: 222.08px;
+    max-width: 222.08px;
+    overflow: hidden;
+  }
+  .new-booking-form .form-field:has(#tableTypeDropdown) {
+    flex: 0 0 auto;
+    min-width: 0;
   }
 
   .table-type-button {
-    width: 100%;
+    width: 222.08px;
+    min-width: 0;
+    max-width: 222.08px;
     height: 40px;
     padding: 8px 16px;
     padding-right: 20px;
@@ -1675,6 +1690,7 @@
     justify-content: space-between;
     box-sizing: border-box;
     transition: border-color 0.2s;
+    overflow: hidden;
   }
 
   .table-type-button:hover {
@@ -1687,6 +1703,7 @@
 
   .table-type-text {
     flex: 1;
+    min-width: 0;
     text-align: left;
     white-space: nowrap;
     overflow: hidden;
@@ -2308,10 +2325,25 @@
 
 <script src="https://cdn.jsdelivr.net/npm/fabric@5.3.0/dist/fabric.min.js"></script>
 <script>
-  // Патч Fabric.js: 'alphabetical' устарел в Canvas API, нужен 'alphabetic'
+  // Патч Canvas API: браузеры больше не принимают 'alphabetical', только 'alphabetic'
+  (function () {
+    var p = typeof CanvasRenderingContext2D !== 'undefined' && CanvasRenderingContext2D.prototype;
+    if (!p) return;
+    var d = Object.getOwnPropertyDescriptor(p, 'textBaseline');
+    if (!d || !d.set) return;
+    var set = d.set;
+    Object.defineProperty(p, 'textBaseline', {
+      set: function (v) { set.call(this, v === 'alphabetical' ? 'alphabetic' : v); },
+      get: d.get,
+      configurable: true,
+      enumerable: d.enumerable !== false
+    });
+  })();
+  // Патч Fabric.js: дефолт textBaseline у текстовых классов
   if (typeof fabric !== 'undefined') {
     if (fabric.Text) fabric.Text.prototype.textBaseline = 'alphabetic';
     if (fabric.Textbox) fabric.Textbox.prototype.textBaseline = 'alphabetic';
+    if (fabric.IText) fabric.IText.prototype.textBaseline = 'alphabetic';
   }
   // Глобальные переменные для canvas и container
   let canvas = null;
@@ -2508,6 +2540,8 @@
     const radius = 8;
     let pathData;
     let x, y;
+    const isL = sofaData.type === 'L';
+    // В режиме редактирования: L — origin center (сохраняем центр), P — origin left/top (сохраняем верхний левый)
     
     if (sofaData.type === 'RECT') {
       const part = sofaData.parts[0];
@@ -2520,7 +2554,6 @@
     } else if (sofaData.type === 'L') {
       x = sofaData.x;
       y = sofaData.y;
-      // pathData из редактора и createCornerSofaView уже в локальных координатах (0,0), используем как есть
       pathData = sofaData.pathData;
     } else if (sofaData.type === 'P') {
       x = sofaData.x;
@@ -2531,6 +2564,8 @@
     const path = new fabric.Path(pathData, {
       left: x,
       top: y,
+      originX: isL ? 'center' : 'left',
+      originY: isL ? 'center' : 'top',
       fill: '#1EA276',
       stroke: 'none',
       selectable: true,
@@ -2539,6 +2574,9 @@
       hasControls: true,
       lockScalingFlip: true
     });
+    if (isL && path.width != null && path.height != null) {
+      path.set({ left: x, top: y });
+    }
     
     path.sofaData = sofaData;
     path.mapTableMeta = {
@@ -2831,6 +2869,7 @@
     const SOFA_MIN_LENGTH = 1; // минимальная длина в ячейках
     const SOFA_MAX_LENGTH = 50; // максимальная длина в ячейках
     const SOFA_DEPTH = 3; // глубина дивана в ячейках (w) = 30px (как в SVG)
+    const SOFA_SELECTION_STROKE = '#11998E';
     
     // Ориентации (в градусах)
     const ORIENTATIONS = [0, 90, 180, 270];
@@ -2913,9 +2952,9 @@
         const maxLengthPx = fromGridCells(SOFA_MAX_LENGTH);
         this.length = Math.max(minLengthPx, Math.min(maxLengthPx, snapToGrid(length)));
         // width может быть передан в пикселях или ячейках, нормализуем к ячейкам
-        if (width === null) {
+        if (width === null || width === undefined || Number.isNaN(Number(width))) {
           this.width = SOFA_DEPTH; // уже в ячейках
-        } else if (width < 10) {
+        } else if (typeof width === 'number' && width < 10) {
           // Если меньше 10, считаем что это ячейки
           this.width = width;
         } else {
@@ -3081,40 +3120,26 @@
       }
     }
     
-    // Угловой диван (L-образный) - простая реализация
-    const createCornerSofa = (x, y, lengthA, lengthB) => {
-      // Используем правильную форму углового дивана
-      // Базовый path уже нормализован относительно (0,0)
+    // Угловой диван (L-образный) - каждая часть масштабируется независимо
+    const createCornerSofa = (x, y, lengthA, lengthB, depthHPx, depthVPx) => {
       const basePath = "M0 4.8C0 2.14903 2.14903 0 4.8 0H55.2C57.851 0 60 2.14903 60 4.8V13.2C60 15.851 57.851 18 55.2 18H22.8C20.149 18 18 20.149 18 22.8V55.2C18 57.851 15.851 60 13.2 60H4.8C2.14903 60 0 57.851 0 55.2V4.8Z";
-      
-      // Масштабируем под нужные размеры (базовый размер 60x60)
-      // Используем единый коэффициент для сохранения пропорций
-      const baseSize = 60;
-      const targetWidth = lengthA;
-      const targetHeight = lengthB;
-      const scale = Math.min(targetWidth / baseSize, targetHeight / baseSize);
-      
-      // Масштабируем все координаты в path с единым коэффициентом (path будет нормализован в createSofaFabricObject)
+      const baseDepth = 18;
+      const baseLen = 55.2;
+      const dH = depthHPx ?? fromGridCells(SOFA_DEPTH);
+      const dV = depthVPx ?? fromGridCells(SOFA_DEPTH);
+      const scaleX = (v) => v <= baseDepth ? v * dV / baseDepth : dV + (v - baseDepth) * (lengthA - dV) / (baseLen - baseDepth);
+      const scaleY = (v) => v <= baseDepth ? v * dH / baseDepth : dH + (v - baseDepth) * (lengthB - dH) / (baseLen - baseDepth);
       const pathData = basePath.replace(/([MLHVCSQTAZ])\s*([-\d.]+(?:\s+[-\d.]+)*)/g, (match, cmd, coords) => {
         if (cmd === 'Z' || cmd === 'z') return match;
         if (cmd === 'H') {
-          // Горизонтальная линия - только X координата
-          const nums = coords.trim().split(/\s+/).map(n => {
-            return (parseFloat(n) * scale).toFixed(3);
-          });
-          return cmd + ' ' + nums.join(' ');
+          return cmd + ' ' + coords.trim().split(/\s+/).map(n => scaleX(parseFloat(n)).toFixed(3)).join(' ');
         }
         if (cmd === 'V') {
-          // Вертикальная линия - только Y координата
-          const nums = coords.trim().split(/\s+/).map(n => {
-            return (parseFloat(n) * scale).toFixed(3);
-          });
-          return cmd + ' ' + nums.join(' ');
+          return cmd + ' ' + coords.trim().split(/\s+/).map(n => scaleY(parseFloat(n)).toFixed(3)).join(' ');
         }
-        // Остальные команды - пары координат
-        const nums = coords.trim().split(/\s+/).map((n) => {
+        const nums = coords.trim().split(/\s+/).map((n, idx) => {
           const val = parseFloat(n);
-          return (val * scale).toFixed(3);
+          return (idx % 2 === 0 ? scaleX(val) : scaleY(val)).toFixed(3);
         });
         return cmd + ' ' + nums.join(' ');
       });
@@ -3129,81 +3154,88 @@
       };
     };
     
-    // П-образный диван (комбо) - используем правильную форму
-    const createPSofa = (x, y, lengthA, lengthB, lengthC) => {
-      // Используем правильную форму комбо дивана
-      // Исходный path: M120 36.328... (из viewBox "110 28 150 90")
-      // Нормализуем к началу координат: вычитаем 120 из X и 36.328 из Y
-      const basePath = "M120 36.328C120 33.677 122.133 31.528 124.764 31.528H246.236C248.867 31.528 251 33.677 251 36.328V86.728C251 89.379 248.867 91.528 246.236 91.528H237.9C235.269 91.528 233.136 89.379 233.136 86.728V54.328C233.136 51.677 231.004 49.528 228.373 49.528H142.627C139.996 49.528 137.864 51.677 137.864 54.328V86.728C137.864 89.379 135.731 91.528 133.1 91.528H124.764C122.133 91.528 120 89.379 120 86.728V36.328Z";
-      
-      // Нормализуем path относительно (0,0) - вычитаем начальные координаты
-      const offsetX = 120;
-      const offsetY = 36.328;
-      const normalizedPath = basePath.replace(/([MLHVCSQTAZ])\s*([-\d.]+(?:\s+[-\d.]+)*)/g, (match, cmd, coords) => {
-        if (cmd === 'Z' || cmd === 'z') return match;
-        if (cmd === 'H') {
-          // Горизонтальная линия - только X координата
-          const nums = coords.trim().split(/\s+/).map(n => {
-            return (parseFloat(n) - offsetX).toFixed(3);
-          });
-          return cmd + ' ' + nums.join(' ');
-        }
-        if (cmd === 'V') {
-          // Вертикальная линия - только Y координата
-          const nums = coords.trim().split(/\s+/).map(n => {
-            return (parseFloat(n) - offsetY).toFixed(3);
-          });
-          return cmd + ' ' + nums.join(' ');
-        }
-        // Остальные команды - пары координат
-        const nums = coords.trim().split(/\s+/).map((n, idx) => {
-          const val = parseFloat(n);
-          return idx % 2 === 0 ? (val - offsetX).toFixed(3) : (val - offsetY).toFixed(3);
-        });
-        return cmd + ' ' + nums.join(' ');
-      });
-      
-      // Масштабируем под нужные размеры
-      // Базовые размеры из исходного path: ширина ~131 (251-120), высота ~55.2 (91.528-36.328)
-      // Используем единый коэффициент для сохранения пропорций
+    // П-образный диван (комбо) - thickness горизонтали (depthH) и вертикалей (depthVL, depthVR) независимы,
+    // каждая вертикаль утолщается сама себя
+    const createPSofa = (x, y, lengthA, lengthBLeft, lengthBRight, lengthC, depthHPx, depthVLPx, depthVRPx) => {
+      const depthH = depthHPx ?? fromGridCells(SOFA_DEPTH);
+      const depthVL = depthVLPx ?? fromGridCells(SOFA_DEPTH);
+      const depthVR = depthVRPx ?? fromGridCells(SOFA_DEPTH);
+      const totalW = lengthA + lengthC;
+      const baseLeftBar = 18;
+      const baseRightStart = 113;
       const baseWidth = 131;
-      const baseHeight = 55.2;
-      const targetWidth = lengthB;
-      const targetHeight = lengthA + lengthC;
-      const scale = Math.min(targetWidth / baseWidth, targetHeight / baseHeight);
-      
-      // Масштабируем координаты с единым коэффициентом (path будет нормализован в createSofaFabricObject)
-      const pathData = normalizedPath.replace(/([MLHVCSQTAZ])\s*([-\d.]+(?:\s+[-\d.]+)*)/g, (match, cmd, coords) => {
+      const baseMidW = baseRightStart - baseLeftBar;
+      const baseRightBar = baseWidth - baseRightStart;
+      const scaleXForPoint = (px) => {
+        if (px <= baseLeftBar) return px * depthVL / baseLeftBar;
+        if (px >= baseRightStart) return totalW - depthVR + (px - baseRightStart) * depthVR / baseRightBar;
+        return depthVL + (px - baseLeftBar) * (totalW - depthVL - depthVR) / baseMidW;
+      };
+      // В шаблоне верхняя полоса (горизонталь П) имеет Y от 31.528 до 36.328 → относительные от -4.8 до 0
+      const baseTopBarYMin = -4.8;
+      const baseTopBarYMax = 0;
+      const baseVertH = 32.4;
+      const baseVertYStart = 0;
+      const baseLeftX = 65.5;
+      // В шаблоне верх проёма между ножками (внутренние углы) имеет baseY ≈ 18 (54.328-36.328).
+      // Эти точки не должны съезжать вниз при изменении lengthB* — иначе горизонталь «расширяется» по середине.
+      const baseInnerTopY = 18;
+      const scaleYForPoint = (px, py) => {
+        if (py <= baseTopBarYMax) {
+          return ((py - baseTopBarYMin) / (baseTopBarYMax - baseTopBarYMin)) * depthH;
+        }
+        if (py <= baseInnerTopY) {
+          return depthH;
+        }
+        const vertLen = px < baseLeftX ? lengthBLeft : lengthBRight;
+        const vertSpan = 50.4 - baseInnerTopY;
+        const scale = (50.4 * vertLen / baseVertH) / vertSpan;
+        return depthH + (py - baseInnerTopY) * scale;
+      };
+      const tf = (px, py) => ({ x: scaleXForPoint(px), y: scaleYForPoint(px, py) });
+      const basePath = "M120 36.328C120 33.677 122.133 31.528 124.764 31.528H246.236C248.867 31.528 251 33.677 251 36.328V86.728C251 89.379 248.867 91.528 246.236 91.528H237.9C235.269 91.528 233.136 89.379 233.136 86.728V54.328C233.136 51.677 231.004 49.528 228.373 49.528H142.627C139.996 49.528 137.864 51.677 137.864 54.328V86.728C137.864 89.379 135.731 91.528 133.1 91.528H124.764C122.133 91.528 120 89.379 120 86.728V36.328Z";
+      const offsetX = 120, offsetY = 36.328;
+      let baseX = 0, baseY = 0;
+      const pathData = basePath.replace(/([MLHVCSQTAZ])\s*([-\d.]*(?:\s+[-\d.]*)*)/gi, (match, cmd, coords) => {
         if (cmd === 'Z' || cmd === 'z') return match;
-        if (cmd === 'H') {
-          // Горизонтальная линия
-          const nums = coords.trim().split(/\s+/).map(n => {
-            return (parseFloat(n) * scale).toFixed(3);
-          });
-          return cmd + ' ' + nums.join(' ');
+        const nums = (coords || '').trim().split(/[\s,]+/).filter(Boolean).map(Number);
+        const out = [];
+        if (cmd === 'M' || cmd === 'L') {
+          for (let i = 0; i < nums.length; i += 2) {
+            baseX = nums[i] - offsetX; baseY = nums[i + 1] - offsetY;
+            const p = tf(baseX, baseY);
+            out.push(p.x.toFixed(3), p.y.toFixed(3));
+          }
+        } else if (cmd === 'H') {
+          for (const n of nums) {
+            baseX = n - offsetX;
+            const p = tf(baseX, baseY);
+            out.push(p.x.toFixed(3));
+          }
+        } else if (cmd === 'V') {
+          for (const n of nums) {
+            baseY = n - offsetY;
+            const p = tf(baseX, baseY);
+            out.push(p.y.toFixed(3));
+          }
+        } else if (cmd === 'C') {
+          for (let i = 0; i < nums.length; i += 6) {
+            const p1 = tf(nums[i] - offsetX, nums[i + 1] - offsetY);
+            const p2 = tf(nums[i + 2] - offsetX, nums[i + 3] - offsetY);
+            baseX = nums[i + 4] - offsetX; baseY = nums[i + 5] - offsetY;
+            const p3 = tf(baseX, baseY);
+            out.push(p1.x.toFixed(3), p1.y.toFixed(3), p2.x.toFixed(3), p2.y.toFixed(3), p3.x.toFixed(3), p3.y.toFixed(3));
+          }
         }
-        if (cmd === 'V') {
-          // Вертикальная линия
-          const nums = coords.trim().split(/\s+/).map(n => {
-            return (parseFloat(n) * scale).toFixed(3);
-          });
-          return cmd + ' ' + nums.join(' ');
-        }
-        // Остальные команды - пары координат
-        const nums = coords.trim().split(/\s+/).map((n) => {
-          const val = parseFloat(n);
-          return (val * scale).toFixed(3);
-        });
-        return cmd + ' ' + nums.join(' ');
+        return cmd + ' ' + out.join(' ');
       });
-      
       return {
         type: 'P',
         pathData: pathData,
         x: x,
         y: y,
         lengthA: lengthA,
-        lengthB: lengthB,
+        lengthB: Math.max(lengthBLeft, lengthBRight),
         lengthC: lengthC
       };
     };
@@ -3224,67 +3256,41 @@
         const radius = 8;
         pathData = `M ${radius} 0 L ${w - radius} 0 Q ${w} 0 ${w} ${radius} L ${w} ${h - radius} Q ${w} ${h} ${w - radius} ${h} L ${radius} ${h} Q 0 ${h} 0 ${h - radius} L 0 ${radius} Q 0 0 ${radius} 0 Z`;
       } else if (sofaData.type === 'L') {
-        // Угловой диван - нормализуем Path относительно начала координат
         x = sofaData.x;
         y = sofaData.y;
-        // Нормализуем все координаты в Path (обрабатываем M, L, C, H, V команды)
-        pathData = sofaData.pathData.replace(/([MLHVCSQTAZ])\s*([-\d.]+(?:\s+[-\d.]+)*)/g, (match, cmd, coords) => {
-          if (cmd === 'Z' || cmd === 'z') return match;
-          if (cmd === 'H') {
-            // Горизонтальная линия - только X координата
-            const nums = coords.trim().split(/\s+/).map(n => {
-              return (parseFloat(n) - x).toFixed(3);
-            });
-            return cmd + ' ' + nums.join(' ');
-          }
-          if (cmd === 'V') {
-            // Вертикальная линия - только Y координата
-            const nums = coords.trim().split(/\s+/).map(n => {
-              return (parseFloat(n) - y).toFixed(3);
-            });
-            return cmd + ' ' + nums.join(' ');
-          }
-          // Остальные команды - пары координат (M, L, C, Q, T, A)
-          const nums = coords.trim().split(/\s+/).map((n, idx) => {
-            const val = parseFloat(n);
-            return idx % 2 === 0 ? (val - x).toFixed(3) : (val - y).toFixed(3);
-          });
-          return cmd + ' ' + nums.join(' ');
-        });
+        pathData = sofaData.pathData;
       } else if (sofaData.type === 'P') {
-        // П-образный диван - нормализуем Path относительно начала координат
         x = sofaData.x;
         y = sofaData.y;
-        // Нормализуем все координаты в Path (обрабатываем M, L, C, H, V команды)
-        pathData = sofaData.pathData.replace(/([MLHVCSQTAZ])\s*([-\d.]+(?:\s+[-\d.]+)*)/g, (match, cmd, coords) => {
-          if (cmd === 'Z' || cmd === 'z') return match;
-          if (cmd === 'H') {
-            // Горизонтальная линия - только X координата
-            const nums = coords.trim().split(/\s+/).map(n => {
-              return (parseFloat(n) - x).toFixed(3);
-            });
-            return cmd + ' ' + nums.join(' ');
-          }
-          if (cmd === 'V') {
-            // Вертикальная линия - только Y координата
-            const nums = coords.trim().split(/\s+/).map(n => {
-              return (parseFloat(n) - y).toFixed(3);
-            });
-            return cmd + ' ' + nums.join(' ');
-          }
-          // Остальные команды - пары координат (M, L, C, Q, T, A)
-          const nums = coords.trim().split(/\s+/).map((n, idx) => {
-            const val = parseFloat(n);
-            return idx % 2 === 0 ? (val - x).toFixed(3) : (val - y).toFixed(3);
-          });
-          return cmd + ' ' + nums.join(' ');
-        });
+        pathData = sofaData.pathData;
       }
       
-      // Создаем единый Path объект
+      const isCornerOrP = sofaData.type === 'L' || sofaData.type === 'P';
+      let pathW, pathH, centerX, centerY;
+      if (isCornerOrP) {
+        if (sofaData.type === 'L' && sofaData.parts && sofaData.parts.length >= 2) {
+          pathW = sofaData.parts[0].length;
+          pathH = sofaData.parts[1].length;
+        } else if (sofaData.type === 'P' && sofaData.parts && sofaData.parts.length >= 3) {
+          const p0 = sofaData.parts[0], p1 = sofaData.parts[1];
+          pathW = p0.length + sofaData.parts[2].length;
+          const depthH = fromGridCells(p0.width != null ? p0.width : SOFA_DEPTH);
+          const lenBR = p1.lengthRight != null ? p1.lengthRight : p1.length;
+          pathH = depthH + Math.max(p1.length, lenBR);
+        }
+        centerX = x + (pathW || 0) / 2;
+        centerY = y + (pathH || 0) / 2;
+      } else {
+        centerX = x;
+        centerY = y;
+      }
+      
+      const isP = sofaData.type === 'P';
       const path = new fabric.Path(pathData, {
-        left: x,
-        top: y,
+        left: isCornerOrP ? (isP ? x : centerX) : x,
+        top: isCornerOrP ? (isP ? y : centerY) : y,
+        originX: isCornerOrP ? (isP ? 'left' : 'center') : 'left',
+        originY: isCornerOrP ? (isP ? 'top' : 'center') : 'top',
         fill: '#1EA276',
         stroke: 'none',
         selectable: true,
@@ -3292,10 +3298,23 @@
         hasBorders: false,
         hasControls: true,
         lockScalingFlip: true,
+        lockScalingX: isCornerOrP,
+        lockScalingY: isCornerOrP,
         lockMovementX: false,
         lockMovementY: false,
-        perPixelTargetFind: true
+        perPixelTargetFind: true,
+        objectCaching: false
       });
+      if (isCornerOrP && path.width != null && path.height != null) {
+        const bw = path.width, bh = path.height;
+        path.set({
+          left: isP ? x : x + bw / 2,
+          top: isP ? y : y + bh / 2
+        });
+      }
+      if (isCornerOrP && typeof path.setControlsVisibility === 'function') {
+        path.setControlsVisibility({ tl: false, tr: false, bl: false, br: false, ml: false, mr: false, mt: false, mb: false });
+      }
       
       path.sofaData = sofaData;
       path.sofaModel = sofaData; // для логики масштабирования и сохранения (object:scaling, object:modified)
@@ -3316,8 +3335,9 @@
     }
 
     const getDeletableSelection = () => {
-      if (!canvas.getActiveObjects) return [];
-      const selected = canvas.getActiveObjects();
+      const active = canvas.getActiveObject && canvas.getActiveObject();
+      if (!active) return [];
+      const selected = (active.type === 'activeSelection' && active.getObjects) ? active.getObjects() : [active];
       if (!selected || selected.length === 0) return [];
       const unique = new Set();
       const deletable = [];
@@ -3470,6 +3490,9 @@
          }
         if (mapObj.mapTableMeta.shape === 'wall') {
           hideWallHandles(mapObj);
+        }
+        if (mapObj.mapTableMeta.shape === 'sofa-corner' || mapObj.mapTableMeta.shape === 'sofa-double') {
+          hideSofaHandles(mapObj);
         }
          const meta = mapObj.mapTableMeta;
         if (meta?.id && meta.id > 0) {
@@ -3923,61 +3946,85 @@
             }
           }
         } else if (sofaType === 'L') {
+          const DEFAULT_LENGTH_A = 10;
+          const DEFAULT_LENGTH_B = 8;
           const parts = table.metadata?.parts || [];
           if (parts.length >= 2) {
             const partA = parts[0];
             const partB = parts[1];
-            // length в метаданных хранится в ячейках
-            const lengthAPx = typeof partA.length === 'number' ? fromGridCells(partA.length) : 160;
-            const lengthBPx = typeof partB.length === 'number' ? fromGridCells(partB.length) : 120;
-            sofaModel = createCornerSofa(partA.x, partA.y, lengthAPx, lengthBPx);
+            const lengthAPx = typeof partA.length === 'number' ? fromGridCells(partA.length) : fromGridCells(DEFAULT_LENGTH_A);
+            const lengthBPx = typeof partB.length === 'number' ? fromGridCells(partB.length) : fromGridCells(DEFAULT_LENGTH_B);
+            const depthHPx = fromGridCells(partA.width != null ? partA.width : SOFA_DEPTH);
+            const depthVPx = fromGridCells(partB.width != null ? partB.width : SOFA_DEPTH);
+            sofaModel = createCornerSofa(partA.x, partA.y, lengthAPx, lengthBPx, depthHPx, depthVPx);
             sofaModel.parts = [
               new SofaPart('A', partA.x, partA.y, partA.orientation || 0, lengthAPx, partA.width),
               new SofaPart('B', partB.x, partB.y, partB.orientation ?? 90, lengthBPx, partB.width)
             ];
           } else {
-            // Fallback для старых данных
-            sofaModel = createCornerSofa(table.x, table.y, 160, 120);
+            const lengthAPx = table.metadata?.lengthA != null ? fromGridCells(table.metadata.lengthA) : fromGridCells(DEFAULT_LENGTH_A);
+            const lengthBPx = table.metadata?.lengthB != null ? fromGridCells(table.metadata.lengthB) : fromGridCells(DEFAULT_LENGTH_B);
+            sofaModel = createCornerSofa(table.x, table.y, lengthAPx, lengthBPx);
             sofaModel.parts = [
-              new SofaPart('A', table.x, table.y, 0, 160, SOFA_DEPTH),
-              new SofaPart('B', table.x, table.y, 90, 120, SOFA_DEPTH)
+              new SofaPart('A', table.x, table.y, 0, lengthAPx, SOFA_DEPTH),
+              new SofaPart('B', table.x, table.y, 90, lengthBPx, SOFA_DEPTH)
             ];
           }
         } else if (sofaType === 'P') {
+          const DEFAULT_LENGTH_A = 12;
+          const DEFAULT_LENGTH_B = 5;
+          const DEFAULT_LENGTH_C = 12;
           const parts = table.metadata?.parts || [];
           if (parts.length >= 3) {
             const partA = parts[0];
             const partB = parts[1];
             const partC = parts[2];
-            // length в метаданных хранится в ячейках
-            const lengthAPx = typeof partA.length === 'number' ? fromGridCells(partA.length) : 120;
-            const lengthBPx = typeof partB.length === 'number' ? fromGridCells(partB.length) : 200;
-            const lengthCPx = typeof partC.length === 'number' ? fromGridCells(partC.length) : 120;
-            // Используем координаты части A как базовые
-            sofaModel = createPSofa(partA.x, partA.y, lengthAPx, lengthBPx, lengthCPx);
+            const lengthAPx = typeof partA.length === 'number' ? fromGridCells(partA.length) : fromGridCells(DEFAULT_LENGTH_A);
+            const lengthBPx = typeof partB.length === 'number' ? fromGridCells(partB.length) : fromGridCells(DEFAULT_LENGTH_B);
+            const lengthCPx = typeof partC.length === 'number' ? fromGridCells(partC.length) : fromGridCells(DEFAULT_LENGTH_C);
+            const lengthBRightPx = partB.lengthRight != null ? fromGridCells(partB.lengthRight) : lengthBPx;
+            const depthHPx = fromGridCells(partA.width != null ? partA.width : SOFA_DEPTH);
+            const depthVLPx = fromGridCells(partB.width != null ? partB.width : SOFA_DEPTH);
+            const depthVRPx = partB.widthRight != null ? fromGridCells(partB.widthRight) : depthVLPx;
+            sofaModel = createPSofa(partA.x, partA.y, lengthAPx, lengthBPx, lengthBRightPx, lengthCPx, depthHPx, depthVLPx, depthVRPx);
             sofaModel.parts = [
               new SofaPart('A', partA.x, partA.y, partA.orientation || 0, lengthAPx, partA.width),
               new SofaPart('B', partB.x, partB.y, partB.orientation ?? 90, lengthBPx, partB.width),
               new SofaPart('C', partC.x, partC.y, partC.orientation ?? 180, lengthCPx, partC.width)
             ];
+            if (partB.lengthRight != null) sofaModel.parts[1].lengthRight = lengthBRightPx;
+            if (partB.width != null && !Number.isNaN(Number(partB.width))) sofaModel.parts[1].width = Number(partB.width);
+            if (partB.widthRight != null && !Number.isNaN(Number(partB.widthRight))) sofaModel.parts[1].widthRight = Number(partB.widthRight);
           } else {
-            // Fallback для старых данных
-            sofaModel = createPSofa(table.x, table.y, 120, 200, 120);
+            const lengthAPx = table.metadata?.lengthA != null ? fromGridCells(table.metadata.lengthA) : fromGridCells(DEFAULT_LENGTH_A);
+            const lengthBPx = table.metadata?.lengthB != null ? fromGridCells(table.metadata.lengthB) : fromGridCells(DEFAULT_LENGTH_B);
+            const lengthCPx = table.metadata?.lengthC != null ? fromGridCells(table.metadata.lengthC) : fromGridCells(DEFAULT_LENGTH_C);
+            sofaModel = createPSofa(table.x, table.y, lengthAPx, lengthBPx, lengthBPx, lengthCPx);
             sofaModel.parts = [
-              new SofaPart('A', table.x, table.y, 0, 120, SOFA_DEPTH),
-              new SofaPart('B', table.x, table.y, 90, 200, SOFA_DEPTH),
-              new SofaPart('C', table.x, table.y, 180, 120, SOFA_DEPTH)
+              new SofaPart('A', table.x, table.y, 0, lengthAPx, SOFA_DEPTH),
+              new SofaPart('B', table.x, table.y, 90, lengthBPx, SOFA_DEPTH),
+              new SofaPart('C', table.x, table.y, 180, lengthCPx, SOFA_DEPTH)
             ];
           }
         }
         
         if (sofaModel) {
           obj = createSofaFabricObject(sofaModel, table.id);
-          // Устанавливаем координаты из базы данных
           if (table.x != null && table.y != null) {
+            let left = table.x, top = table.y;
+            if (obj.originX === 'center' && (sofaType === 'L' || sofaType === 'P')) {
+              const posAnchor = table.metadata?.positionAnchor;
+              if (posAnchor !== 'center') {
+                const bw = obj.width, bh = obj.height;
+                if (bw != null && bh != null) {
+                  left = table.x + bw / 2;
+                  top = table.y + bh / 2;
+                }
+              }
+            }
             obj.set({
-              left: table.x,
-              top: table.y,
+              left: left,
+              top: top,
               angle: table.angle || 0
             });
           } else {
@@ -4240,19 +4287,37 @@
         payload.y = obj.top;
         payload.angle = obj.angle || 0;
         
-        // Обновляем метаданные с текущими координатами частей
+        // Обновляем метаданные с текущими координатами частей и размерами
         if (obj.sofaModel && obj.sofaModel.parts) {
-          payload.metadata = {
-            type: obj.sofaModel.type,
-            parts: obj.sofaModel.parts.map(p => ({
+          const type = obj.sofaModel.type;
+          const parts = obj.sofaModel.parts.map(p => {
+            const base = {
               id: p.id,
               x: p.x,
               y: p.y,
               orientation: p.orientation,
               length: p.getLengthCells(),
-              width: p.width
-            }))
+              width: (p.width != null && !Number.isNaN(Number(p.width))) ? Number(p.width) : SOFA_DEPTH
+            };
+            if (p.lengthRight != null) base.lengthRight = toGridCells(p.lengthRight);
+            if (p.widthRight != null) base.widthRight = (p.widthRight != null && !Number.isNaN(Number(p.widthRight))) ? Number(p.widthRight) : undefined;
+            return base;
+          });
+          payload.metadata = {
+            type,
+            positionAnchor: 'center',
+            parts
           };
+          if (type === 'L' && parts.length >= 2) {
+            payload.metadata.lengthA = parts[0].length;
+            payload.metadata.lengthB = parts[1].length;
+          }
+          if (type === 'P' && parts.length >= 3) {
+            payload.metadata.lengthA = parts[0].length;
+            payload.metadata.lengthB = parts[1].length;
+            payload.metadata.lengthC = parts[2].length;
+            if (parts[1].lengthRight != null) payload.metadata.lengthBRight = parts[1].lengthRight;
+          }
         } else {
           // Fallback - используем существующие метаданные
           payload.metadata = meta.metadata || {};
@@ -4572,17 +4637,32 @@
       } else if (['sofa-straight', 'sofa-corner', 'sofa-double'].includes(meta.shape) && obj.sofaModel) {
         payload.width = obj.getScaledWidth();
         payload.height = obj.getScaledHeight();
+        const model = obj.sofaModel;
         payload.metadata = {
-          type: obj.sofaModel.type,
-          parts: obj.sofaModel.parts.map(p => ({
-            id: p.id,
-            x: p.x + offset,
-            y: p.y + offset,
-            orientation: p.orientation,
-            length: p.getLengthCells(),
-            width: p.width
-          }))
+          type: model.type,
+          parts: model.parts.map(p => {
+            const partPayload = {
+              id: p.id,
+              x: p.x + offset,
+              y: p.y + offset,
+              orientation: p.orientation,
+              length: p.getLengthCells(),
+              width: p.width
+            };
+            if (p.lengthRight != null) partPayload.lengthRight = toGridCells(p.lengthRight);
+            if (p.widthRight != null) partPayload.widthRight = p.widthRight;
+            return partPayload;
+          })
         };
+        if (model.type === 'L' && model.lengthA != null && model.lengthB != null) {
+          payload.metadata.lengthA = toGridCells(model.lengthA);
+          payload.metadata.lengthB = toGridCells(model.lengthB);
+        }
+        if (model.type === 'P' && model.lengthA != null && model.lengthB != null && model.lengthC != null) {
+          payload.metadata.lengthA = toGridCells(model.lengthA);
+          payload.metadata.lengthB = toGridCells(model.lengthB);
+          payload.metadata.lengthC = toGridCells(model.lengthC);
+        }
         if (meta.metadata?.pathData) payload.metadata.pathData = meta.metadata.pathData;
       } else return;
       await postMapElement(payload);
@@ -4645,8 +4725,8 @@
       }
       if (type === 'sofa-corner') {
         const center = canvas.getCenter();
-        const lengthA = 16; // горизонтальная часть (160px)
-        const lengthB = 12; // вертикальная часть (120px)
+        const lengthA = Math.round(16 / 1.6); // горизонтальная часть, уменьшена в 1.6 раза (10)
+        const lengthB = Math.round(12 / 1.6); // вертикальная часть, уменьшена в 1.6 раза (8)
         const sofaModel = createCornerSofa(center.left, center.top, fromGridCells(lengthA), fromGridCells(lengthB));
         const payload = {
           shape: 'sofa-corner',
@@ -4666,10 +4746,10 @@
       }
       if (type === 'sofa-double') {
         const center = canvas.getCenter();
-        const lengthA = 12; // левая часть (120px)
-        const lengthB = 20; // нижняя часть (200px)
-        const lengthC = 12; // правая часть (120px)
-        const sofaModel = createPSofa(center.left, center.top, fromGridCells(lengthA), fromGridCells(lengthB), fromGridCells(lengthC));
+        const lengthA = 12; // левая часть горизонтали (120px)
+        const lengthB = 5; // вертикальные ноги по умолчанию (уменьшены в 3 и в 1.5 раза)
+        const lengthC = 12; // правая часть горизонтали (120px)
+        const sofaModel = createPSofa(center.left, center.top, fromGridCells(lengthA), fromGridCells(lengthB), fromGridCells(lengthB), fromGridCells(lengthC), undefined, undefined, undefined);
         const payload = {
           shape: 'sofa-double',
           x: center.left,
@@ -5174,7 +5254,7 @@
     // reuse global canvasClipboard
     document.addEventListener('keydown', (e) => {
       const meta = e.ctrlKey || e.metaKey;
-      if (meta && e.key.toLowerCase()==='g' && !e.shiftKey) { e.preventDefault(); const sel = canvas.getActiveObjects(); if (sel.length>1){ const g=new fabric.Group(sel); sel.forEach(o=>canvas.remove(o)); canvas.add(g).setActiveObject(g); canvas.requestRenderAll(); } }
+      if (meta && e.key.toLowerCase()==='g' && !e.shiftKey) { e.preventDefault(); const a=canvas.getActiveObject(); const sel=a?(a.type==='activeSelection'&&a.getObjects?a.getObjects():[a]):[]; if (sel.length>1){ const g=new fabric.Group(sel); sel.forEach(o=>canvas.remove(o)); canvas.add(g).setActiveObject(g); canvas.requestRenderAll(); } }
       if (meta && e.key.toLowerCase()==='g' && e.shiftKey) { e.preventDefault(); const obj=canvas.getActiveObject(); if (obj && obj.type==='group'){ const items=obj._objects; obj._restoreObjectsState(); canvas.remove(obj); items.forEach(o=>canvas.add(o)); canvas.discardActiveObject(); canvas.requestRenderAll(); } }
       if (meta && e.key.toLowerCase()==='c') { const obj=canvas.getActiveObject(); if (obj) obj.clone(o=>canvasClipboard=o); }
       if (meta && e.key.toLowerCase()==='v') { if (!canvasClipboard) return; canvasClipboard.clone(clone=>{ canvas.discardActiveObject(); clone.set({ left:(clone.left||0)+20, top:(clone.top||0)+20, evented:true }); if (clone.type==='activeSelection'){ clone.canvas=canvas; clone.forEachObject(o=>canvas.add(o)); clone.setCoords(); } else { canvas.add(clone); } canvas.setActiveObject(clone); canvas.requestRenderAll(); }); }
@@ -5320,13 +5400,18 @@
             // Для L/P пересчитываем pathData из обновлённых parts (для RECT path строится из parts в createSofaFabricObject)
             if (obj.sofaModel.type === 'L') {
               const p0 = obj.sofaModel.parts[0], p1 = obj.sofaModel.parts[1];
-              const rebuilt = createCornerSofa(p0.x, p0.y, p0.length, p1.length);
+              const depthHPx = fromGridCells(p0.width != null ? p0.width : SOFA_DEPTH);
+              const depthVPx = fromGridCells(p1.width != null ? p1.width : SOFA_DEPTH);
+              const rebuilt = createCornerSofa(p0.x, p0.y, p0.length, p1.length, depthHPx, depthVPx);
               obj.sofaModel.pathData = rebuilt.pathData;
               obj.sofaModel.lengthA = p0.getLengthCells();
               obj.sofaModel.lengthB = p1.getLengthCells();
             } else if (obj.sofaModel.type === 'P') {
               const p0 = obj.sofaModel.parts[0], p1 = obj.sofaModel.parts[1], p2 = obj.sofaModel.parts[2];
-              const rebuilt = createPSofa(p0.x, p0.y, p0.length, p1.length, p2.length);
+              const depthHPx = fromGridCells(p0.width != null ? p0.width : SOFA_DEPTH);
+              const depthVLPx = fromGridCells(p1.width != null ? p1.width : SOFA_DEPTH);
+              const depthVRPx = fromGridCells(p1.widthRight != null ? p1.widthRight : p1.width != null ? p1.width : SOFA_DEPTH);
+              const rebuilt = createPSofa(p0.x, p0.y, p0.length, p1.length, p1.lengthRight ?? p1.length, p2.length, depthHPx, depthVLPx, depthVRPx);
               obj.sofaModel.pathData = rebuilt.pathData;
               obj.sofaModel.lengthA = p0.getLengthCells();
               obj.sofaModel.lengthB = p1.getLengthCells();
@@ -5357,36 +5442,46 @@
             // Удаляем временные данные масштабирования
             delete obj._sofaScalingBase;
             
-            // Обновляем метаданные с новыми размерами
-            newGroup.mapTableMeta.metadata = {
-              type: newGroup.sofaModel.type,
-              parts: newGroup.sofaModel.parts.map(p => ({
-                id: p.id,
-                x: p.x,
-                y: p.y,
-                orientation: p.orientation,
-                length: p.getLengthCells(),
-                width: p.width
-              }))
-            };
-            
-            // Сохраняем на сервер
+            const typeNG = newGroup.sofaModel.type;
+            const partsNG = newGroup.sofaModel.parts.map(p => {
+              const base = { id: p.id, x: p.x, y: p.y, orientation: p.orientation, length: p.getLengthCells(), width: p.width };
+              if (p.lengthRight != null) base.lengthRight = toGridCells(p.lengthRight);
+              if (p.widthRight != null) base.widthRight = p.widthRight;
+              return base;
+            });
+            newGroup.mapTableMeta.metadata = { type: typeNG, pathData: newGroup.sofaModel.pathData, parts: partsNG };
+            if (typeNG === 'L' && partsNG.length >= 2) {
+              newGroup.mapTableMeta.metadata.lengthA = partsNG[0].length;
+              newGroup.mapTableMeta.metadata.lengthB = partsNG[1].length;
+            }
+            if (typeNG === 'P' && partsNG.length >= 3) {
+              newGroup.mapTableMeta.metadata.lengthA = partsNG[0].length;
+              newGroup.mapTableMeta.metadata.lengthB = partsNG[1].length;
+              newGroup.mapTableMeta.metadata.lengthC = partsNG[2].length;
+              if (partsNG[1].lengthRight != null) newGroup.mapTableMeta.metadata.lengthBRight = partsNG[1].lengthRight;
+            }
             syncTableUpdate(newGroup).catch(() => {});
             canvas.requestRenderAll();
           } else {
-            // Если не было масштабирования, просто обновляем метаданные
             if (obj.sofaModel && obj.sofaModel.parts) {
-              obj.mapTableMeta.metadata = {
-                type: obj.sofaModel.type,
-                parts: obj.sofaModel.parts.map(p => ({
-                  id: p.id,
-                  x: p.x,
-                  y: p.y,
-                  orientation: p.orientation,
-                  length: p.getLengthCells(),
-                  width: p.width
-                }))
-              };
+              const typeM = obj.sofaModel.type;
+              const partsM = obj.sofaModel.parts.map(p => {
+                const base = { id: p.id, x: p.x, y: p.y, orientation: p.orientation, length: p.getLengthCells(), width: p.width };
+                if (p.lengthRight != null) base.lengthRight = toGridCells(p.lengthRight);
+                if (p.widthRight != null) base.widthRight = p.widthRight;
+                return base;
+              });
+              obj.mapTableMeta.metadata = { type: typeM, pathData: obj.sofaModel.pathData, parts: partsM };
+              if (typeM === 'L' && partsM.length >= 2) {
+                obj.mapTableMeta.metadata.lengthA = partsM[0].length;
+                obj.mapTableMeta.metadata.lengthB = partsM[1].length;
+              }
+              if (typeM === 'P' && partsM.length >= 3) {
+                obj.mapTableMeta.metadata.lengthA = partsM[0].length;
+                obj.mapTableMeta.metadata.lengthB = partsM[1].length;
+                obj.mapTableMeta.metadata.lengthC = partsM[2].length;
+                if (partsM[1].lengthRight != null) obj.mapTableMeta.metadata.lengthBRight = partsM[1].lengthRight;
+              }
             }
             syncTableUpdate(obj).catch(() => {});
           }
@@ -5404,44 +5499,276 @@
     // Дополнительно сохраняем координаты при завершении перемещения дивана
     // Старые переменные для диванов удалены
     canvas.on('object:moving', (event) => {
-      const obj = getMapGroup(event.target);
-      // Старая логика для sofa-double удалена
-      if (obj && obj.mapTableMeta && obj.mapTableMeta.shape === 'wall') {
-        updateWallHandlesPosition(obj);
+      const target = event.target;
+      if (target?.sofaHandleKind && target.sofaTarget) {
+        const handle = target;
+        const s = handle.sofaTarget;
+        if (s?.sofaModel) {
+          const handleIndex = s._sofaHandles?.indexOf(handle);
+          const specs = s.mapTableMeta?.shape === 'sofa-corner' ? getSofaHandleSpecsL(s) : getSofaHandleSpecsP(s);
+          const sp = (handleIndex >= 0 && specs[handleIndex]) ? specs[handleIndex] : handle.sofaSpec;
+          if (sp?.action) {
+            const shape = s.mapTableMeta?.shape;
+            const dim = getSofaPathDimensions(s);
+            let pathW = dim?.pathW, pathH = dim?.pathH;
+            if (shape === 'sofa-corner') {
+              s.setCoords();
+              pathW = (s.width != null ? s.width : pathW) || pathW;
+              pathH = (s.height != null ? s.height : pathH) || pathH;
+            }
+            const cur = pathLocalToCanvas(s, sp.lx, sp.ly, pathW, pathH);
+            const dx = handle.left - cur.x;
+            const dy = handle.top - cur.y;
+            const a = (s.angle || 0) * Math.PI / 180;
+            const cos = Math.cos(a), sin = Math.sin(a);
+            const deltaX = dx * cos + dy * sin;
+            const deltaY = -dx * sin + dy * cos;
+            const delta = sp.dir === 'x' ? deltaX : sp.dir === 'y' ? deltaY : deltaX;
+            const MIN_L = fromGridCells(2);
+            const MAX_L = fromGridCells(50);
+            const MIN_D = fromGridCells(1);
+            const MAX_D = fromGridCells(10);
+            const parts = s.sofaModel.parts;
+            if (shape === 'sofa-corner') {
+              const p0 = parts[0], p1 = parts[1];
+              const curDepthH = fromGridCells(p0.width != null ? p0.width : SOFA_DEPTH);
+              const curDepthV = fromGridCells(p1.width != null ? p1.width : SOFA_DEPTH);
+              if (sp.action !== 'lengthA' && sp.action !== 'lengthB') {
+                s._anchorLeftL = null;
+                s._anchorTopL = null;
+              }
+              if (sp.action === 'bothDepth') {
+                p0.width = toGridCells(Math.max(MIN_D, Math.min(MAX_D, curDepthH + deltaY)));
+                p1.width = toGridCells(Math.max(MIN_D, Math.min(MAX_D, curDepthV + deltaX)));
+                rebuildSofaL(s);
+              } else if (sp.action === 'depthH') {
+                p0.width = toGridCells(Math.max(MIN_D, Math.min(MAX_D, curDepthH + delta)));
+                rebuildSofaL(s);
+              } else if (sp.action === 'depthV') {
+                p1.width = toGridCells(Math.max(MIN_D, Math.min(MAX_D, curDepthV + delta)));
+                rebuildSofaL(s);
+              } else if (sp.action === 'lengthA') {
+                if (!s._anchorLeftL) {
+                  const at = pathLocalToCanvas(s, 0, pathH / 2, pathW, pathH);
+                  s._anchorLeftL = { canvasX: at.x, canvasY: at.y, pathLx: 0, pathLy: pathH / 2 };
+                }
+                p0.length = Math.max(MIN_L, Math.min(MAX_L, p0.length + delta));
+                rebuildSofaL(s, { canvasX: s._anchorLeftL.canvasX, canvasY: s._anchorLeftL.canvasY, pathLx: 0, pathLy: s._anchorLeftL.pathLy });
+              } else if (sp.action === 'lengthB') {
+                if (!s._anchorTopL) {
+                  const at = pathLocalToCanvas(s, pathW / 2, 0, pathW, pathH);
+                  s._anchorTopL = { canvasX: at.x, canvasY: at.y, pathLx: pathW / 2, pathLy: 0 };
+                }
+                p1.length = Math.max(MIN_L, Math.min(MAX_L, p1.length + delta));
+                rebuildSofaL(s, { canvasX: s._anchorTopL.canvasX, canvasY: s._anchorTopL.canvasY, pathLx: s._anchorTopL.pathLx, pathLy: 0 });
+              } else if (sp.action === 'lengthA_depthH_T') {
+                p0.length = Math.max(MIN_L, Math.min(MAX_L, p0.length + deltaX));
+                p0.width = toGridCells(Math.max(MIN_D, Math.min(MAX_D, curDepthH + deltaY)));
+                rebuildSofaL(s);
+              } else if (sp.action === 'lengthA_depthH_B') {
+                p0.length = Math.max(MIN_L, Math.min(MAX_L, p0.length + deltaX));
+                p0.width = toGridCells(Math.max(MIN_D, Math.min(MAX_D, curDepthH - deltaY)));
+                rebuildSofaL(s);
+              } else if (sp.action === 'lengthB_depthV_R') {
+                p1.length = Math.max(MIN_L, Math.min(MAX_L, p1.length + deltaY));
+                p1.width = toGridCells(Math.max(MIN_D, Math.min(MAX_D, curDepthV + deltaX)));
+                rebuildSofaL(s);
+              } else if (sp.action === 'lengthB_depthV_L') {
+                p1.length = Math.max(MIN_L, Math.min(MAX_L, p1.length + deltaY));
+                p1.width = toGridCells(Math.max(MIN_D, Math.min(MAX_D, curDepthV - deltaX)));
+                rebuildSofaL(s);
+              }
+              s.setCoords();
+            } else if (shape === 'sofa-double') {
+              const p0 = parts[0], p1 = parts[1], p2 = parts[2];
+              if (p1.lengthRight == null) p1.lengthRight = p1.length;
+              if (p1.widthRight == null) p1.widthRight = p1.width;
+              if (sp.action !== 'lengthA' && sp.action !== 'lengthC') {
+                s._anchorRight = null;
+                s._anchorLeft = null;
+              }
+              if (sp.action !== 'lengthB_left' && sp.action !== 'lengthB_right') {
+                s._anchorTopLeftP = null;
+                s._savedDepthHForVertical = null;
+              }
+              let anchorTopLeftP = null;
+              const k = 0.85;
+              if (sp.action === 'lengthA') {
+                // Тянем левый край → правый стоит. Якорь = правая точка path.
+                const depthH = fromGridCells(p0.width != null ? p0.width : SOFA_DEPTH);
+                const topBarY = depthH / 2;
+                s.setCoords();
+                const pathW0 = p0.length + p2.length;
+                if (!s._anchorRight) s._anchorRight = pathLocalToCanvas(s, pathW0 - 4, topBarY, pathW0, dim?.pathH);
+                const ax = s._anchorRight.x, ay = s._anchorRight.y;
+                const rad = (s.angle || 0) * Math.PI / 180;
+                const cos = Math.cos(rad), sin = Math.sin(rad);
+                const dist = (ax - handle.left) * cos + (ay - handle.top) * sin;
+                const newTotalW = Math.max(MIN_L * 2, Math.min(MAX_L * 2, Math.abs(dist) + 8));
+                p0.length = Math.max(MIN_L, Math.min(MAX_L, newTotalW - p2.length));
+                rebuildSofaP(s);
+                const pathW = p0.length + p2.length;
+                s.set({
+                  left: ax - (pathW - 4) * cos + topBarY * sin,
+                  top: ay - (pathW - 4) * sin - topBarY * cos
+                });
+                s.setCoords();
+              } else if (sp.action === 'lengthC') {
+                // Тянем правый край → левый стоит (origin=left), path не двигаем.
+                const depthH = fromGridCells(p0.width != null ? p0.width : SOFA_DEPTH);
+                const topBarY = depthH / 2;
+                s.setCoords();
+                const pathW0 = p0.length + p2.length;
+                const anchorLeft = pathLocalToCanvas(s, 4, topBarY, pathW0, dim?.pathH);
+                const rad = (s.angle || 0) * Math.PI / 180;
+                const cos = Math.cos(rad), sin = Math.sin(rad);
+                const dist = (handle.left - anchorLeft.x) * cos + (handle.top - anchorLeft.y) * sin;
+                const newTotalW = Math.max(MIN_L * 2, Math.min(MAX_L * 2, Math.abs(dist) + 8));
+                p2.length = Math.max(MIN_L, Math.min(MAX_L, newTotalW - p0.length));
+                rebuildSofaP(s);
+                s.setCoords();
+              } else if (sp.action === 'lengthB_left') {
+                s.setCoords();
+                if (!s._anchorTopLeftP) {
+                  s._anchorTopLeftP = pathLocalToCanvas(s, 0, 0, dim?.pathW, dim?.pathH);
+                  s._savedDepthHForVertical = p0.width != null ? p0.width : (p2.width != null ? p2.width : undefined);
+                }
+                anchorTopLeftP = s._anchorTopLeftP;
+                const savedLengthA = p0.length, savedLengthC = p2.length;
+                p1.length = Math.max(MIN_L, Math.min(MAX_L, p1.length + delta));
+                p0.length = savedLengthA;
+                p2.length = savedLengthC;
+                if (s._savedDepthHForVertical != null) { p0.width = s._savedDepthHForVertical; p2.width = s._savedDepthHForVertical; }
+                rebuildSofaP(s, anchorTopLeftP, s._savedDepthHForVertical ?? undefined);
+              } else if (sp.action === 'lengthB_right') {
+                s.setCoords();
+                if (!s._anchorTopLeftP) {
+                  s._anchorTopLeftP = pathLocalToCanvas(s, 0, 0, dim?.pathW, dim?.pathH);
+                  s._savedDepthHForVertical = p0.width != null ? p0.width : (p2.width != null ? p2.width : undefined);
+                }
+                anchorTopLeftP = s._anchorTopLeftP;
+                const savedLengthA = p0.length, savedLengthC = p2.length;
+                const cur = p1.lengthRight != null ? p1.lengthRight : p1.length;
+                p1.lengthRight = Math.max(MIN_L, Math.min(MAX_L, cur + delta));
+                p0.length = savedLengthA;
+                p2.length = savedLengthC;
+                if (s._savedDepthHForVertical != null) { p0.width = s._savedDepthHForVertical; p2.width = s._savedDepthHForVertical; }
+                rebuildSofaP(s, anchorTopLeftP, s._savedDepthHForVertical ?? undefined);
+              } else if (sp.action === 'depthH') {
+                const curDepth = fromGridCells(p0.width != null ? p0.width : SOFA_DEPTH);
+                const newDepth = toGridCells(Math.max(MIN_D, Math.min(MAX_D, curDepth + delta)));
+                p0.width = p2.width = newDepth;
+              } else if (sp.action === 'depthVL') {
+                const curDepth = fromGridCells(p1.width != null ? p1.width : SOFA_DEPTH);
+                const newPx = Math.max(MIN_D, Math.min(MAX_D, curDepth + delta));
+                p1.width = newPx / (GRID_STEP || 10);
+              } else if (sp.action === 'depthVR') {
+                const curDepth = fromGridCells(p1.widthRight != null ? p1.widthRight : p1.width != null ? p1.width : SOFA_DEPTH);
+                const newPx = Math.max(MIN_D, Math.min(MAX_D, curDepth - delta));
+                p1.widthRight = newPx / (GRID_STEP || 10);
+              }
+              if (sp.action !== 'lengthA' && sp.action !== 'lengthC' && sp.action !== 'lengthB_left' && sp.action !== 'lengthB_right') {
+                rebuildSofaP(s);
+              }
+              s.setCoords();
+            }
+            s.mapTableMeta.metadata = {
+              type: s.sofaModel.type,
+              pathData: s.sofaModel.pathData,
+              parts: s.sofaModel.parts.map(p => {
+                const base = {
+                  id: p.id,
+                  x: p.x,
+                  y: p.y,
+                  orientation: p.orientation,
+                  length: p.getLengthCells(),
+                  width: (p.width != null && !Number.isNaN(Number(p.width))) ? Number(p.width) : SOFA_DEPTH
+                };
+                if (p.lengthRight != null) base.lengthRight = toGridCells(p.lengthRight);
+                if (p.widthRight != null) base.widthRight = (p.widthRight != null && !Number.isNaN(Number(p.widthRight))) ? Number(p.widthRight) : undefined;
+                return base;
+              })
+            };
+            const skipRight = (shape === 'sofa-double' && sp.action === 'lengthA');
+            const skipLeft = (shape === 'sofa-double' && sp.action === 'lengthC');
+            const skipForPHorizontal = (shape === 'sofa-double' && (sp.action === 'lengthA' || sp.action === 'lengthC'))
+              ? (sp.action === 'lengthA' ? [0, 1, 3, 5] : [0, 1, 2, 4])
+              : (skipRight ? [1, 3, 5] : skipLeft ? [0, 2, 4] : null);
+            updateSofaHandlePositions(s, handle, skipForPHorizontal);
+            s._sofaHandles?.forEach(h => h.bringToFront && h.bringToFront());
+          }
+        }
+      } else {
+        const obj = getMapGroup(target) || target;
+        if (obj?.mapTableMeta?.shape === 'wall') {
+          updateWallHandlesPosition(obj);
+        }
+        if (obj?.mapTableMeta && (obj.mapTableMeta.shape === 'sofa-corner' || obj.mapTableMeta.shape === 'sofa-double')) {
+          updateSofaHandlePositions(obj);
+          syncSofaPartsFromPath(obj);
+        }
       }
+      canvas.requestRenderAll();
+    });
+
+    canvas.on('object:rotating', (event) => {
+      const obj = getMapGroup(event.target) || event.target;
+      if (obj?.mapTableMeta?.shape === 'sofa-corner' || obj?.mapTableMeta?.shape === 'sofa-double') {
+        updateSofaHandlePositions(obj);
+        syncSofaPartsFromPath(obj);
+      }
+      canvas.requestRenderAll();
     });
 
     canvas.on('mouse:up', () => {
-      // Сохраняем позиции диванов после перемещения
       const activeObject = canvas.getActiveObject();
-      if (activeObject && activeObject.mapTableMeta) {
-        const shape = activeObject.mapTableMeta.shape;
+      const sofaToSave = activeSofa || (activeObject?.mapTableMeta?.shape === 'sofa-straight' || activeObject?.mapTableMeta?.shape === 'sofa-corner' || activeObject?.mapTableMeta?.shape === 'sofa-double' ? activeObject : null);
+      if (activeSofa) {
+        activeSofa._anchorRight = null;
+        activeSofa._anchorLeft = null;
+        activeSofa._anchorTopLeftP = null;
+        activeSofa._savedDepthHForVertical = null;
+        activeSofa._anchorLeftL = null;
+        activeSofa._anchorTopL = null;
+        updateSofaHandlePositions(activeSofa);
+      }
+      // Сохраняем позиции и размеры диванов после перемещения или ресайза ручками
+      if (sofaToSave && sofaToSave.mapTableMeta) {
+        const shape = sofaToSave.mapTableMeta.shape;
         if (shape === 'sofa-straight' || shape === 'sofa-corner' || shape === 'sofa-double') {
-          // Обновляем координаты частей на основе новой позиции группы
-          if (activeObject.sofaModel && activeObject.sofaModel.parts) {
-            const groupLeft = activeObject.left;
-            const groupTop = activeObject.top;
-            const groupAngle = activeObject.angle || 0;
-            
-            // Обновляем координаты частей относительно новой позиции группы
-            // (пока оставляем как есть, так как части уже в локальных координатах группы)
-            
-            // Обновляем метаданные
-            activeObject.mapTableMeta.metadata = {
-              type: activeObject.sofaModel.type,
-              parts: activeObject.sofaModel.parts.map(p => ({
+          if (sofaToSave.sofaModel && sofaToSave.sofaModel.parts) {
+            // Обновляем метаданные (включая pathData, размеры, позицию)
+            const type = sofaToSave.sofaModel.type;
+            const parts = sofaToSave.sofaModel.parts.map(p => {
+              const base = {
                 id: p.id,
                 x: p.x,
                 y: p.y,
                 orientation: p.orientation,
                 length: p.getLengthCells(),
-                width: p.width
-              }))
+                width: (p.width != null && !Number.isNaN(Number(p.width))) ? Number(p.width) : SOFA_DEPTH
+              };
+              if (p.lengthRight != null) base.lengthRight = toGridCells(p.lengthRight);
+              if (p.widthRight != null) base.widthRight = (p.widthRight != null && !Number.isNaN(Number(p.widthRight))) ? Number(p.widthRight) : undefined;
+              return base;
+            });
+            sofaToSave.mapTableMeta.metadata = {
+              type,
+              pathData: sofaToSave.sofaModel.pathData,
+              parts
             };
+            if (type === 'L' && parts.length >= 2) {
+              sofaToSave.mapTableMeta.metadata.lengthA = parts[0].length;
+              sofaToSave.mapTableMeta.metadata.lengthB = parts[1].length;
+            }
+            if (type === 'P' && parts.length >= 3) {
+              sofaToSave.mapTableMeta.metadata.lengthA = parts[0].length;
+              sofaToSave.mapTableMeta.metadata.lengthB = parts[1].length;
+              sofaToSave.mapTableMeta.metadata.lengthC = parts[2].length;
+              if (parts[1].lengthRight != null) sofaToSave.mapTableMeta.metadata.lengthBRight = parts[1].lengthRight;
+            }
           }
-          
-          // Сохраняем на сервер
-          syncTableUpdate(activeObject).catch(() => {});
+          syncTableUpdate(sofaToSave).catch(() => {});
         }
       }
     });
@@ -5567,24 +5894,304 @@
       canvas.requestRenderAll();
     };
 
+    let activeSofa = null;
+
+    const hideSofaHandles = (sofa) => {
+      if (!sofa?._sofaHandles) return;
+      sofa._sofaHandles.forEach(h => canvas.remove(h));
+      sofa._sofaHandles = null;
+      if (activeSofa === sofa) activeSofa = null;
+    };
+
+    const pathLocalToCanvas = (path, px, py, pathW, pathH) => {
+      path.setCoords();
+      const a = (path.angle || 0) * Math.PI / 180;
+      const cos = Math.cos(a), sin = Math.sin(a);
+      const left = path.left ?? 0;
+      const top = path.top ?? 0;
+      const origX = path.originX || 'left';
+      const origY = path.originY || 'top';
+      // Для L/P диванов используем pathW/pathH (геометрия path), т.к. Fabric bbox может отличаться
+      const w = (pathW != null ? pathW : path.width) ?? 1;
+      const h = (pathH != null ? pathH : path.height) ?? 1;
+      let dx = 0, dy = 0;
+      if (origX === 'center') dx = -w / 2;
+      else if (origX === 'right') dx = -w;
+      if (origY === 'center') dy = -h / 2;
+      else if (origY === 'bottom') dy = -h;
+      const localX = px + dx;
+      const localY = py + dy;
+      return {
+        x: left + localX * cos - localY * sin,
+        y: top + localX * sin + localY * cos
+      };
+    };
+
+    const parsePathToPoints = (pathData) => {
+      const pts = [];
+      let x = 0, y = 0;
+      const re = /([MLHVCSQTAZ])\s*([-\d.]*(?:\s+[-\d.]*)*)/gi;
+      let m;
+      while ((m = re.exec(pathData)) !== null) {
+        const cmd = m[1].toUpperCase();
+        const nums = (m[2] || '').trim().split(/[\s,]+/).filter(Boolean).map(Number);
+        if (cmd === 'M') { x = nums[0]; y = nums[1]; pts.push({ x, y }); }
+        else if (cmd === 'L') { for (let i = 0; i < nums.length; i += 2) { x = nums[i]; y = nums[i + 1]; pts.push({ x, y }); } }
+        else if (cmd === 'H') { for (const n of nums) { x = n; pts.push({ x, y }); } }
+        else if (cmd === 'V') { for (const n of nums) { y = n; pts.push({ x, y }); } }
+        else if (cmd === 'C') { for (let i = 0; i < nums.length; i += 6) { x = nums[i + 4]; y = nums[i + 5]; pts.push({ x, y }); } }
+      }
+      return pts;
+    };
+
+    const getSofaHandleSpecsL = (sofa) => {
+      const p0 = sofa.sofaModel?.parts?.[0], p1 = sofa.sofaModel?.parts?.[1];
+      if (!p0 || !p1) return [];
+      const lengthA = p0.length;
+      const lengthB = p1.length;
+      const depthH = fromGridCells(p0.width != null ? p0.width : SOFA_DEPTH);
+      const depthV = fromGridCells(p1.width != null ? p1.width : SOFA_DEPTH);
+      return [
+        { lx: lengthA / 2, ly: 0, action: 'depthH', dir: 'y', cursor: 'ns-resize' },
+        { lx: lengthA / 2, ly: depthH, action: 'depthH', dir: 'y', cursor: 'ns-resize' },
+        { lx: lengthA, ly: depthH / 2, action: 'lengthA', dir: 'x', cursor: 'ew-resize' },
+        { lx: depthV, ly: (depthH + lengthB) / 2, action: 'depthV', dir: 'x', cursor: 'ew-resize' },
+        { lx: 0, ly: (depthH + lengthB) / 2, action: 'depthV', dir: 'x', cursor: 'ew-resize' },
+        { lx: depthV / 2, ly: lengthB, action: 'lengthB', dir: 'y', cursor: 'ns-resize' }
+      ];
+    };
+
+    const getSofaHandleSpecsP = (sofa) => {
+      const parts = sofa.sofaModel?.parts;
+      if (!parts || parts.length < 3) return [];
+      const lengthA = parts[0].length;
+      const lengthBLeft = parts[1].length;
+      const lengthBRight = parts[1].lengthRight != null ? parts[1].lengthRight : parts[1].length;
+      const lengthC = parts[2].length;
+      const totalW = lengthA + lengthC;
+      const depthH = fromGridCells(parts[0].width != null ? parts[0].width : SOFA_DEPTH);
+      const depthVL = fromGridCells(parts[1].width != null ? parts[1].width : SOFA_DEPTH);
+      const depthVR = fromGridCells(parts[1].widthRight != null ? parts[1].widthRight : parts[1].width != null ? parts[1].width : SOFA_DEPTH);
+      const topBarY = depthH / 2;
+      const pathHLeft = depthH + lengthBLeft;
+      const pathHRight = depthH + lengthBRight;
+      const vertMidYLeft = depthH + lengthBLeft / 2;
+      const vertMidYRight = depthH + lengthBRight / 2;
+      return [
+        { lx: 4, ly: topBarY, action: 'lengthA', dir: 'x', cursor: 'ew-resize' },
+        { lx: totalW - 4, ly: topBarY, action: 'lengthC', dir: 'x', cursor: 'ew-resize' },
+        { lx: depthVL / 2, ly: pathHLeft - 2, action: 'lengthB_left', dir: 'y', cursor: 'ns-resize' },
+        { lx: totalW - depthVR / 2, ly: pathHRight - 2, action: 'lengthB_right', dir: 'y', cursor: 'ns-resize' },
+        { lx: depthVL, ly: vertMidYLeft, action: 'depthVL', dir: 'x', cursor: 'ew-resize' },
+        { lx: totalW - depthVR, ly: vertMidYRight, action: 'depthVR', dir: 'x', cursor: 'ew-resize' },
+        { lx: totalW / 2, ly: depthH - 2, action: 'depthH', dir: 'y', cursor: 'ns-resize' }
+      ];
+    };
+
+    const rebuildSofaL = (sofa, keepAt) => {
+      const p0 = sofa.sofaModel.parts[0], p1 = sofa.sofaModel.parts[1];
+      const depthHPx = fromGridCells(p0.width != null ? p0.width : SOFA_DEPTH);
+      const depthVPx = fromGridCells(p1.width != null ? p1.width : SOFA_DEPTH);
+      const rebuilt = createCornerSofa(p0.x, p0.y, p0.length, p1.length, depthHPx, depthVPx);
+      sofa.sofaModel.pathData = rebuilt.pathData;
+      const pathFromString = (fabric.util && fabric.util.parsePathD) ? fabric.util.parsePathD(rebuilt.pathData) : null;
+      const pathData = pathFromString || (function() { const t = new fabric.Path(rebuilt.pathData); return JSON.parse(JSON.stringify(t.path)); })();
+      sofa.set({ path: pathData, dirty: true });
+      sofa.setCoords();
+      if (keepAt) {
+        const pathW = (sofa.width != null ? sofa.width : p0.length) || p0.length;
+        const pathH = (sofa.height != null ? sofa.height : p1.length) || p1.length;
+        const a = (sofa.angle || 0) * Math.PI / 180;
+        const cos = Math.cos(a), sin = Math.sin(a);
+        const dx = -pathW / 2, dy = -pathH / 2;
+        const localX = keepAt.pathLx + dx, localY = keepAt.pathLy + dy;
+        const newLeft = keepAt.canvasX - (localX * cos - localY * sin);
+        const newTop = keepAt.canvasY - (localX * sin + localY * cos);
+        sofa.set({ left: newLeft, top: newTop });
+        sofa.setCoords();
+      }
+    };
+
+    const rebuildSofaP = (sofa, keepTopLeftAt, forcedDepthHGrid) => {
+      const p0 = sofa.sofaModel.parts[0], p1 = sofa.sofaModel.parts[1], p2 = sofa.sofaModel.parts[2];
+      const lengthBRight = p1.lengthRight != null ? p1.lengthRight : p1.length;
+      const depthHPx = forcedDepthHGrid != null
+        ? fromGridCells(forcedDepthHGrid)
+        : fromGridCells(p0.width != null ? p0.width : SOFA_DEPTH);
+      const depthVLPx = fromGridCells(p1.width != null ? p1.width : SOFA_DEPTH);
+      const depthVRPx = fromGridCells(p1.widthRight != null ? p1.widthRight : p1.width != null ? p1.width : SOFA_DEPTH);
+      const rebuilt = createPSofa(p0.x, p0.y, p0.length, p1.length, lengthBRight, p2.length, depthHPx, depthVLPx, depthVRPx);
+      sofa.sofaModel.pathData = rebuilt.pathData;
+      const pathFromString = (fabric.util && fabric.util.parsePathD) ? fabric.util.parsePathD(rebuilt.pathData) : null;
+      const pathData = pathFromString || (function() { const t = new fabric.Path(rebuilt.pathData); return JSON.parse(JSON.stringify(t.path)); })();
+      sofa.set({ path: pathData, dirty: true });
+      sofa.setCoords();
+      if (keepTopLeftAt) {
+        const pathW = p0.length + p2.length;
+        const pathH = depthHPx + Math.max(p1.length, lengthBRight);
+        const nowAt = pathLocalToCanvas(sofa, 0, 0, pathW, pathH);
+        const dx = keepTopLeftAt.x - nowAt.x, dy = keepTopLeftAt.y - nowAt.y;
+        sofa.set({ left: (sofa.left ?? 0) + dx, top: (sofa.top ?? 0) + dy });
+        sofa.setCoords();
+      }
+    };
+
+    const getSofaPathDimensions = (sofa) => {
+      const shape = sofa.mapTableMeta?.shape;
+      if (shape === 'sofa-corner') {
+        const p0 = sofa.sofaModel?.parts?.[0], p1 = sofa.sofaModel?.parts?.[1];
+        return p0 && p1 ? { pathW: p0.length, pathH: p1.length } : null;
+      }
+      if (shape === 'sofa-double') {
+        const parts = sofa.sofaModel?.parts;
+        if (!parts || parts.length < 3) return null;
+        const lengthA = parts[0].length;
+        const lengthBLeft = parts[1].length;
+        const lengthBRight = parts[1].lengthRight != null ? parts[1].lengthRight : parts[1].length;
+        const lengthC = parts[2].length;
+        const depthH = fromGridCells(parts[0].width != null ? parts[0].width : SOFA_DEPTH);
+        return { pathW: lengthA + lengthC, pathH: depthH + Math.max(lengthBLeft, lengthBRight) };
+      }
+      return null;
+    };
+
+    const syncSofaPartsFromPath = (sofa) => {
+      if (!sofa?.sofaModel?.parts) return;
+      const dim = getSofaPathDimensions(sofa);
+      if (!dim) return;
+      const { pathW, pathH } = dim;
+      const a = (sofa.angle || 0) * Math.PI / 180;
+      const cos = Math.cos(a), sin = Math.sin(a);
+      let innerX, innerY;
+      if (sofa.mapTableMeta?.shape === 'sofa-double' && sofa.originX === 'left') {
+        const left = sofa.left ?? 0, top = sofa.top ?? 0;
+        innerX = left;
+        innerY = top;
+      } else if (sofa.mapTableMeta?.shape === 'sofa-double' && sofa.originX === 'right') {
+        const left = sofa.left ?? 0, top = sofa.top ?? 0;
+        innerX = left - pathW * cos;
+        innerY = top - pathW * sin;
+      } else if (sofa.mapTableMeta?.shape === 'sofa-double' && sofa.originY === 'top') {
+        const left = sofa.left ?? 0, top = sofa.top ?? 0;
+        innerX = left - (pathW / 2) * cos;
+        innerY = top - (pathW / 2) * sin;
+      } else if (sofa.originX === 'center') {
+        const centerX = sofa.left ?? 0;
+        const centerY = sofa.top ?? 0;
+        innerX = centerX - (pathW / 2) * cos + (pathH / 2) * sin;
+        innerY = centerY - (pathW / 2) * sin - (pathH / 2) * cos;
+      } else return;
+      sofa.sofaModel.parts.forEach(p => { p.x = innerX; p.y = innerY; });
+    };
+
+    const updateSofaHandlePositions = (sofa, skipHandle, skipIndices) => {
+      if (!sofa?._sofaHandles) return;
+      sofa.setCoords();
+      const shape = sofa.mapTableMeta?.shape;
+      const specs = shape === 'sofa-corner' ? getSofaHandleSpecsL(sofa) : getSofaHandleSpecsP(sofa);
+      const dim = getSofaPathDimensions(sofa);
+      let pathW = dim?.pathW, pathH = dim?.pathH;
+      if (shape === 'sofa-corner') {
+        pathW = (sofa.width != null ? sofa.width : pathW) || pathW;
+        pathH = (sofa.height != null ? sofa.height : pathH) || pathH;
+      }
+      const skipSet = skipIndices ? new Set(skipIndices) : null;
+      sofa._sofaHandles.forEach((h, i) => {
+        if (h === skipHandle || (skipSet && skipSet.has(i))) return;
+        if (specs[i]) {
+          const pt = pathLocalToCanvas(sofa, specs[i].lx, specs[i].ly, pathW, pathH);
+          h.set({ left: pt.x, top: pt.y });
+          h.setCoords();
+        }
+      });
+    };
+
+    const showSofaHandles = (sofa) => {
+      if (!sofa || !sofa.sofaModel) return;
+      const shape = sofa.mapTableMeta?.shape;
+      if (shape !== 'sofa-corner' && shape !== 'sofa-double') return;
+      if (activeSofa && activeSofa !== sofa) hideSofaHandles(activeSofa);
+      hideSofaHandles(sofa);
+      const specs = shape === 'sofa-corner' ? getSofaHandleSpecsL(sofa) : getSofaHandleSpecsP(sofa);
+      const dim = getSofaPathDimensions(sofa);
+      let pathW = dim?.pathW, pathH = dim?.pathH;
+      if (shape === 'sofa-corner') {
+        pathW = (sofa.width != null ? sofa.width : pathW) || pathW;
+        pathH = (sofa.height != null ? sofa.height : pathH) || pathH;
+      }
+      const handles = specs.map((spec) => {
+        const pt = pathLocalToCanvas(sofa, spec.lx, spec.ly, pathW, pathH);
+        const h = new fabric.Rect({
+          left: pt.x,
+          top: pt.y,
+          width: 10,
+          height: 10,
+          fill: 'transparent',
+          stroke: 'rgb(178,204,255)',
+          strokeWidth: 1,
+          originX: 'center',
+          originY: 'center',
+          hasBorders: false,
+          hasControls: false,
+          lockScalingX: true,
+          lockScalingY: true,
+          lockRotation: true,
+          lockMovementX: false,
+          lockMovementY: false,
+          selectable: true,
+          evented: true,
+          hoverCursor: (spec.cursor || 'ns-resize')
+        });
+        h.sofaHandleKind = true;
+        h.sofaTarget = sofa;
+        h.sofaSpec = spec;
+        h.on('modified', () => {
+          if (h.sofaTarget) syncTableUpdate(h.sofaTarget).catch(() => {});
+        });
+        canvas.add(h);
+        return h;
+      });
+      sofa._sofaHandles = handles;
+      handles.forEach(h => h.bringToFront());
+      activeSofa = sofa;
+      canvas.requestRenderAll();
+    };
+
+    const updateSofaSelectionStroke = (selectedObjs) => {
+      const selectedSet = new Set(selectedObjs || []);
+      canvas.getObjects().forEach(o => {
+        const shape = o.mapTableMeta?.shape;
+        if (shape !== 'sofa-straight' && shape !== 'sofa-corner' && shape !== 'sofa-double') return;
+        if (selectedSet.has(o)) {
+          o.set({ stroke: SOFA_SELECTION_STROKE, strokeWidth: 3 });
+        } else {
+          o.set({ stroke: 'none', strokeWidth: 0 });
+        }
+      });
+      canvas.requestRenderAll();
+    };
+
     canvas.on('selection:created', (e) => {
       const primary = e.selected && e.selected[0];
       if (primary?.sofaHandleKind || primary?.sofaCornerHandleKind || primary?.wallHandle) {
         return;
       }
-      // Для стен используем сам объект, так как стена не является группой
       const obj = primary?.mapTableMeta ? primary : getMapGroup(primary);
       if (obj && obj.mapTableMeta) {
         if (obj.mapTableMeta.shape === 'wall') {
           showWallHandles(obj);
+        } else if (obj.mapTableMeta.shape === 'sofa-corner' || obj.mapTableMeta.shape === 'sofa-double') {
+          if (activeWall) hideWallHandles(activeWall);
+          showSofaHandles(obj);
         } else {
-          if (activeWall) {
-            hideWallHandles(activeWall);
-          }
+          if (activeWall) hideWallHandles(activeWall);
+          if (activeSofa) hideSofaHandles(activeSofa);
         }
       } else {
         if (activeWall) hideWallHandles(activeWall);
+        if (activeSofa) hideSofaHandles(activeSofa);
       }
+      updateSofaSelectionStroke(e.selected || []);
       updateDeleteButtonVisibility();
       updateCopyButtonVisibility();
     });
@@ -5594,25 +6201,30 @@
       if (primary?.sofaHandleKind || primary?.sofaCornerHandleKind || primary?.wallHandle) {
         return;
       }
-      // Для стен используем сам объект, так как стена не является группой
       const obj = primary?.mapTableMeta ? primary : getMapGroup(primary);
       if (obj && obj.mapTableMeta) {
         if (obj.mapTableMeta.shape === 'wall') {
           showWallHandles(obj);
+        } else if (obj.mapTableMeta.shape === 'sofa-corner' || obj.mapTableMeta.shape === 'sofa-double') {
+          if (activeWall) hideWallHandles(activeWall);
+          showSofaHandles(obj);
         } else {
-          if (activeWall) {
-            hideWallHandles(activeWall);
-          }
+          if (activeWall) hideWallHandles(activeWall);
+          if (activeSofa) hideSofaHandles(activeSofa);
         }
       } else {
         if (activeWall) hideWallHandles(activeWall);
+        if (activeSofa) hideSofaHandles(activeSofa);
       }
+      updateSofaSelectionStroke(e.selected || []);
       updateDeleteButtonVisibility();
       updateCopyButtonVisibility();
     });
 
     canvas.on('selection:cleared', () => {
       if (activeWall) hideWallHandles(activeWall);
+      if (activeSofa) hideSofaHandles(activeSofa);
+      updateSofaSelectionStroke([]);
       updateDeleteButtonVisibility();
       updateCopyButtonVisibility();
     });
@@ -7109,6 +7721,7 @@
       // Модальное окно есть на странице - открываем его
       console.log('Открываем модальное окно на странице');
       modal.style.display = 'flex';
+      document.body.style.overflow = 'hidden';
       
       // Заполняем дату и время в форме
       setTimeout(() => {
@@ -7283,6 +7896,7 @@
     const modal = document.getElementById('newBookingModal');
     if (!modal) return;
     modal.style.display = 'flex';
+    document.body.style.overflow = 'hidden';
     if (typeof closeAllDropdowns === 'function') closeAllDropdowns();
     modal.dataset.bookingId = bookingId;
     const title = modal.querySelector('.new-booking-title');
@@ -7304,6 +7918,7 @@
           const modal = document.getElementById('newBookingModal');
           if (modal) {
             modal.style.display = 'flex';
+            document.body.style.overflow = 'hidden';
             
             // Обновляем заголовок
             const title = modal.querySelector('.new-booking-title');
@@ -7995,6 +8610,7 @@
       const modal = document.getElementById('newBookingModal');
       if (modal) {
         modal.style.display = 'flex';
+        document.body.style.overflow = 'hidden';
         if (typeof window.populateTableNumberSelect === 'function') {
           window.populateTableNumberSelect();
         }
@@ -8007,6 +8623,7 @@
       const modal = document.getElementById('newBookingModal');
       if (modal) {
         modal.style.display = 'none';
+        document.body.style.overflow = '';
         // Обновляем список резерваций после закрытия
         if (currentMode === 'view') {
           setTimeout(() => {
