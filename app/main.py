@@ -94,12 +94,14 @@ async def check_expired_businesses_task():
         # Для продакшена изменить на 3600 (1 час) или 1800 (30 минут)
         await asyncio.sleep(300)  # 5 минут = 300 секунд
 
+
 # Запускаем фоновую задачу при старте приложения
 @app.on_event("startup")
 async def startup_event():
     """Запуск фоновых задач при старте приложения"""
     print("[STARTUP] Pokretanje sistema provere isteka rokova...")
     asyncio.create_task(check_expired_businesses_task())
+    # Автообновление рейтинга Google Maps временно отключено
     print("[STARTUP] Sistem provere isteka rokova je pokrenut")
     create_db_and_tables()
 
@@ -214,12 +216,27 @@ def check_subscription_in_api(request: Request, session: Session) -> Optional[JS
     
     return None
 
+def _resolve_short_google_maps_url(url: str) -> str:
+    """Разворачивает короткую ссылку (maps.app.goo.gl / goo.gl) в финальный URL через редирект."""
+    if not url or ("goo.gl" not in url and "maps.app.goo.gl" not in url):
+        return url or ""
+    try:
+        import httpx
+        with httpx.Client(follow_redirects=True, timeout=10.0) as client:
+            r = client.get(url.strip())
+            if r.status_code == 200 and r.url:
+                return str(r.url)
+    except Exception as e:
+        print(f"Не удалось развернуть короткую ссылку: {e}")
+    return url
+
+
 def extract_google_maps_data(url: str) -> dict:
     """
     Извлекает данные из разных форматов Google Maps URL:
     - Embed URL (iframe src)
-    - Короткие ссылки (maps.app.goo.gl)
-    - Стандартные ссылки (maps.google.com)
+    - Короткие ссылки (maps.app.goo.gl) — сначала разворачиваются по редиректу
+    - Стандартные ссылки (maps.google.com, google.com/maps)
     - Прямые координаты (lat, lng)
     
     Возвращает словарь с координатами, place_id, и другими данными
@@ -238,7 +255,15 @@ def extract_google_maps_data(url: str) -> dict:
     if not url:
         return result
     
+    url = url.strip()
+    
     try:
+        # Короткие ссылки — сначала разворачиваем, потом парсим финальный URL
+        if "goo.gl" in url or "maps.app.goo.gl" in url:
+            resolved = _resolve_short_google_maps_url(url)
+            if resolved and resolved != url:
+                url = resolved
+            # если не удалось развернуть, парсим как есть (standard_url останется исходная ссылка)
         # Проверяем, является ли ввод просто координатами (формат: "lat, lng" или "lat,lng")
         coord_pattern = r'^\s*(-?\d+\.?\d*)\s*[,;]\s*(-?\d+\.?\d*)\s*$'
         coord_match = re.match(coord_pattern, url.strip())
@@ -280,32 +305,32 @@ def extract_google_maps_data(url: str) -> dict:
             if name_match:
                 result["name"] = unquote(name_match.group(1))
         
-        # 2. Обработка коротких ссылок (maps.app.goo.gl)
-        elif "goo.gl" in url or "maps.app.goo.gl" in url:
-            # Для коротких ссылок нужно развернуть их, но мы можем вернуть оригинальный URL
+        # 2. Короткие ссылки уже развёрнуты выше в url
+        # 3. Обработка стандартных ссылок google.com/maps и maps.google.com (в т.ч. развёрнутые goo.gl)
+        if "google.com/maps" in url or "maps.google.com" in url:
             result["standard_url"] = url
-        
-        # 3. Обработка стандартных ссылок maps.google.com
-        elif "maps.google.com" in url:
             parsed = urlparse(url)
             params = parse_qs(parsed.query)
             
-            # Проверяем параметр cid
             if "cid" in params:
                 result["cid"] = params["cid"][0]
-                result["standard_url"] = url
-            
-            # Проверяем параметр place_id
             if "place_id" in params:
                 result["place_id"] = params["place_id"][0]
-                result["standard_url"] = url
             
-            # Извлекаем координаты из пути или параметров
-            coord_match = re.search(r'@(-?\d+\.\d+),(-?\d+\.\d+)', url)
+            # Координаты из пути: /place/.../@44.123,20.456,17z или @44.123,20.456
+            coord_match = re.search(r'@(-?\d+\.?\d*),(-?\d+\.?\d*)', url)
             if coord_match:
-                lat = float(coord_match.group(2))
-                lng = float(coord_match.group(1))
-                result["coordinates"] = (lat, lng)
+                try:
+                    lat = float(coord_match.group(2))
+                    lng = float(coord_match.group(1))
+                    if -90 <= lat <= 90 and -180 <= lng <= 180:
+                        result["coordinates"] = (lat, lng)
+                except ValueError:
+                    pass
+            # Название места из пути: /place/Place+Name/ или /place/Place%20Name/
+            place_path = re.search(r'/place/([^/@]+)', url)
+            if place_path and not result["name"]:
+                result["name"] = unquote(place_path.group(1).replace('+', ' ')).strip() or None
         
         # Если не удалось определить формат, просто сохраняем URL как стандартный
         if not result["standard_url"]:
@@ -315,6 +340,304 @@ def extract_google_maps_data(url: str) -> dict:
         print(f"Ошибка при обработке Google Maps URL: {e}")
     
     return result
+
+
+def _fetch_rating_from_maps_page(url: str) -> Optional[float]:
+    """
+    Загружает страницу Google Maps по ссылке и извлекает рейтинг из HTML или из JSON в странице.
+    Ищет <span aria-hidden="true">4,6</span>, aria-label, или "rating":4.6 в данных.
+    """
+    if not url or "google.com/maps" not in url:
+        return None
+    import re
+    try:
+        import httpx
+        headers = {
+            "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
+            "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
+            "Accept-Language": "sr,en;q=0.9,ru;q=0.8",
+        }
+        print(f"📡 Učitavanje rejtinga sa stranice: {url[:80]}...")
+        with httpx.Client(follow_redirects=True, timeout=15.0) as client:
+            r = client.get(url, headers=headers)
+        if r.status_code != 200:
+            print(f"⚠️ Stranica vratila status: {r.status_code}")
+            return None
+        text = r.text
+        # Декодируем HTML-сущности
+        import html
+        try:
+            text_decoded = html.unescape(text)
+        except Exception:
+            text_decoded = text
+        # Odgovor sadrži "4,6" (fontDisplayLarge: False). Tražimo "4,6" / "4.6" — proširujemo prozor (250 znakova)
+        for m in re.finditer(r'(4[,.]6|4[,.]5|3[,.]\d|5[,.]0)', text_decoded):
+            pos = m.end()
+            chunk_after = text_decoded[pos : pos + 250]
+            if 'звездочные' in chunk_after or 'звезд' in chunk_after:
+                try:
+                    v = float(m.group(1).replace(",", "."))
+                    if 0 <= v <= 5:
+                        print(f"⭐ Rejting pronađen (4,6 + звездочные): {v}")
+                        return round(v, 1)
+                except ValueError:
+                    pass
+        # Приоритет: <div class="fontDisplayLarge">4,6</div> — средняя оценка места (однозначный блок)
+        for pat in [
+            r'<div\s+class=["\']fontDisplayLarge["\'][^>]*>\s*([\d]+[.,]\d+)\s*</div>',
+            r'class=["\']fontDisplayLarge["\'][^>]*>\s*([\d]+[.,]\d+)\s*</div>',
+            r'fontDisplayLarge["\']?\s*>\s*([\d]+[.,]\d+)\s*</div>',
+        ]:
+            m_main = re.search(pat, text_decoded)
+            if m_main:
+                try:
+                    v = float(m_main.group(1).replace(",", "."))
+                    if 0 <= v <= 5:
+                        print(f"⭐ Rejting pronađen (fontDisplayLarge): {v}")
+                        return round(v, 1)
+                except ValueError:
+                    pass
+        # "4,6-звездочные" в тексте — первое такое число
+        m_inline = re.search(r'([\d]+[.,]\d+)\s*[-–]\s*звездочные', text_decoded)
+        if m_inline:
+            try:
+                v = float(m_inline.group(1).replace(",", "."))
+                if 2.0 <= v <= 5.0:
+                    print(f"⭐ Rejting pronađen (X-звездочные): {v}")
+                    return round(v, 1)
+            except ValueError:
+                pass
+        # Дубликат проверки fontDisplayLarge без class= (на случай минификации)
+        m_main = re.search(r'fontDisplayLarge[^>]*>\s*([\d]+[.,]\d+)\s*</div>', text_decoded)
+        if m_main:
+            try:
+                v = float(m_main.group(1).replace(",", "."))
+                if 0 <= v <= 5:
+                    print(f"⭐ Rejting pronađen (Srednja ocena): {v}")
+                    return round(v, 1)
+            except ValueError:
+                pass
+        # <span aria-hidden="true">4,6</span> перед span с aria-label="...-звездочные"
+        m_aria = re.search(r'aria-hidden=["\']true["\'][^>]*>\s*([\d]+[.,]\d+)\s*</span>\s*<span[^>]+aria-label=["\'][^"\']*звездочные', text_decoded)
+        if m_aria:
+            try:
+                v = float(m_aria.group(1).replace(",", "."))
+                if 0 <= v <= 5:
+                    print(f"⭐ Rejting pronađen (aria-hidden + звездочные): {v}")
+                    return round(v, 1)
+            except ValueError:
+                pass
+        # Остальные паттерны
+        patterns = [
+            r'aria-hidden\s*=\s*["\']true["\'][^>]*>\s*([\d]+[.,]\d+)\s*<',
+            r'>\s*([\d]+[.,]\d+)\s*</span>\s*<[^>]+aria-label',
+            r'([\d]+[.,]\d+)\s*[-–]\s*звездочные',
+            r'aria-label\s*=\s*["\']([\d]+[.,]\d+)[^"\']*звездочные',
+            r'aria-label\s*=\s*["\']([\d]+[.,]\d+)[^"\']*звезд',
+            r'["\']([\d]+[.,]\d+)-звездочные',
+            r'["\']([\d]+[.,]\d+)[^"\']*star',
+            r'"rating"\s*:\s*([\d]+[.,]?\d*)',
+            r'\[([\d]+[.,]\d+)\s*,\s*5\]',
+        ]
+        for pat in patterns:
+            for m in re.finditer(pat, text_decoded, re.I | re.DOTALL):
+                raw = m.group(1).replace(",", ".").strip()
+                try:
+                    v = float(raw)
+                    if 0 <= v <= 5:
+                        print(f"⭐ Rejting pronađen na stranici: {v}")
+                        return round(v, 1)
+                except ValueError:
+                    continue
+        # Запас: широкое окно вокруг "звездочные" / "звезд" — только рейтинг 2.0–5.0 (не 1.1 km и т.п.)
+        for needle in ["звездочные", "звезд", "-star"]:
+            idx = 0
+            while True:
+                idx = text_decoded.find(needle, idx)
+                if idx == -1:
+                    break
+                chunk = text_decoded[max(0, idx - 400) : idx + 120]
+                mm = re.findall(r'([\d]+[.,]\d+)', chunk)
+                for raw in mm:
+                    try:
+                        v = float(raw.replace(",", "."))
+                        if 2.0 <= v <= 5.0:  # tipičan rejting objekta, isključi 1.1 (km) itd.
+                            print(f"⭐ Rejting pronađen (blizu '{needle}'): {v}")
+                            return round(v, 1)
+                    except ValueError:
+                        continue
+                idx += 1
+        # aria-label bez "звездочные" — takođe samo 2.0–5.0 da ne uzmemo 1.1
+        for needle in ["aria-label"]:
+            idx = 0
+            while True:
+                idx = text_decoded.find(needle, idx)
+                if idx == -1:
+                    break
+                chunk = text_decoded[idx : idx + 120]
+                mm = re.findall(r'([\d]+[.,]\d+)', chunk)
+                for raw in mm:
+                    try:
+                        v = float(raw.replace(",", "."))
+                        if 2.0 <= v <= 5.0:
+                            print(f"⭐ Rejting pronađen (u aria-label): {v}")
+                            return round(v, 1)
+                    except ValueError:
+                        continue
+                idx += 1
+        # Poslednji pokušaj: prvi "звездочные" — u 500 znakova ispred i 150 posle tražimo broj 3.0–5.9
+        idx_z = text_decoded.find("звездочные")
+        if idx_z != -1:
+            chunk = text_decoded[max(0, idx_z - 500) : idx_z + 150]
+            last_rating = None
+            for m in re.finditer(r'([3-5][.,]\d+)', chunk):
+                try:
+                    v = float(m.group(1).replace(",", "."))
+                    if 3.0 <= v <= 5.9:
+                        last_rating = v
+                except ValueError:
+                    continue
+            if last_rating is not None:
+                print(f"⭐ Rejting pronađen (ispred 'звездочные'): {last_rating}")
+                return round(last_rating, 1)
+        # Rejting u kontekstu rejting-reči: samo 3.0–5.0 (isključujemo 2.0 = npr. "2.0 km")
+        has_rating_word_any = ("звездочные" in text_decoded or "звезд" in text_decoded or "star" in text_decoded.lower())
+        if has_rating_word_any:
+            # Tražimo broj rejtinga najbliži ključnoj reči (prva pojava = glavni rejting mesta)
+            needles_ru = ["звездочные", "звезд"]
+            needles_en = [" star ", "stars", "-star", "aria-label"]
+            for needle in needles_ru:
+                idx = text_decoded.find(needle)
+                if idx == -1:
+                    continue
+                chunk = text_decoded[max(0, idx - 350) : idx + 80]
+                nums = list(re.finditer(r'([3-5][.,]\d|5[.,]0)', chunk))
+                if nums:
+                    last_match = nums[-1]
+                    try:
+                        v = float(last_match.group(1).replace(",", "."))
+                        if 3.0 <= v <= 5.0:
+                            print(f"⭐ Rejting pronađen (blizu '{needle}'): {v}")
+                            return round(v, 1)
+                    except ValueError:
+                        pass
+            for needle in needles_en:
+                idx = text_decoded.lower().find(needle)
+                if idx == -1:
+                    continue
+                chunk = text_decoded[max(0, idx - 350) : idx + 80]
+                nums = list(re.finditer(r'([3-5][.,]\d|5[.,]0)', chunk))
+                if nums:
+                    last_match = nums[-1]
+                    try:
+                        v = float(last_match.group(1).replace(",", "."))
+                        if 3.0 <= v <= 5.0:
+                            print(f"⭐ Rejting pronađen (blizu '{needle.strip()}'): {v}")
+                            return round(v, 1)
+                    except ValueError:
+                        pass
+            # Zatim bilo koji broj 3.0–5.0 u blizini rejting-reči (ne 2.0)
+            for m in re.finditer(r'([\d]+[,.]\d+)', text_decoded):
+                try:
+                    v = float(m.group(1).replace(",", "."))
+                    if 3.0 <= v <= 5.0:
+                        start = max(0, m.start() - 400)
+                        end = min(len(text_decoded), m.end() + 400)
+                        ctx = text_decoded[start:end]
+                        ctx_lower = ctx.lower()
+                        if "звездочные" in ctx or "звезд" in ctx or "aria-label" in ctx or "star" in ctx_lower:
+                            print(f"⭐ Rejting pronađen (broj + kontekst): {v}")
+                            return round(v, 1)
+                except ValueError:
+                    continue
+        has_aria = "aria-hidden" in text_decoded or "aria-label" in text_decoded
+        has_rating_word = "звездочные" in text_decoded or "звезд" in text_decoded or "star" in text_decoded.lower()
+        has_font = "fontDisplayLarge" in text_decoded
+        has_46 = "4,6" in text_decoded or "4.6" in text_decoded
+        print(f"⚠️ Rejting nije pronađen. Odgovor: {len(text)} znakova, fontDisplayLarge: {has_font}, 4,6: {has_46}, aria: {has_aria}, rejting-reč: {has_rating_word}")
+        return None
+    except Exception as e:
+        print(f"❌ Greška pri učitavanju rejtinga sa stranice Maps: {e}")
+        return None
+
+
+def _fetch_google_place_rating(api_key: str, name: Optional[str] = None, lat: Optional[float] = None, lng: Optional[float] = None) -> Optional[float]:
+    """
+    Запрашивает рейтинг через Google Places API (Text Search).
+    Используется как запасной вариант, если парсинг страницы не сработал.
+    """
+    if not api_key or not (name or (lat is not None and lng is not None)):
+        return None
+    try:
+        import httpx
+        query = (name or "").strip() or f"{lat},{lng}"
+        location = f"{lat},{lng}" if lat is not None and lng is not None else None
+        params = {"query": query, "key": api_key}
+        if location:
+            params["location"] = location
+            params["radius"] = 50
+        url = "https://maps.googleapis.com/maps/api/place/textsearch/json"
+        with httpx.Client(timeout=10.0) as client:
+            r = client.get(url, params=params)
+        if r.status_code != 200:
+            return None
+        data = r.json()
+        if data.get("status") != "OK":
+            return None
+        results = data.get("results") or []
+        if not results:
+            return None
+        rating = results[0].get("rating")
+        if rating is None:
+            return None
+        try:
+            v = float(rating)
+            if 0 <= v <= 5:
+                return round(v, 1)
+        except (TypeError, ValueError):
+            pass
+        return None
+    except Exception as e:
+        print(f"Ошибка при запросе рейтинга Google Places: {e}")
+        return None
+
+
+def refresh_google_rating_for_business(session: Session, business: Business) -> Optional[float]:
+    """
+    Обновляет google_rating для бизнеса по сохранённому google_maps_url.
+    Сначала Google Places API (если ключ задан), иначе парсинг страницы.
+    """
+    url = (business.google_maps_url or "").strip()
+    if not url:
+        return None
+    maps_data = extract_google_maps_data(url)
+    rating = None
+    api_key = getattr(settings, "google_maps_api_key", None)
+    if api_key and (maps_data.get("coordinates") or maps_data.get("name")):
+        coords = maps_data.get("coordinates")
+        lat, lng = (float(coords[0]), float(coords[1])) if coords and len(coords) >= 2 else (None, None)
+        name = maps_data.get("name")
+        rating = _fetch_google_place_rating(api_key, name=name, lat=lat, lng=lng)
+        if rating is not None:
+            print(f"⭐ Rejting osvežen iz Google Places API: {rating}")
+    if rating is None:
+        standard_url = maps_data.get("standard_url") or url
+        rating = _fetch_rating_from_maps_page(standard_url)
+        if rating is not None:
+            print(f"⭐ Rejting osvežen sa stranice Maps: {rating}")
+    if rating is not None:
+        business.google_rating = rating
+        business.updated_at = _datetime.utcnow()
+        session.add(business)
+        try:
+            session.commit()
+            return rating
+        except Exception as e:
+            session.rollback()
+            print(f"Ошибка сохранения рейтинга: {e}")
+            return None
+    return None
+
 
 def get_client_stats(session: Session, business_id: int):
     """Получает статистику клиентов для поиска"""
@@ -524,14 +847,39 @@ async def dashboard(request: Request, period: Optional[str] = Query("current_mon
         # Доходимость (процент успешных резерваций - dosao/dosli от всех бронирований)
         attendance_rate = (len(confirmed_bookings) / len(bookings) * 100) if bookings else 0
         
-        # Новые / Постоянные гости
-        new_clients = [c for c in contacts if c.preferences and "Novi" in c.preferences.get("tags", [])]
-        regular_clients = [c for c in contacts if c.preferences and "Stalni gost" in c.preferences.get("tags", [])]
-        new_clients_count = len(new_clients)
-        regular_clients_count = len(regular_clients)
+        # Новые / Постоянные гости: только по бронированиям за период (без тегов)
+        # Новые = контакты, у которых в этом периоде первая бронь (не было брони до начала периода)
+        # Постоянные = контакты, у которых уже была бронь до начала периода
+        contact_ids_in_period = set(b.contact_id for b in bookings) if bookings else set()
+        if contact_ids_in_period:
+            if start_date is not None:
+                # Есть выбранный период: кто из гостей периода имел бронь до start_date
+                earlier_rows = session.exec(
+                    select(Booking.contact_id).where(
+                        Booking.contact_id.in_(list(contact_ids_in_period)),
+                        Booking.date < start_date.date()
+                    ).distinct()
+                ).all()
+                # Результат может быть list of tuples (id,) — извлекаем id
+                stalni_ids = set(int(r[0]) if isinstance(r, (tuple, list)) else r for r in earlier_rows)
+                new_ids = contact_ids_in_period - stalni_ids
+            else:
+                # all_time: по всей истории — новые = 1 бронь, постоянные = 2+
+                from collections import Counter
+                count_per_contact = Counter(b.contact_id for b in bookings)
+                new_ids = {cid for cid in contact_ids_in_period if count_per_contact.get(cid, 0) == 1}
+                stalni_ids = {cid for cid in contact_ids_in_period if count_per_contact.get(cid, 0) > 1}
+            new_clients_count = len(new_ids)
+            regular_clients_count = len(stalni_ids)
+            total_unique = len(contact_ids_in_period)
+            new_clients_percent = (new_clients_count / total_unique * 100) if total_unique > 0 else 0
+            regular_clients_percent = (regular_clients_count / total_unique * 100) if total_unique > 0 else 0
+        else:
+            new_clients_count = 0
+            regular_clients_count = 0
+            new_clients_percent = 0.0
+            regular_clients_percent = 0.0
         total_tagged = new_clients_count + regular_clients_count
-        new_clients_percent = (new_clients_count / total_tagged * 100) if total_tagged > 0 else 0
-        regular_clients_percent = (regular_clients_count / total_tagged * 100) if total_tagged > 0 else 0
         
         # Retention (количество бронирований / количество контактов с хотя бы одной успешной бронью)
         contacts_with_bookings = set(b.contact_id for b in confirmed_bookings)
@@ -2792,7 +3140,9 @@ async def get_business_settings(request: Request, session: Session = Depends(get
         "lead_sources": _lead_sources,
         "working_schedule": business.working_schedule or {},
         "timezone": business.timezone or "Europe/Belgrade",
-        "table_columns": table_columns_value
+        "table_columns": table_columns_value,
+        "google_maps_url": business.google_maps_url or "",
+        "google_rating": (float(business.google_rating) if business.google_rating is not None else None),
     }
     
     print(f"📤 Settings dict keys: {list(settings_dict.keys())}")
@@ -2803,6 +3153,30 @@ async def get_business_settings(request: Request, session: Session = Depends(get
         "success": True,
         "settings": settings_dict
     }
+
+
+@app.post("/api/business/settings/refresh-google-rating")
+async def refresh_google_rating_endpoint(request: Request, session: Session = Depends(get_session)):
+    """Обновить рейтинг Google Maps по сохранённой ссылке (без повторного ввода)."""
+    subscription_check = check_subscription_in_api(request, session)
+    if subscription_check:
+        return subscription_check
+    user = get_current_user(request)
+    if not user:
+        return JSONResponse({"success": False, "error": "Unauthorized"}, status_code=401)
+    business_id = user.get("business_id")
+    if not business_id:
+        return JSONResponse({"success": False, "error": "Business not found"}, status_code=404)
+    business = session.get(Business, business_id)
+    if not business:
+        return JSONResponse({"success": False, "error": "Business not found"}, status_code=404)
+    if not (business.google_maps_url or "").strip():
+        return JSONResponse({"success": False, "error": "google_maps_url_not_set"}, status_code=400)
+    rating = refresh_google_rating_for_business(session, business)
+    if rating is not None:
+        return JSONResponse({"success": True, "google_rating": round(rating, 1)})
+    return JSONResponse({"success": False, "error": "rating_fetch_failed"}, status_code=422)
+
 
 @app.post("/api/business/settings")
 async def update_business_settings(request: Request, session: Session = Depends(get_session)):
@@ -2901,48 +3275,7 @@ async def update_business_settings(request: Request, session: Session = Depends(
                 import traceback
                 print(f"💾 Traceback: {traceback.format_exc()}")
         
-        # Обработка Google Maps URL
-        if "google_maps_url" in data:
-            old_url = business.google_maps_url
-            new_url = data["google_maps_url"].strip()
-            
-            # Извлекаем данные из URL (включая обработку прямых координат)
-            maps_data = extract_google_maps_data(new_url)
-            # Безопасное логирование без сериализации datetime
-            try:
-                print(f"📊 Извлеченные данные из Google Maps URL: {json.dumps(maps_data, default=str)}")
-            except:
-                print(f"📊 Извлеченные данные из Google Maps URL: {str(maps_data)}")
-            
-            # Если это координаты, используем стандартный URL вместо координат
-            if maps_data.get("standard_url") and maps_data.get("coordinates"):
-                # Если введены координаты, сохраняем стандартный URL
-                business.google_maps_url = maps_data["standard_url"]
-                print(f"✅ Координаты преобразованы в URL: {maps_data['standard_url']}")
-            elif new_url:
-                # Для обычных URL сохраняем как есть
-                business.google_maps_url = new_url
-            else:
-                business.google_maps_url = None
-            
-            # Если URL изменился и есть координаты или CID, логируем для дальнейшего использования
-            if maps_data.get("coordinates"):
-                print(f"📍 Координаты: {maps_data['coordinates']}")
-            if maps_data.get("cid"):
-                print(f"🆔 CID: {maps_data['cid']}")
-            if maps_data.get("place_id"):
-                print(f"🆔 Place ID: {maps_data['place_id']}")
-        
-        # Обработка ручного рейтинга
-        if "google_rating_manual" in data:
-            try:
-                rating = float(data["google_rating_manual"]) if data["google_rating_manual"] else None
-                if rating and 0 <= rating <= 5:
-                    business.google_rating = rating
-                elif data["google_rating_manual"] is None or data["google_rating_manual"] == "":
-                    business.google_rating = None
-            except (ValueError, TypeError):
-                pass  # Игнорируем неверные значения
+        # Обработка Google Maps URL и рейтинга временно отключена
         
         business.updated_at = _datetime.utcnow()
         session.add(business)

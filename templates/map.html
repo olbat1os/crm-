@@ -1,4 +1,4 @@
-E{% extends 'map_base.html' %}
+{% extends 'map_base.html' %}
 {% block content %}
 <script>
   if (/[?&]embed=1(?=&|$)/.test(window.location.search || '')) {
@@ -2223,19 +2223,6 @@ E{% extends 'map_base.html' %}
           </span>
           <span class="card-action">+ Dodaj</span>
         </button>
-        <button type="button" class="table-card" data-add="chair-numbered">
-          <span class="card-icon">
-            <svg width="32" height="32" viewBox="0 0 22 22" fill="none" xmlns="http://www.w3.org/2000/svg">
-              <rect width="22" height="22" rx="11" fill="#1EA276"/>
-              <path d="M7.65215 15V9.115L6.30215 9.94V8.61L7.65215 7.8H8.88215V15H7.65215ZM13.2769 15.15C12.8069 15.15 12.3836 15.04 12.0069 14.82C11.6336 14.5967 11.3369 14.2883 11.1169 13.895C10.8969 13.5017 10.7869 13.05 10.7869 12.54V10.35C10.7869 9.80333 10.8952 9.32833 11.1119 8.925C11.3319 8.52167 11.6386 8.21 12.0319 7.99C12.4286 7.77 12.8886 7.66 13.4119 7.66C13.7752 7.66 14.1202 7.72167 14.4469 7.845C14.7736 7.965 15.0636 8.15833 15.3169 8.425L14.4469 9.27C14.3202 9.12 14.1652 9.00167 13.9819 8.915C13.8019 8.82833 13.6119 8.785 13.4119 8.785C13.1319 8.785 12.8869 8.85167 12.6769 8.985C12.4669 9.115 12.3036 9.28667 12.1869 9.5C12.0736 9.71333 12.0169 9.94167 12.0169 10.185V11.38L11.7969 11.14C12.0036 10.9 12.2519 10.7133 12.5419 10.58C12.8319 10.4433 13.1352 10.375 13.4519 10.375C13.9052 10.375 14.3052 10.4783 14.6519 10.685C14.9986 10.8883 15.2719 11.1683 15.4719 11.525C15.6719 11.8783 15.7719 12.2817 15.7719 12.735C15.7719 13.185 15.6569 13.5933 15.4269 13.96C15.2002 14.3233 14.8986 14.6133 14.5219 14.83C14.1452 15.0433 13.7302 15.15 13.2769 15.15ZM13.2769 13.995C13.5102 13.995 13.7236 13.94 13.9169 13.83C14.1102 13.7167 14.2636 13.565 14.3769 13.375C14.4936 13.1817 14.5519 12.9683 14.5519 12.735C14.5519 12.5017 14.4952 12.2883 14.3819 12.095C14.2686 11.9017 14.1152 11.7483 13.9219 11.635C13.7319 11.5183 13.5202 11.46 13.2869 11.46C13.0536 11.46 12.8402 11.5183 12.6469 11.635C12.4536 11.7483 12.3002 11.9017 12.1869 12.095C12.0736 12.2883 12.0169 12.5017 12.0169 12.735C12.0169 12.9617 12.0719 13.1717 12.1819 13.365C12.2952 13.555 12.4469 13.7083 12.6369 13.825C12.8302 13.9383 13.0436 13.995 13.2769 13.995Z" fill="white"/>
-            </svg>
-          </span>
-          <span class="card-content">
-            <span class="card-title">Stolica sa brojem</span>
-            <span class="card-meta">Računa se kao sto, ima broj</span>
-          </span>
-          <span class="card-action">+ Dodaj</span>
-        </button>
       </div>
     </div>
 
@@ -2312,7 +2299,6 @@ E{% extends 'map_base.html' %}
     <div class="tabs">
       <div class="tab active">Sprat 1</div>
       <div style="margin-left:auto; color:#bbb; cursor:pointer;" id="addTabButton" title="Dodaj sprat">+</div>
-      <button class="edit-map-btn" id="saveMapBtn" onclick="saveAllMapChanges()" style="margin-left: 16px;">Sačuvaj</button>
       <button class="edit-map-btn" onclick="switchToViewMode()" style="margin-left: 16px;">Nazad na pregled</button>
     </div>
 
@@ -3390,17 +3376,24 @@ E{% extends 'map_base.html' %}
       return `do ${capacity}`;
     };
 
-    const truncateTextToFit = (fullText, maxWidth, fontSize, fontFamily) => {
-      if (!fullText) return '';
-      const t = new fabric.Text(fullText, { fontSize, fontFamily: fontFamily || 'Manrope, sans-serif', fontWeight: '700', textBaseline: 'alphabetic' });
-      if (t.width <= maxWidth) return fullText;
-      let base = fullText;
-      while (base.length > 0) {
-        base = base.slice(0, -1);
-        t.set('text', base);
-        if (t.width <= maxWidth) return base;
+    // Подбирает размер шрифта, чтобы полный текст поместился в maxWidth (без обрезки текста)
+    const getFontSizeToFit = (fullText, maxWidth, maxFontSize, fontFamily) => {
+      if (!fullText || maxWidth <= 0) return maxFontSize || 28;
+      const minFontSize = 8;
+      let fs = maxFontSize || 28;
+      const t = new fabric.Text(fullText, { fontSize: fs, fontFamily: fontFamily || 'Manrope, sans-serif', fontWeight: '700', textBaseline: 'alphabetic' });
+      while (t.width > maxWidth && fs > minFontSize) {
+        fs = Math.max(minFontSize, Math.floor(fs - 1));
+        t.set('fontSize', fs);
       }
-      return '';
+      return fs;
+    };
+    window.getFontSizeToFit = getFontSizeToFit;
+
+    const truncateTextToFit = (fullText, maxWidth, fontSize, fontFamily) => {
+      if (!fullText) return fullText;
+      const fs = getFontSizeToFit(fullText, maxWidth, fontSize, fontFamily);
+      return { text: fullText, fontSize: fs };
     };
     window.truncateTextToFit = truncateTextToFit;
 
@@ -3464,9 +3457,11 @@ E{% extends 'map_base.html' %}
       const scaleX = group.scaleX || 1;
       const localWidth = (group.getScaledWidth() || 80) / scaleX;
       const maxW = Math.max(20, localWidth * 0.95);
-      const fs = group.numberLabel.fontSize || 28;
-      const displayText = truncateTextToFit(rawText, maxW, fs);
-      group.numberLabel.set({ text: displayText });
+      const baseFs = group.numberLabel.fontSize || 28;
+      const result = truncateTextToFit(rawText, maxW, baseFs);
+      const text = typeof result === 'object' && result != null && 'text' in result ? result.text : result;
+      const fontSize = typeof result === 'object' && result != null && 'fontSize' in result ? result.fontSize : baseFs;
+      group.numberLabel.set({ text: text, fontSize: fontSize });
       if (!group.mapTableMeta.metadata) group.mapTableMeta.metadata = {};
       if ((customName || '').trim()) {
         group.mapTableMeta.metadata.customName = customName.trim();
@@ -3608,11 +3603,13 @@ E{% extends 'map_base.html' %}
 
       const rawName = (table.metadata?.customName || '').trim() ? table.metadata.customName.trim() : String(table.number);
       const labelWidth = Math.max(20, Math.min(width, height || width) * 0.95);
-      const fs = shapeType === 'chair-numbered' ? 16 : 28;
-      const displayName = truncateTextToFit(rawName, labelWidth, fs);
+      const baseFs = shapeType === 'chair-numbered' ? 16 : 28;
+      const labelResult = truncateTextToFit(rawName, labelWidth, baseFs);
+      const displayName = typeof labelResult === 'object' && labelResult != null && 'text' in labelResult ? labelResult.text : labelResult;
+      const labelFontSize = typeof labelResult === 'object' && labelResult != null && 'fontSize' in labelResult ? labelResult.fontSize : baseFs;
       const numberLabel = new fabric.Text(displayName, {
         fontFamily: 'Manrope, sans-serif',
-        fontSize: fs,
+        fontSize: labelFontSize,
         fontWeight: '700',
         fill: shapeType === 'chair-numbered' ? '#ffffff' : TABLE_COLORS.text,
         textBaseline: 'alphabetic',
@@ -7271,15 +7268,17 @@ E{% extends 'map_base.html' %}
         });
       }
       
-      // Добавляем номер/название стола - customName или авто-номер, обрезаем если не помещается
+      // Добавляем номер/название стола — полный текст, уменьшаем шрифт если не помещается
       const rawName = (table.metadata?.customName || '').trim() ? table.metadata.customName.trim() : String(table.number || '');
       const labelWidth = Math.max(20, Math.min(width, height || width) * 0.95);
-      const fs = shapeType === 'chair-numbered' ? 16 : 28;
-      const fitFn = window.truncateTextToFit || (() => (t, w, f) => t);
-      const displayName = fitFn(rawName, labelWidth, fs);
+      const baseFs = shapeType === 'chair-numbered' ? 16 : 28;
+      const fitFn = window.truncateTextToFit || (() => (t, w, f) => ({ text: t, fontSize: f }));
+      const fitResult = fitFn(rawName, labelWidth, baseFs);
+      const displayName = typeof fitResult === 'object' && fitResult != null && 'text' in fitResult ? fitResult.text : fitResult;
+      const labelFs = typeof fitResult === 'object' && fitResult != null && 'fontSize' in fitResult ? fitResult.fontSize : baseFs;
       const numberLabel = new fabric.Text(displayName, {
         fontFamily: 'Manrope, sans-serif',
-        fontSize: fs,
+        fontSize: labelFs,
         fontWeight: '700',
         fill: shapeType === 'chair-numbered' ? '#ffffff' : TABLE_COLORS.text,
         textBaseline: 'alphabetic',

@@ -1741,9 +1741,6 @@
       <div class="card-type-option" onclick="window.addStatCard('retention')" data-metric="retention">
         <div class="card-type-option-title">Retention</div>
       </div>
-      <div class="card-type-option" onclick="window.addStatCard('rejting_google')" data-metric="rejting_google">
-        <div class="card-type-option-title">Rejting Google Maps</div>
-      </div>
     </div>
   </div>
 </div>
@@ -1791,7 +1788,6 @@
     has_avg_spend_data: {{ 'true' if has_avg_spend_data else 'false' }},
     has_total_spend_data: {{ 'true' if has_total_spend_data else 'false' }},
     has_guests_data: {{ 'true' if has_guests_data else 'false' }},
-    has_google_rating_data: {{ 'true' if has_google_rating_data else 'false' }},
     has_attendance_data: {{ 'true' if has_attendance_data else 'false' }},
     has_retention_data: {{ 'true' if has_retention_data else 'false' }},
     has_marketing_data: {{ 'true' if has_marketing_data else 'false' }},
@@ -1800,7 +1796,6 @@
     attendance_trend: {{ attendance_trend | tojson if attendance_trend else 'null' }},
     avg_spend: {{ avg_spend }},
     guests_with_bookings: {{ guests_with_bookings }},
-    google_rating: {{ google_rating if google_rating is not none else 'null' }},
     attendance_rate: {{ attendance_rate }},
     new_clients_percent: {{ new_clients_percent }},
     regular_clients_percent: {{ regular_clients_percent }},
@@ -1868,17 +1863,6 @@
           <div class="stat-value ${guestsClass}">${guestsValue}</div>
           <div class="stat-divider"></div>
           <div class="stat-label">Broj gostiju</div>
-        `;
-        break;
-      
-      case 'rejting_google':
-        cardClass = 'stats-card stats-card-medium card-width-295';
-        // Always show as no-data since Google Maps rating is not yet implemented
-        cardClass += ' no-data-card';
-        cardContent = `
-          <div class="stat-value no-data">–</div>
-          <div class="stat-divider"></div>
-          <div class="stat-label">Rejting Google Maps</div>
         `;
         break;
       
