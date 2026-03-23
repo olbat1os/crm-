@@ -4096,6 +4096,20 @@
       right: 20px;
       height: calc(100vh - 309px);
       border-radius: 16px;
+      /* чтобы вложенный скролл работал в flex-колонке на iOS/Android */
+      min-height: 0;
+    }
+    
+    /* Вложенный скролл на touch: не задаём pan-x/pan-y — иначе блокируется второй ось */
+    .bookings-container .scroll-container {
+      flex: 1 1 auto;
+      min-height: 0;
+      max-height: 100%;
+      -webkit-overflow-scrolling: touch;
+    }
+    .bookings-container .scroll-content {
+      -webkit-overflow-scrolling: touch;
+      overscroll-behavior-y: contain;
     }
     
     .bookings-table thead th,

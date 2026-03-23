@@ -5191,12 +5191,19 @@
       const meta = tableGroup?.mapTableMeta;
       const customName = meta?.metadata?.customName ?? '';
       const capacity = meta?.metadata?.capacity;
-      document.getElementById('tableEditName').value = customName;
+      const nameInput = document.getElementById('tableEditName');
+      nameInput.value = customName;
       document.getElementById('tableEditCapacity').value = capacity !== undefined && capacity !== null ? String(capacity) : '';
       const capField = document.getElementById('tableEditCapacityField');
       capField.style.display = meta?.shape === 'chair-numbered' ? 'none' : 'block';
+      // Живое обновление надписи стола при вводе названия (уменьшение шрифта сразу на карте)
+      nameInput.oninput = () => {
+        const g = window._tableEditTargetGroup;
+        if (!g) return;
+        applyTableLabelToGroup(g, nameInput.value);
+      };
       document.getElementById('tableEditModal').classList.add('show');
-      document.getElementById('tableEditName').focus();
+      nameInput.focus();
     };
     window.closeTableEditModal = () => {
       window._tableEditTargetGroup = null;
@@ -5259,69 +5266,72 @@
 
     canvas.on('object:scaling', (event) => {
       const obj = event.target;
-      if (obj?.mapTableMeta) {
-        // Для текста обрабатываем изменение ширины через scaleX
-        if (obj.mapTableMeta.shape === 'text') {
-          // Сохраняем базовую ширину при первом масштабировании
-          if (!obj._baseWidth) {
-            obj._baseWidth = obj.width || 240;
-          }
-          
-          // При масштабировании по X обновляем ширину и растягиваем текст
-          if (obj.scaleX !== 1) {
-            const newWidth = obj._baseWidth * obj.scaleX;
-            const scaleFactor = obj.scaleX;
-            
-            // Обновляем ширину и применяем charSpacing для растягивания
-            obj.set({
-              width: newWidth,
-              scaleX: 1,
-              charSpacing: (scaleFactor - 1) * 100
-            });
-            obj._baseWidth = newWidth; // Обновляем базовую ширину
-            obj.setCoords();
-            canvas.requestRenderAll();
-          }
-          
-          // При масштабировании по Y обновляем fontSize
-          if (obj.scaleY !== 1) {
-            if (!obj._baseFontSize) {
-              obj._baseFontSize = obj.fontSize || 18;
-            }
-            const newFontSize = obj._baseFontSize * obj.scaleY;
-            obj.set({
-              fontSize: newFontSize,
-              scaleY: 1
-            });
-            obj._baseFontSize = newFontSize; // Обновляем базовый размер шрифта
-            obj.setCoords();
-            canvas.requestRenderAll();
-          }
-          return;
+      if (!obj?.mapTableMeta) return;
+
+      // 1) Специальная логика для свободного текста (shape === 'text')
+      if (obj.mapTableMeta.shape === 'text') {
+        // Сохраняем базовую ширину при первом масштабировании
+        if (!obj._baseWidth) {
+          obj._baseWidth = obj.width || 240;
         }
-        // Для остальных объектов не трогаем масштаб внутренних надписей
-        maintainLabelSize(obj);
-        // Для столов — сразу обновляем текст при изменении размера
-        if (['square', 'circle', 'chair-numbered'].includes(obj.mapTableMeta?.shape) && obj.numberLabel) {
-          const customName = obj.mapTableMeta?.metadata?.customName;
-          applyTableLabelToGroup(obj, customName != null ? customName : '');
+        
+        // При масштабировании по X обновляем ширину и растягиваем текст
+        if (obj.scaleX !== 1) {
+          const newWidth = obj._baseWidth * obj.scaleX;
+          const scaleFactor = obj.scaleX;
+          
+          // Обновляем ширину и применяем charSpacing для растягивания
+          obj.set({
+            width: newWidth,
+            scaleX: 1,
+            charSpacing: (scaleFactor - 1) * 100
+          });
+          obj._baseWidth = newWidth; // Обновляем базовую ширину
+          obj.setCoords();
+          canvas.requestRenderAll();
         }
-        // Для диванов сохраняем исходные размеры и координаты при первом масштабировании
-        if ((obj.mapTableMeta.shape === 'sofa-straight' || obj.mapTableMeta.shape === 'sofa-corner' || obj.mapTableMeta.shape === 'sofa-double') && obj.sofaModel) {
-          if (!obj._sofaScalingBase) {
-            // Сохраняем исходные размеры группы и частей, а также координаты
-            obj._sofaScalingBase = {
-              width: obj.getScaledWidth(),
-              height: obj.getScaledHeight(),
-              parts: obj.sofaModel.parts.map(p => ({
-                id: p.id,
-                x: p.x,
-                y: p.y,
-                length: p.length,
-                width: p.width
-              }))
-            };
+        
+        // При масштабировании по Y обновляем fontSize
+        if (obj.scaleY !== 1) {
+          if (!obj._baseFontSize) {
+            obj._baseFontSize = obj.fontSize || 18;
           }
+          const newFontSize = obj._baseFontSize * obj.scaleY;
+          obj.set({
+            fontSize: newFontSize,
+            scaleY: 1
+          });
+          obj._baseFontSize = newFontSize; // Обновляем базовый размер шрифта
+          obj.setCoords();
+          canvas.requestRenderAll();
+        }
+        return;
+      }
+
+      // 2) Для остальных объектов поддерживаем стабильный размер надписей
+      maintainLabelSize(obj);
+
+      // 3) Для столов — сразу обновляем текст при изменении размера (уменьшаем шрифт под ширину стола)
+      if (['square', 'circle', 'chair-numbered'].includes(obj.mapTableMeta?.shape) && obj.numberLabel) {
+        const customName = obj.mapTableMeta?.metadata?.customName;
+        applyTableLabelToGroup(obj, customName != null ? customName : '');
+      }
+
+      // 4) Для диванов сохраняем исходные размеры и координаты при первом масштабировании
+      if ((obj.mapTableMeta.shape === 'sofa-straight' || obj.mapTableMeta.shape === 'sofa-corner' || obj.mapTableMeta.shape === 'sofa-double') && obj.sofaModel) {
+        if (!obj._sofaScalingBase) {
+          // Сохраняем исходные размеры группы и частей, а также координаты
+          obj._sofaScalingBase = {
+            width: obj.getScaledWidth(),
+            height: obj.getScaledHeight(),
+            parts: obj.sofaModel.parts.map(p => ({
+              id: p.id,
+              x: p.x,
+              y: p.y,
+              length: p.length,
+              width: p.width
+            }))
+          };
         }
       }
     });
